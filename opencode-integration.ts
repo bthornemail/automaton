@@ -79,39 +79,51 @@ class OpenCodeIntegration {
   }
   
   /**
-   * Execute command directly using system tools
+   * Execute command directly using bridge
    */
   private async executeDirect(tool: string, args: any[]): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const child = spawn(tool, args, { 
-        stdio: 'pipe',
-        cwd: process.cwd(),
-        shell: true
-      });
-      
-      let stdout = '';
-      let stderr = '';
-      
-      child.stdout?.on('data', (data) => {
-        stdout += data.toString();
-      });
-      
-      child.stderr?.on('data', (data) => {
-        stderr += data.toString();
-      });
-      
-      child.on('close', (code) => {
-        if (code === 0) {
-          resolve({ stdout, stderr, exitCode: code });
-        } else {
-          resolve({ stdout, stderr, exitCode: code, success: false });
-        }
-      });
-      
-      child.on('error', (error) => {
-        resolve({ stdout: '', stderr: error.message, exitCode: -1, success: false });
-      });
-    });
+    // Map args to params based on tool type
+    let params: any = {};
+    
+    switch (tool) {
+      case 'read':
+        params = { filePath: args[0] };
+        break;
+      case 'write':
+        params = { filePath: args[0], content: args[1] };
+        break;
+      case 'edit':
+        params = { 
+          filePath: args[0], 
+          oldString: args[1] || '', 
+          newString: args[2] || '',
+          replaceAll: args[3] || false
+        };
+        break;
+      case 'glob':
+        params = { pattern: args[0] || '**/*', path: args[1] };
+        break;
+      case 'grep':
+        params = { pattern: args[0], path: args[1], include: args[2] };
+        break;
+      case 'bash':
+        params = { command: args[0], timeout: args[1] };
+        break;
+      case 'task':
+        params = { description: args[0], prompt: args[1] };
+        break;
+      case 'todowrite':
+        params = { todos: args[0] };
+        break;
+      case 'todoread':
+        params = {};
+        break;
+      default:
+        params = { args };
+    }
+    
+    // Route through bridge
+    return await this.bridge.routeCommand(tool, params);
   }
   
   /**
