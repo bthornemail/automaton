@@ -63,23 +63,40 @@ class OpenCodeBridge {
     return new Promise((resolve, reject) => {
       let child;
       
+      // Handle different tool types
       if (tool === 'read' && params.filePath) {
         // Read file directly
         try {
           const content = require('fs').readFileSync(params.filePath, 'utf8');
-          resolve({ success: true, content, tool });
+          resolve({ success: true, content, tool, type: 'church-pair' });
+        } catch (error) {
+          resolve({ success: false, error: error.message, tool });
+        }
+      } else if (tool === 'write' && params.filePath && params.content !== undefined) {
+        // Write file directly
+        try {
+          require('fs').writeFileSync(params.filePath, params.content, 'utf8');
+          resolve({ success: true, tool, filePath: params.filePath });
+        } catch (error) {
+          resolve({ success: false, error: error.message, tool });
+        }
+      } else if (tool === 'edit' && params.filePath) {
+        // Edit file
+        try {
+          const fs = require('fs');
+          const currentContent = fs.readFileSync(params.filePath, 'utf8');
+          const newContent = currentContent.replace(
+            params.oldString || '', 
+            params.newString || ''
+          );
+          fs.writeFileSync(params.filePath, newContent, 'utf8');
+          resolve({ success: true, tool, filePath: params.filePath });
         } catch (error) {
           resolve({ success: false, error: error.message, tool });
         }
       } else if (tool === 'bash' && params.command) {
         // Execute bash command
         child = spawn('bash', ['-c', params.command], { 
-          stdio: 'pipe',
-          cwd: process.cwd()
-        });
-      } else if (tool === 'ls') {
-        // List directory
-        child = spawn('ls', ['-la'], { 
           stdio: 'pipe',
           cwd: process.cwd()
         });
@@ -150,12 +167,44 @@ class OpenCodeIntegration {
     this.log(`Executing ${tool} with priority ${priority}`, 'info');
     
     try {
-      // Route through bridge
-      const params = { args };
-      if (tool === 'read' && args[0]) {
-        params.filePath = args[0];
-      } else if (tool === 'bash' && args[0]) {
-        params.command = args[0];
+      // Map args to params based on tool type
+      let params = {};
+      
+      switch (tool) {
+        case 'read':
+          params = { filePath: args[0] };
+          break;
+        case 'write':
+          params = { filePath: args[0], content: args[1] };
+          break;
+        case 'edit':
+          params = { 
+            filePath: args[0], 
+            oldString: args[1] || '', 
+            newString: args[2] || '',
+            replaceAll: args[3] || false
+          };
+          break;
+        case 'glob':
+          params = { pattern: args[0] || '**/*', path: args[1] };
+          break;
+        case 'grep':
+          params = { pattern: args[0], path: args[1], include: args[2] };
+          break;
+        case 'bash':
+          params = { command: args[0], timeout: args[1] };
+          break;
+        case 'task':
+          params = { description: args[0], prompt: args[1] };
+          break;
+        case 'todowrite':
+          params = { todos: args[0] };
+          break;
+        case 'todoread':
+          params = {};
+          break;
+        default:
+          params = { args };
       }
       
       const result = await this.bridge.routeCommand(tool, params);
