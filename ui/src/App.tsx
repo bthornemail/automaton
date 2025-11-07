@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Activity, Eye, MessageSquare, History, Zap, Sparkles, Cog } from 'lucide-react';
+import { Activity, Eye, MessageSquare, History, Zap, Sparkles, Cog, Brain } from 'lucide-react';
 import Dashboard from '@/components/Dashboard/Dashboard';
 import DimensionalCanvas from '@/components/DimensionalCanvas/DimensionalCanvas';
 import ControlPanel from '@/components/ControlPanel/ControlPanel';
@@ -11,9 +11,12 @@ import QuantumVisualization from '@/components/QuantumVisualization/QuantumVisua
 import CircuitBuilder from '@/components/QuantumVisualization/CircuitBuilder';
 import AdvancedAnimations from '@/components/AdvancedAnimations/AdvancedAnimations';
 import Configuration from '@/components/Configuration/Configuration';
+import OpenCodeInterface from './components/OpenCodeInterface/OpenCodeInterface';
+
+console.log('App.tsx: OpenCodeInterface imported:', OpenCodeInterface);
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'analysis' | 'history' | 'agents' | 'quantum' | 'animations' | 'config'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'analysis' | 'history' | 'agents' | 'quantum' | 'animations' | 'opencode' | 'config'>('overview');
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Activity },
@@ -22,6 +25,7 @@ const App: React.FC = () => {
     { id: 'agents', label: 'Agents', icon: MessageSquare },
     { id: 'quantum', label: 'Quantum', icon: Zap },
     { id: 'animations', label: 'Animations', icon: Sparkles },
+    { id: 'opencode', label: 'OpenCode', icon: Brain },
     { id: 'config', label: 'Config', icon: Cog }
   ];
 
@@ -163,6 +167,17 @@ const App: React.FC = () => {
             className="max-w-7xl mx-auto"
           >
             <AdvancedAnimations />
+          </motion.div>
+        )}
+
+        {/* OpenCode Tab */}
+        {activeTab === 'opencode' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-6xl mx-auto"
+          >
+            <OpenCodeInterface />
           </motion.div>
         )}
 
