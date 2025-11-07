@@ -7,12 +7,13 @@
  */
 
 import { execSync } from 'child_process';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'fs';
+import * as path from 'path';
 
 // Church encoding utilities
 class ChurchEncoding {
   static zero = (f: any) => (x: any) => x;
-  static succ = (n: any) => (_f: any) => (x: any) => x;
+  static succ = (n: any) => (f: any) => (x: any) => f(n(f)(x));
   static add = (m: any) => (n: any) => (f: any) => (x: any) => m(f)(n(f)(x));
   static mul = (m: any) => (n: any) => (f: any) => m(n(f));
   static pow = (m: any) => (n: any) => n(m);
@@ -146,14 +147,22 @@ class OpenCodeBridge {
     switch (tool) {
       case 'read':
         return this.encodeRead(params.filePath);
+      case 'write':
+        return this.encodeWrite(params.filePath, params.content);
       case 'edit':
         return this.encodeEdit(params.filePath, params.oldString, params.newString);
+      case 'glob':
+        return this.encodeGlob(params.pattern, params.path);
+      case 'grep':
+        return this.encodeGrep(params.pattern, params.path, params.include);
       case 'bash':
-        return this.encodeBash(params.command);
+        return this.encodeBash(params.command, params.timeout);
       case 'task':
         return this.encodeTask(params.description, params.prompt);
       case 'todowrite':
         return this.encodeTodo(params.todos);
+      case 'todoread':
+        return this.encodeTodoRead();
       default:
         return this.encodeGeneric(tool, params);
     }
@@ -174,13 +183,25 @@ class OpenCodeBridge {
     if (!existsSync(filePath)) {
       throw new Error(`File not found: ${filePath}`);
     }
-    const content = readFileSync(filePath, 'utf8');
-    return {
-      type: 'church-pair',
-      first: content,
-      second: filePath,
-      church: 'λx.λy.λf.fxy'
-    };
+    try {
+      const content = readFileSync(filePath, 'utf8');
+      return {
+        type: 'church-pair',
+        first: content,
+        second: filePath,
+        church: 'λx.λy.λf.fxy',
+        success: true
+      };
+    } catch (error: any) {
+      return {
+        type: 'church-pair',
+        first: '',
+        second: filePath,
+        church: 'λx.λy.λf.fxy',
+        success: false,
+        error: error.message
+      };
+    }
   }
   
   encodeEdit(filePath: any, oldString: any, newString: any) {
@@ -192,17 +213,64 @@ class OpenCodeBridge {
       operand1: this.encoding.fromNumber(oldLen),
       operand2: this.encoding.fromNumber(newLen),
       church: 'λm.λn.λf.λx.mf(nfx)',
-      filePath
+      filePath,
+      oldString,
+      newString
     };
   }
   
-  encodeBash(command: any) {
+  encodeWrite(filePath: any, content: any) {
+    // Write as Church multiplication: content * path
+    return {
+      type: 'church-multiplication',
+      operand1: this.encoding.fromNumber(content ? content.length : 0),
+      operand2: this.encoding.fromNumber(filePath ? filePath.length : 0),
+      church: 'λm.λn.λf.m(nf)',
+      filePath,
+      content
+    };
+  }
+
+  encodeGlob(pattern: any, searchPath?: any) {
+    // Glob as structural pattern matching
+    return {
+      type: 'structural-pattern',
+      pattern,
+      path: searchPath || '.',
+      church: 'λx.λy.λf.fxy',
+      dimension: '2D'
+    };
+  }
+
+  encodeGrep(pattern: any, searchPath?: any, include?: any) {
+    // Grep as structural unification
+    return {
+      type: 'structural-unification',
+      pattern,
+      path: searchPath || '.',
+      include,
+      church: 'λx.λy.λf.fxy',
+      dimension: '2D'
+    };
+  }
+
+  encodeBash(command: any, timeout?: any) {
     // Bash as network operation through spacetime
     return {
       type: 'network-operation',
       command,
+      timeout,
       church: 'λcmd.execute(spacetime)',
       dimension: '4D'
+    };
+  }
+
+  encodeTodoRead() {
+    // Todo read as consensus query
+    return {
+      type: 'consensus-query',
+      church: 'λledger.query(consensus)',
+      dimension: '5D'
     };
   }
   
@@ -297,6 +365,85 @@ class OpenCodeBridge {
         unified: true
       };
     }
+    
+    if (operation.type === 'structural-pattern') {
+      // Execute glob pattern matching using Node.js fs
+      try {
+        const globPattern = operation.pattern || '**/*';
+        const searchPath = operation.path || '.';
+        
+        // Simple glob implementation using fs
+        const files: string[] = [];
+        const patternParts = globPattern.split('/');
+        const searchDir = path.resolve(searchPath);
+        
+        function walkDir(dir: string, depth: number = 0): void {
+          try {
+            const entries = readdirSync(dir);
+            for (const entry of entries) {
+              const fullPath = path.join(dir, entry);
+              const stat = statSync(fullPath);
+              
+              if (stat.isDirectory()) {
+                walkDir(fullPath, depth + 1);
+              } else if (stat.isFile()) {
+                const relativePath = path.relative(searchDir, fullPath);
+                // Simple pattern matching
+                if (globPattern === '**/*' || relativePath.includes(patternParts[patternParts.length - 1])) {
+                  files.push(relativePath);
+                }
+              }
+            }
+          } catch (error) {
+            // Skip directories we can't read
+          }
+        }
+        
+        walkDir(searchDir);
+        
+        return {
+          ...operation,
+          files,
+          count: files.length,
+          success: true
+        };
+      } catch (error: any) {
+        return {
+          ...operation,
+          files: [],
+          success: false,
+          error: error.message
+        };
+      }
+    }
+    
+    if (operation.type === 'structural-unification') {
+      // Execute grep pattern matching
+      try {
+        const { execSync } = require('child_process');
+        const pattern = operation.pattern;
+        const searchPath = operation.path || '.';
+        const include = operation.include || '';
+        const cmd = `grep -r "${pattern}" ${searchPath} ${include}`;
+        const output = execSync(cmd, { encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 });
+        const matches = output.split('\n').filter(line => line.trim());
+        return {
+          ...operation,
+          matches,
+          count: matches.length,
+          success: true
+        };
+      } catch (error: any) {
+        // Grep returns non-zero exit code when no matches found, which is OK
+        return {
+          ...operation,
+          matches: [],
+          count: 0,
+          success: true
+        };
+      }
+    }
+    
     return { ...operation, dimension: '2D-structural' };
   }
   
@@ -304,12 +451,46 @@ class OpenCodeBridge {
     // 3D: Algebraic transformations
     if (operation.type === 'church-addition') {
       const result = this.encoding.add(operation.operand1)(operation.operand2);
+      // Actually perform the edit operation
+      try {
+        if (operation.filePath && existsSync(operation.filePath)) {
+          const currentContent = readFileSync(operation.filePath, 'utf8');
+          const newContent = currentContent.replace(operation.oldString || '', operation.newString || '');
+          writeFileSync(operation.filePath, newContent, 'utf8');
+        }
+      } catch (error: any) {
+        // Continue even if edit fails, return the Church encoding result
+      }
       return {
         ...operation,
         result,
         resultNumber: this.encoding.toNumber(result)
       };
     }
+    
+    if (operation.type === 'church-multiplication') {
+      const result = this.encoding.mul(operation.operand1)(operation.operand2);
+      // Actually perform the write operation
+      try {
+        if (operation.filePath && operation.content !== undefined) {
+          writeFileSync(operation.filePath, operation.content, 'utf8');
+        }
+      } catch (error: any) {
+        return {
+          ...operation,
+          result,
+          success: false,
+          error: error.message
+        };
+      }
+      return {
+        ...operation,
+        result,
+        resultNumber: this.encoding.toNumber(result),
+        success: true
+      };
+    }
+    
     return { ...operation, dimension: '3D-algebraic' };
   }
   
@@ -317,10 +498,19 @@ class OpenCodeBridge {
     // 4D: Network execution
     if (operation.type === 'network-operation') {
       try {
-        const output = execSync(operation.command, { encoding: 'utf8' });
+        const output = execSync(operation.command, { 
+          encoding: 'utf8',
+          maxBuffer: 10 * 1024 * 1024, // 10MB buffer
+          timeout: operation.timeout || 120000
+        });
         return { ...operation, output, success: true };
       } catch (error: any) {
-        return { ...operation, error: error.message, success: false };
+        return { 
+          ...operation, 
+          error: error.message, 
+          success: false,
+          exitCode: error.status || -1
+        };
       }
     }
     return { ...operation, dimension: '4D-network' };
@@ -337,6 +527,47 @@ class OpenCodeBridge {
       }));
       return { ...operation, todos: validated };
     }
+    
+    if (operation.type === 'consensus-query') {
+      // Read todos from canvas or return empty
+      try {
+        if (existsSync(this.canvasPath)) {
+          const canvasData = readFileSync(this.canvasPath, 'utf8');
+          const lines = canvasData.split('\n').filter(line => line.trim());
+          const todos = lines
+            .map(line => {
+              try {
+                const entry = JSON.parse(line);
+                if (entry.type === 'operation' && entry.tool === 'todowrite') {
+                  return entry.params?.todos || [];
+                }
+              } catch {
+                return [];
+              }
+              return [];
+            })
+            .flat();
+          return {
+            ...operation,
+            todos: todos.length > 0 ? todos : [],
+            success: true
+          };
+        }
+      } catch (error: any) {
+        return {
+          ...operation,
+          todos: [],
+          success: false,
+          error: error.message
+        };
+      }
+      return {
+        ...operation,
+        todos: [],
+        success: true
+      };
+    }
+    
     return { ...operation, dimension: '5D-consensus' };
   }
   
