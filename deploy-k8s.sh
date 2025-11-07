@@ -132,6 +132,10 @@ echo "🚀 Applying Kubernetes manifests..."
 
 # Create namespace and core resources
 echo "📋 Creating namespace and core resources..."
+# Delete existing secret if it exists to avoid base64 encoding issues
+echo "🔐 Ensuring secrets are properly configured..."
+kubectl delete secret automaton-secrets -n automaton --ignore-not-found=true 2>/dev/null || true
+
 kubectl apply -f k8s/01-automaton-deployment.yaml
 
 # Wait for Redis to be ready
