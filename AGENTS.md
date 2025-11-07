@@ -139,6 +139,22 @@ Goal-Oriented Agent
   · Implements quantum consensus voting
   · Resolves conflicts via Grover + Borda algorithms
 
+7. OpenCode Integration Agent
+
+· Purpose: Bridge opencode CLI commands with automaton dimensional operations
+· Capabilities:
+  · Maps opencode tools to Church encoding operations
+  · Routes file system commands through topological layers
+  · Integrates search/edit operations with dimensional progression
+  · Provides CLI interface to multi-agent system
+· Tool Mappings:
+  · Read/Glob/Grep → 2D-Structural Agent (pattern operations)
+  · Edit/Write → 3D-Algebraic Agent (transformation operations)
+  · Bash → 4D-Network Agent (system operations)
+  · Task → 6D-Intelligence Agent (complex operations)
+  · Todo → 5D-Consensus Agent (goal tracking)
+· Requirements: MUST maintain tool-to-dimension fidelity
+
 Agent Communication Protocol
 
 Vertical Communication (Dimensional Hierarchy)
@@ -153,6 +169,13 @@ Horizontal Communication (Cross-Dimensional)
 · Pattern matching across dimensions
 · Resource sharing between parallel systems
 
+OpenCode Integration Layer
+
+· Tool-to-dimension routing via OpenCode Integration Agent
+· Command preprocessing through Church encoding
+· Result post-processing with dimensional validation
+· CLI interface to multi-agent coordination
+
 Message Types
 
 1. State Updates: Dimensional state changes
@@ -160,6 +183,7 @@ Message Types
 3. Constraint Violations: SHACL compliance alerts
 4. Evolution Proposals: Canvas modification suggestions
 5. Consensus Votes: Multi-agent decision making
+6. OpenCode Commands: Routed CLI operations with dimensional context
 
 Implementation Requirements
 
