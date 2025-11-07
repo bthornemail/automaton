@@ -9,7 +9,7 @@
 
 "command": ["claude", "mcp", "server"],
 
-"enabled": true,
+"enabled": false,
 
 "environment": {},
 
