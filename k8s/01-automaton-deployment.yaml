@@ -4,7 +4,7 @@ metadata:
   name: automaton
   labels:
     name: automaton
-    app: automaton-metaverse
+    app: "automaton-metaverse"
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -24,10 +24,12 @@ metadata:
   name: automaton-secrets
   namespace: automaton
 type: Opaque
-data:
+  data:
   REDIS_PASSWORD: YXV0b21F0b24xMw==  # base64 encoded 'automaton123'
   GRAFANA_PASSWORD: YXV0b21F0b24xMw==  # base64 encoded 'automaton123'
   JWT_SECRET: c3VwZXJfc2VjcmV0X2F1dG9tYXRvbl9rZXJuZWw=  # base64 encoded secret
+  SMTP_USER: YWRtaW5AdW5pdmVyc2FsbGlmZXByb3RvY29sLmNvbQ==  # base64 encoded 'admin@universallifeprotocol.com'
+  SMTP_PASSWORD: TXB5NmdfSyYyeg==  # base64 encoded 'Mpy6g_K$J7nq&2z'
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -329,4 +331,4 @@ spec:
   resources:
     requests:
       storage: 1Gi
-  storageClassName: fast-ssd
+  storageClassName: standard
