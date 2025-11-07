@@ -35,12 +35,22 @@ metadata:
   name: automaton-secrets
   namespace: automaton
 type: Opaque
-  data:
-  REDIS_PASSWORD: YXV0b21F0b24xMw==  # base64 encoded 'automaton123'
-  GRAFANA_PASSWORD: YXV0b21F0b24xMw==  # base64 encoded 'automaton123'
-  JWT_SECRET: c3VwZXJfc2VjcmV0X2F1dG9tYXRvbl9rZXJuZWw=  # base64 encoded secret
+data:
+  REDIS_PASSWORD: YXV0b21hdG9uMTIz  # base64 encoded 'automaton123'
+  GRAFANA_PASSWORD: YXV0b21hdG9uMTIz  # base64 encoded 'automaton123'
+  JWT_SECRET: c3VwZXJfc2VjcmV0X2F1dG9tYXRvbl9rZXJuZWw=  # base64 encoded 'super_secret_automaton_kernel'
   SMTP_USER: YWRtaW5AdW5pdmVyc2FsbGlmZXByb3RvY29sLmNvbQ==  # base64 encoded 'admin@universallifeprotocol.com'
-  SMTP_PASSWORD: TXB5NmdfSyYyeg==  # base64 encoded 'Mpy6g_K$J7nq&2z'
+  SMTP_PASSWORD: TXB5NmdfSyRKN25xJjJ6  # base64 encoded 'Mpy6g_K$J7nq&2z'
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: automaton-data
+  namespace: automaton
+data:
+  automaton.jsonl: |
+    {"id":"self-ref","type":"file","x":800,"y":0,"width":280,"height":120,"color":"5","file":"automaton-kernel.jsonl"}
+    {"id":"0D-topology","type":"text","x":0,"y":0,"width":280,"height":120,"color":"1","text":"# 0D-topology\n\n**Quantum Vacuum Topology**\n- Empty pattern: `()`\n- Point topology\n- Trivial fiber bundle\n- Base: `∅`\n\n*The primordial topological space*"}
 ---
 apiVersion: apps/v1
 kind: Deployment
