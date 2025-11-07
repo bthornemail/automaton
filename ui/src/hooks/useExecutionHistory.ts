@@ -86,10 +86,10 @@ export const useExecutionHistory = () => {
     const handleActionExecuted = (action: string, result: any) => {
       addToHistory({
         action,
-        timestamp: Date.now(),
-        from: 'unknown', // These would be determined by the actual action
-        to: 'unknown',
-        iteration: data.history.length
+        timestamp: result.timestamp || Date.now(),
+        from: result.from || 'unknown',
+        to: result.to || 'unknown',
+        iteration: result.iteration !== undefined ? result.iteration : data.history.length
       });
     };
 

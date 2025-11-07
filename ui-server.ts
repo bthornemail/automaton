@@ -7,6 +7,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
 import WordNetIntegration from './src/services/wordnet';
+import { simpleOpenCodeService } from './src/services/simple-opencode';
 
 const HTTP_PORT = 5555;
 const WS_PORT = 5556;
@@ -283,6 +284,90 @@ async function handleAPIRequest(path: string, req: any, res: any) {
           response.success = false;
           response.error = 'Two words required for relationship analysis';
         }
+        break;
+
+      case 'opencode/connect':
+        const connected = await simpleOpenCodeService.initialize();
+        response.data = { connected };
+        break;
+
+      case 'opencode/analyze':
+        const automatonData = {
+          isRunning,
+          currentDimension: (automaton as any).currentDimension,
+          iterationCount: (automaton as any).executionHistory?.length || 0,
+          selfModificationCount: (automaton as any).selfModificationCount,
+          totalObjects: (automaton as any).objects.length,
+          status: isRunning ? 'running' : 'idle',
+          executionHistory: (automaton as any).executionHistory || []
+        };
+        const analysis = await simpleOpenCodeService.analyzeAutomatonState(automatonData);
+        response.data = analysis;
+        break;
+
+      case 'opencode/suggest':
+        const currentDim = (automaton as any).currentDimension;
+        const availableActions = ['evolve', 'self-reference', 'self-modify', 'self-io', 'validate-self', 'self-train', 'self-observe', 'compose'];
+        const suggestions = await simpleOpenCodeService.getSuggestionsForAction(currentDim, availableActions);
+        response.data = { suggestions };
+        break;
+
+      case 'opencode/search':
+        const searchBody = await parseRequestBody(req);
+        const pattern = searchBody.pattern;
+        if (pattern) {
+          response.data = await simpleOpenCodeService.searchCodebase(pattern);
+        } else {
+          response.success = false;
+          response.error = 'Pattern is required for search';
+        }
+        break;
+
+      case 'opencode/status':
+        response.data = {
+          connected: simpleOpenCodeService.isClientConnected(),
+          currentSession: null, // Simplified version doesn't track sessions
+          availableModels: simpleOpenCodeService.getAvailableModels(),
+          availableAgents: simpleOpenCodeService.getAvailableAgents()
+        };
+        break;
+
+      case 'opencode/agent/list':
+        response.data = simpleOpenCodeService.getAvailableAgents();
+        break;
+
+      case 'opencode/agent/execute':
+        const agentBody = await parseRequestBody(req);
+        const agentName = agentBody.agent;
+        const agentTask = agentBody.task;
+        
+        if (agentName && agentTask) {
+          response.data = await simpleOpenCodeService.executeAgentTask(agentName, agentTask);
+        } else {
+          response.success = false;
+          response.error = 'Agent name and task are required';
+        }
+        break;
+
+      case 'opencode/model/set':
+        const modelBody = await parseRequestBody(req);
+        const newModel = modelBody.model;
+        
+        if (newModel) {
+          const success = await simpleOpenCodeService.setModel(newModel);
+          response.data = { model: newModel, set: success };
+          if (!success) {
+            response.success = false;
+            response.error = 'Model not available';
+          }
+        } else {
+          response.success = false;
+          response.error = 'Model name is required';
+        }
+        break;
+
+      case 'opencode/models':
+        response.data = simpleOpenCodeService.getAvailableModels();
         break;
 
       default:
