@@ -1,0 +1,723 @@
+Loaded 233 objects from ./automaton.jsonl
+✅ Automaton initialized successfully
+🔌 WebSocket server attached to HTTP server
+🚀 Automaton Backend Server Started
+📊 API: http://localhost:5555/api
+🔌 WebSocket: ws://localhost:5556
+🌐 HTTP API server running on http://localhost:5555
+🚀 Starting automaton with 2000ms interval
+🎯 Executing: self-modify
+Added self-modification #1: self-ref-modified-1762477106023
+🎯 Executing: self-reference
+Self-reference to line 1: identity
+🎯 Executing: self-reference
+Self-reference to line 1: identity
+🎯 Executing: evolve
+Evolving from dimension 0 to 1
+🎯 Executing: evolve
+Evolving from dimension 1 to 2
+🎯 Executing: evolve
+Evolving from dimension 2 to 3
+🎯 Executing: evolve
+Evolving from dimension 3 to 4
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: evolve
+Evolving from dimension 4 to 5
+🎯 Executing: validate-self
+Validated 8/8 automata
+🎯 Executing: evolve
+Evolving from dimension 5 to 6
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: evolve
+Evolving from dimension 6 to 7
+🎯 Executing: evolve
+Evolving from dimension 7 to 8
+🎯 Executing: self-modify
+Added self-modification #2: self-ref-modified-1762477146060
+🎯 Executing: evolve
+Evolving from dimension 0 to 1
+🎯 Executing: evolve
+Evolving from dimension 1 to 2
+🎯 Executing: evolve
+Evolving from dimension 2 to 3
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: evolve
+Evolving from dimension 3 to 4
+🎯 Executing: evolve
+Evolving from dimension 4 to 5
+🎯 Executing: evolve
+Evolving from dimension 5 to 6
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: evolve
+Evolving from dimension 6 to 7
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-observe
+Self-observation: Currently at quantum (dimension 7)
+Quantum collapse: returning to 0D
+🎯 Executing: evolve
+Evolving from dimension 0 to 1
+🎯 Executing: evolve
+Evolving from dimension 1 to 2
+🎯 Executing: evolve
+Evolving from dimension 2 to 3
+🎯 Executing: evolve
+Evolving from dimension 3 to 4
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: self-modify
+Added self-modification #3: self-ref-modified-1762477186103
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: evolve
+Evolving from dimension 4 to 5
+🎯 Executing: evolve
+Evolving from dimension 5 to 6
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: evolve
+Evolving from dimension 6 to 7
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-observe
+Self-observation: Currently at quantum (dimension 7)
+Quantum collapse: returning to 0D
+🎯 Executing: validate-self
+Validated 8/8 automata
+🎯 Executing: self-reference
+Self-reference to line 1: identity
+🎯 Executing: self-reference
+Self-reference to line 1: identity
+🎯 Executing: evolve
+Evolving from dimension 0 to 1
+🎯 Executing: evolve
+Evolving from dimension 1 to 2
+🎯 Executing: evolve
+Evolving from dimension 2 to 3
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: evolve
+Evolving from dimension 3 to 4
+🎯 Executing: evolve
+Evolving from dimension 4 to 5
+🎯 Executing: evolve
+Evolving from dimension 5 to 6
+🎯 Executing: self-modify
+Added self-modification #4: self-ref-modified-1762477226138
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: evolve
+Evolving from dimension 6 to 7
+🎯 Executing: evolve
+Evolving from dimension 7 to 8
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-reference
+Self-reference to line 1: identity
+🎯 Executing: evolve
+Evolving from dimension 0 to 1
+🎯 Executing: evolve
+Evolving from dimension 1 to 2
+🎯 Executing: evolve
+Evolving from dimension 2 to 3
+🎯 Executing: evolve
+Evolving from dimension 3 to 4
+🎯 Executing: validate-self
+Validated 8/8 automata
+🎯 Executing: evolve
+Evolving from dimension 4 to 5
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: evolve
+Evolving from dimension 5 to 6
+🎯 Executing: evolve
+Evolving from dimension 6 to 7
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: self-observe
+Self-observation: Currently at quantum (dimension 7)
+Quantum collapse: returning to 0D
+🎯 Executing: evolve
+Evolving from dimension 0 to 1
+🎯 Executing: evolve
+Evolving from dimension 1 to 2
+🎯 Executing: self-modify
+Added self-modification #5: self-ref-modified-1762477264169
+🎯 Executing: self-modify
+Added self-modification #6: self-ref-modified-1762477266171
+🎯 Executing: self-modify
+Added self-modification #7: self-ref-modified-1762477268172
+🎯 Executing: self-modify
+Added self-modification #8: self-ref-modified-1762477270174
+🎯 Executing: self-modify
+Added self-modification #9: self-ref-modified-1762477272177
+🎯 Executing: self-modify
+Added self-modification #10: self-ref-modified-1762477274179
+🎯 Executing: evolve
+Evolving from dimension 2 to 3
+🎯 Executing: evolve
+Evolving from dimension 3 to 4
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: evolve
+Evolving from dimension 4 to 5
+🎯 Executing: evolve
+Evolving from dimension 5 to 6
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: evolve
+Evolving from dimension 6 to 7
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: evolve
+Evolving from dimension 7 to 8
+🎯 Executing: self-reference
+Self-reference to line 1: identity
+🎯 Executing: evolve
+Evolving from dimension 0 to 1
+🎯 Executing: self-modify
+Added self-modification #11: self-ref-modified-1762477306212
+🎯 Executing: evolve
+Evolving from dimension 1 to 2
+🎯 Executing: self-modify
+Added self-modification #12: self-ref-modified-1762477310217
+🎯 Executing: evolve
+Evolving from dimension 2 to 3
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: evolve
+Evolving from dimension 3 to 4
+🎯 Executing: evolve
+Evolving from dimension 4 to 5
+🎯 Executing: evolve
+Evolving from dimension 5 to 6
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: validate-self
+Validated 8/8 automata
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: evolve
+Evolving from dimension 6 to 7
+🎯 Executing: self-observe
+Self-observation: Currently at quantum (dimension 7)
+Quantum collapse: returning to 0D
+🎯 Executing: evolve
+Evolving from dimension 0 to 1
+🎯 Executing: evolve
+Evolving from dimension 1 to 2
+🎯 Executing: self-modify
+Added self-modification #13: self-ref-modified-1762477340243
+🎯 Executing: evolve
+Evolving from dimension 2 to 3
+🎯 Executing: evolve
+Evolving from dimension 3 to 4
+🎯 Executing: self-modify
+Added self-modification #14: self-ref-modified-1762477346245
+🎯 Executing: evolve
+Evolving from dimension 4 to 5
+🎯 Executing: evolve
+Evolving from dimension 5 to 6
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: evolve
+Evolving from dimension 6 to 7
+🎯 Executing: self-observe
+Self-observation: Currently at quantum (dimension 7)
+Quantum collapse: returning to 0D
+🎯 Executing: evolve
+Evolving from dimension 0 to 1
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: evolve
+Evolving from dimension 1 to 2
+🎯 Executing: validate-self
+Validated 8/8 automata
+🎯 Executing: evolve
+Evolving from dimension 2 to 3
+🎯 Executing: evolve
+Evolving from dimension 3 to 4
+🎯 Executing: evolve
+Evolving from dimension 4 to 5
+🎯 Executing: evolve
+Evolving from dimension 5 to 6
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: self-train
+Learned action frequencies:
+🛑 Automaton stopped
+🚀 Starting automaton with 2000ms interval
+🎯 Executing: self-modify
+Added self-modification #15: self-ref-modified-1762477461249
+🎯 Executing: self-observe
+Self-observation: Currently at quantum (dimension 7)
+Quantum collapse: returning to 0D
+🎯 Executing: evolve
+Evolving from dimension 0 to 1
+🎯 Executing: evolve
+Evolving from dimension 1 to 2
+🎯 Executing: evolve
+Evolving from dimension 2 to 3
+🎯 Executing: evolve
+Evolving from dimension 3 to 4
+🎯 Executing: evolve
+Evolving from dimension 4 to 5
+🎯 Executing: evolve
+Evolving from dimension 5 to 6
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: evolve
+Evolving from dimension 6 to 7
+🎯 Executing: validate-self
+Validated 8/8 automata
+🎯 Executing: self-observe
+Self-observation: Currently at quantum (dimension 7)
+Quantum collapse: returning to 0D
+🎯 Executing: self-reference
+Self-reference to line 1: identity
+🎯 Executing: self-reference
+Self-reference to line 1: identity
+🎯 Executing: evolve
+Evolving from dimension 0 to 1
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: evolve
+Evolving from dimension 1 to 2
+🎯 Executing: evolve
+Evolving from dimension 2 to 3
+🎯 Executing: evolve
+Evolving from dimension 3 to 4
+🎯 Executing: self-modify
+Added self-modification #16: self-ref-modified-1762477501280
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: evolve
+Evolving from dimension 4 to 5
+🎯 Executing: evolve
+Evolving from dimension 5 to 6
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: evolve
+Evolving from dimension 6 to 7
+🎯 Executing: evolve
+Evolving from dimension 7 to 8
+🎯 Executing: self-reference
+Self-reference to line 1: identity
+🎯 Executing: evolve
+Evolving from dimension 0 to 1
+🎯 Executing: evolve
+Evolving from dimension 1 to 2
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: self-modify
+Added self-modification #17: self-ref-modified-1762477523301
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: evolve
+Evolving from dimension 2 to 3
+🎯 Executing: evolve
+Evolving from dimension 3 to 4
+🎯 Executing: evolve
+Evolving from dimension 4 to 5
+🎯 Executing: evolve
+Evolving from dimension 5 to 6
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-modify
+Added self-modification #18: self-ref-modified-1762477541320
+🎯 Executing: evolve
+Evolving from dimension 6 to 7
+🎯 Executing: evolve
+Evolving from dimension 7 to 8
+🎯 Executing: evolve
+Evolving from dimension 0 to 1
+🎯 Executing: evolve
+Evolving from dimension 1 to 2
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: self-modify
+Added self-modification #19: self-ref-modified-1762477553334
+🎯 Executing: evolve
+Evolving from dimension 2 to 3
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: evolve
+Evolving from dimension 3 to 4
+🎯 Executing: validate-self
+Validated 8/8 automata
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: evolve
+Evolving from dimension 4 to 5
+🎯 Executing: evolve
+Evolving from dimension 5 to 6
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: evolve
+Evolving from dimension 6 to 7
+🎯 Executing: evolve
+Evolving from dimension 7 to 8
+🎯 Executing: self-modify
+Added self-modification #20: self-ref-modified-1762477581366
+🎯 Executing: evolve
+Evolving from dimension 0 to 1
+🎯 Executing: evolve
+Evolving from dimension 1 to 2
+🎯 Executing: evolve
+Evolving from dimension 2 to 3
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: evolve
+Evolving from dimension 3 to 4
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: evolve
+Evolving from dimension 4 to 5
+🎯 Executing: evolve
+Evolving from dimension 5 to 6
+🎯 Executing: validate-self
+Validated 8/8 automata
+🎯 Executing: evolve
+Evolving from dimension 6 to 7
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-observe
+Self-observation: Currently at quantum (dimension 7)
+Quantum collapse: returning to 0D
+🎯 Executing: evolve
+Evolving from dimension 0 to 1
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: evolve
+Evolving from dimension 1 to 2
+🎯 Executing: self-modify
+Added self-modification #21: self-ref-modified-1762477615401
+🎯 Executing: self-modify
+Added self-modification #22: self-ref-modified-1762477617402
+🎯 Executing: evolve
+Evolving from dimension 2 to 3
+🎯 Executing: self-modify
+Added self-modification #23: self-ref-modified-1762477621402
+🎯 Executing: evolve
+Evolving from dimension 3 to 4
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: evolve
+Evolving from dimension 4 to 5
+🎯 Executing: evolve
+Evolving from dimension 5 to 6
+🎯 Executing: evolve
+Evolving from dimension 6 to 7
+🎯 Executing: self-observe
+Self-observation: Currently at quantum (dimension 7)
+Quantum collapse: returning to 0D
+🎯 Executing: evolve
+Evolving from dimension 0 to 1
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: evolve
+Evolving from dimension 1 to 2
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: self-modify
+Added self-modification #24: self-ref-modified-1762477643422
+🎯 Executing: evolve
+Evolving from dimension 2 to 3
+🎯 Executing: evolve
+Evolving from dimension 3 to 4
+🎯 Executing: evolve
+Evolving from dimension 4 to 5
+🎯 Executing: evolve
+Evolving from dimension 5 to 6
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-modify
+Added self-modification #25: self-ref-modified-1762477661437
+🎯 Executing: evolve
+Evolving from dimension 6 to 7
+🎯 Executing: evolve
+Evolving from dimension 7 to 8
+🎯 Executing: evolve
+Evolving from dimension 0 to 1
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: evolve
+Evolving from dimension 1 to 2
+🎯 Executing: evolve
+Evolving from dimension 2 to 3
+🎯 Executing: evolve
+Evolving from dimension 3 to 4
+🎯 Executing: evolve
+Evolving from dimension 4 to 5
+🎯 Executing: validate-self
+Validated 8/8 automata
+🎯 Executing: evolve
+Evolving from dimension 5 to 6
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: evolve
+Evolving from dimension 6 to 7
+🎯 Executing: self-observe
+Self-observation: Currently at quantum (dimension 7)
+Quantum collapse: returning to 0D
+🎯 Executing: self-reference
+Self-reference to line 1: identity
+🎯 Executing: evolve
+Evolving from dimension 0 to 1
+🎯 Executing: evolve
+Evolving from dimension 1 to 2
+🎯 Executing: evolve
+Evolving from dimension 2 to 3
+🎯 Executing: evolve
+Evolving from dimension 3 to 4
+🎯 Executing: self-modify
+Added self-modification #26: self-ref-modified-1762477701472
+🎯 Executing: evolve
+Evolving from dimension 4 to 5
+🎯 Executing: evolve
+Evolving from dimension 5 to 6
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: evolve
+Evolving from dimension 6 to 7
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-observe
+Self-observation: Currently at quantum (dimension 7)
+Quantum collapse: returning to 0D
+🎯 Executing: validate-self
+Validated 8/8 automata
+🎯 Executing: evolve
+Evolving from dimension 0 to 1
+🎯 Executing: evolve
+Evolving from dimension 1 to 2
+🎯 Executing: self-modify
+Added self-modification #27: self-ref-modified-1762477727496
+🎯 Executing: self-modify
+Added self-modification #28: self-ref-modified-1762477729496
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: evolve
+Evolving from dimension 2 to 3
+🎯 Executing: evolve
+Evolving from dimension 3 to 4
+🎯 Executing: evolve
+Evolving from dimension 4 to 5
+🎯 Executing: self-modify
+Added self-modification #29: self-ref-modified-1762477741508
+🎯 Executing: evolve
+Evolving from dimension 5 to 6
+🎯 Executing: evolve
+Evolving from dimension 6 to 7
+🎯 Executing: self-observe
+Self-observation: Currently at quantum (dimension 7)
+Quantum collapse: returning to 0D
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-reference
+Self-reference to line 1: identity
+🎯 Executing: evolve
+Evolving from dimension 0 to 1
+🎯 Executing: evolve
+Evolving from dimension 1 to 2
+🎯 Executing: evolve
+Evolving from dimension 2 to 3
+🎯 Executing: evolve
+Evolving from dimension 3 to 4
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: evolve
+Evolving from dimension 4 to 5
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: evolve
+Evolving from dimension 5 to 6
+🎯 Executing: evolve
+Evolving from dimension 6 to 7
+🎯 Executing: evolve
+Evolving from dimension 7 to 8
+🎯 Executing: evolve
+Evolving from dimension 0 to 1
+🎯 Executing: evolve
+Evolving from dimension 1 to 2
+🎯 Executing: evolve
+Evolving from dimension 2 to 3
+🎯 Executing: evolve
+Evolving from dimension 3 to 4
+🎯 Executing: self-modify
+Added self-modification #30: self-ref-modified-1762477781549
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: evolve
+Evolving from dimension 4 to 5
+🎯 Executing: evolve
+Evolving from dimension 5 to 6
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: evolve
+Evolving from dimension 6 to 7
+🎯 Executing: validate-self
+Validated 8/8 automata
+🎯 Executing: evolve
+Evolving from dimension 7 to 8
+🎯 Executing: evolve
+Evolving from dimension 0 to 1
+🎯 Executing: evolve
+Evolving from dimension 1 to 2
+🎯 Executing: evolve
+Evolving from dimension 2 to 3
+🎯 Executing: evolve
+Evolving from dimension 3 to 4
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: evolve
+Evolving from dimension 4 to 5
+🎯 Executing: evolve
+Evolving from dimension 5 to 6
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-modify
+Added self-modification #31: self-ref-modified-1762477821585
+🎯 Executing: evolve
+Evolving from dimension 6 to 7
+🎯 Executing: self-observe
+Self-observation: Currently at quantum (dimension 7)
+Quantum collapse: returning to 0D
+🎯 Executing: evolve
+Evolving from dimension 0 to 1
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: evolve
+Evolving from dimension 1 to 2
+🎯 Executing: evolve
+Evolving from dimension 2 to 3
+🎯 Executing: evolve
+Evolving from dimension 3 to 4
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: validate-self
+Validated 8/8 automata
+🎯 Executing: evolve
+Evolving from dimension 4 to 5
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: evolve
+Evolving from dimension 5 to 6
+🎯 Executing: self-train
+Learned action frequencies:
+🎯 Executing: self-io
+Loaded 233 objects from ./automaton.jsonl
+Performed self-I/O: read 233 objects
+🎯 Executing: evolve
+Evolving from dimension 6 to 7
