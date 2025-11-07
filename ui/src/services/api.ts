@@ -131,6 +131,68 @@ class ApiService {
   async getAvailableAgents(): Promise<ApiResponse<string[]>> {
     return this.request<string[]>('/agent/list');
   }
+
+  // OpenCode endpoints
+  async connectOpenCode(): Promise<ApiResponse> {
+    return this.request('/opencode/connect', {
+      method: 'POST',
+    });
+  }
+
+  async createOpenCodeSession(title?: string): Promise<ApiResponse> {
+    return this.request('/opencode/session/create', {
+      method: 'POST',
+      body: JSON.stringify({ title }),
+    });
+  }
+
+  async analyzeWithOpenCode(): Promise<ApiResponse> {
+    return this.request('/opencode/analyze', {
+      method: 'POST',
+    });
+  }
+
+  async getOpenCodeSuggestions(): Promise<ApiResponse> {
+    return this.request('/opencode/suggest', {
+      method: 'POST',
+    });
+  }
+
+  async searchWithOpenCode(pattern: string): Promise<ApiResponse> {
+    return this.request('/opencode/search', {
+      method: 'POST',
+      body: JSON.stringify({ pattern }),
+    });
+  }
+
+  async getOpenCodeStatus(): Promise<ApiResponse> {
+    return this.request('/opencode/status');
+  }
 }
 
 export const apiService = new ApiService();
+
+// OpenCode specific API wrapper
+export const opencodeApi = {
+  getStatus: () => apiService.getOpenCodeStatus(),
+  analyzeCode: (code: string) => apiService['request']('/opencode/analyze', {
+    method: 'POST',
+    body: JSON.stringify({ code }),
+  }),
+  connect: () => apiService.connectOpenCode(),
+  createSession: (title?: string) => apiService.createOpenCodeSession(title),
+  getSuggestions: () => apiService.getOpenCodeSuggestions(),
+  search: (pattern: string) => apiService.searchWithOpenCode(pattern),
+  
+  // Agentic features
+  getAgents: () => apiService['request']('/opencode/agent/list'),
+  executeAgent: (agent: string, task: string) => apiService['request']('/opencode/agent/execute', {
+    method: 'POST',
+    body: JSON.stringify({ agent, task }),
+  }),
+  getModels: () => apiService['request']('/opencode/models'),
+  setModel: (model: string) => apiService['request']('/opencode/model/set', {
+    method: 'POST',
+    body: JSON.stringify({ model }),
+  }),
+};
