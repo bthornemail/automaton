@@ -1,0 +1,63 @@
+# Backend API Dockerfile
+FROM node:18-alpine AS builder
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY tsconfig.json ./
+
+# Install all dependencies (including dev for build)
+RUN npm ci
+
+# Copy source code
+COPY *.ts ./
+COPY grok_files/ ./grok_files/
+
+# Build TypeScript
+RUN npm run build
+
+# Production stage
+FROM node:18-alpine AS production
+
+# Install additional tools
+RUN apk add --no-cache curl
+
+# Create app user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S automaton -u 1001
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files and install production dependencies only
+COPY package*.json ./
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy built application and source
+COPY --from=builder /app/*.js ./
+COPY --from=builder /app/grok_files/ ./grok_files/
+COPY automaton.jsonl ./
+
+# Create directories
+RUN mkdir -p logs && \
+    chown -R automaton:nodejs /app
+
+# Switch to non-root user
+USER automaton
+
+# Expose ports
+EXPOSE 5555 9001
+
+# Add labels
+LABEL maintainer="Automaton Team"
+LABEL version="1.0.0"
+LABEL description="Self-Referencing Automaton Backend API"
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:5555/api/status || exit 1
+
+# Start the application
+CMD ["node", "ui-server.js"]
