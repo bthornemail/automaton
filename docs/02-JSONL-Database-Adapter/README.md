@@ -1,3 +1,28 @@
+---
+id: jsonl-database-adapter-readme
+title: "JSONL Database Adapter Documentation"
+level: foundational
+type: documentation
+tags: [jsonl-database-adapter, database-architecture, modular-design, r5rs-functions]
+keywords: [jsonl-database-adapter, database-architecture, modular-design, database-abstraction, jsonl-support, r5rs-functions, frontend-backend-integration]
+prerequisites: [r5rs-expressions-readme]
+enables: [jsonl-database-adapter-rfc2119-spec]
+related: [r5rs-canvas-engine, meta-log-docs-readme]
+readingTime: 30
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "2D-Structural-Agent"
+  lastUpdate: 2025-01-07
+  dependencies: [r5rs-canvas-engine]
+  watchers: []
+  r5rsEngine: "r5rs-canvas-engine.scm"
+  selfBuilding:
+    enabled: true
+    source: "r5rs-canvas-engine.scm"
+    pattern: "database-architecture"
+---
+
 # JSONL Database Adapter Documentation
 
 This folder contains documentation for the modular database architecture that supports JSONL-encoded R5RS functions and custom database backends.

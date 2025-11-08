@@ -444,6 +444,10 @@ Horizontal Communication (Cross-Dimensional)
 · MUST: Implement exactly one system per topology dimension
 · SHOULD: Use specified technologies (Three.js, WebLLM, etc.)
 · MUST: Maintain SHACL shape compliance
+· MUST: Preserve federated provenance through all transformations
+· MUST: Implement provenance-aware deduplication for objects with duplicate IDs
+· MUST: Use Obsidian Frontmatter Knowledge Model to analyze documentation
+· SHOULD: Update blackboard metadata based on knowledge model analysis
 
 ### ASP Rules
 
@@ -491,6 +495,90 @@ missing_attention(N) :- implements(N,Y), rdf:type(Y,'ai'),
 
 **Reference**: See `grok_files/07-Grok.md` for SHACL validation engine and `docs/05-Meta-Log/MULTIVERSE-CANVAS-RFC2119-SPEC.md` Section 11 for validation requirements.
 
+### Federated Provenance Requirements
+
+Agents MUST comply with the Federated Provenance Meta-Log specification (`docs/13-Federated-Provenance-Meta-Log/`) when handling objects with duplicate IDs:
+
+#### Provenance Preservation Requirements
+
+- **MUST** preserve provenance through all transformations (Section 7.4)
+- **MUST** maintain file and line accuracy in `selfReference` metadata
+- **SHOULD** preserve pattern information from `selfReference.pattern`
+- **MUST** handle missing provenance gracefully (warn, don't fail)
+
+#### Provenance-Aware Deduplication
+
+When encountering objects with duplicate IDs, agents MUST implement provenance-aware deduplication:
+
+1. **Same-File Duplicates**: 
+   - Merge provenance history into `provenanceHistory` array
+   - Keep the latest object version (fixes memory leaks)
+   - Preserve all provenance entries in history
+
+2. **Cross-File Duplicates**:
+   - Preserve both objects (federated provenance requirement)
+   - Track provenance history across files
+   - Enable cross-file relationship queries
+
+#### Self-Reference Metadata Structure
+
+Each JSONL entry MUST include `selfReference` metadata:
+
+```json
+{
+  "id": "0D-automaton",
+  "type": "automaton",
+  "selfReference": {
+    "file": "automaton-kernel.jsonl",
+    "line": 14,
+    "pattern": "identity"
+  },
+  "provenanceHistory": [
+    { "file": "automaton-kernel.jsonl", "line": 14, "pattern": "identity" },
+    { "file": "automaton.jsonl", "line": 2103, "pattern": "Identity Evolution (0D)" }
+  ]
+}
+```
+
+#### Deduplication Implementation
+
+Agents MUST implement the following deduplication logic:
+
+```typescript
+// Same-file duplicate: merge provenance history, keep latest
+if (currentFile === existingFile) {
+  // Merge provenance history
+  if (!existingObj.provenanceHistory) {
+    existingObj.provenanceHistory = [];
+    if (existingObj.selfReference) {
+      existingObj.provenanceHistory.push(existingObj.selfReference);
+    }
+  }
+  existingObj.provenanceHistory.push(currentProvenance);
+  // Replace with latest version
+  this.objects.splice(existingIndex, 1);
+  this.objects.push(obj);
+}
+
+// Cross-file duplicate: preserve both (federated provenance)
+if (currentFile !== existingFile) {
+  // Keep both objects
+  this.objects.push(obj);
+  // Track provenance history
+  existingObj.provenanceHistory.push(currentProvenance);
+}
+```
+
+#### Provenance Query Requirements
+
+Agents MUST support provenance queries:
+
+- **ProLog**: `provenance(Id, File, Line, Pattern)`
+- **DataLog**: Extract provenance facts from `selfReference` metadata
+- **SPARQL**: Query `prov:wasDerivedFrom` relationships
+
+**Reference**: See `docs/13-Federated-Provenance-Meta-Log/FEDERATED-PROVENANCE-RFC2119-SPEC.md` for complete specification and `DEDUPLICATION_PROVENANCE_EVALUATION.md` for implementation details.
+
 ### R5RS Function Integration
 
 Agents MUST use R5RS functions from `r5rs-canvas-engine.scm` and `grok_files/`:
@@ -502,6 +590,20 @@ Agents MUST use R5RS functions from `r5rs-canvas-engine.scm` and `grok_files/`:
 - **Validation**: `r5rs:load-shacl-shapes`, `r5rs:shacl-validate`
 
 **Reference**: See `docs/05-Meta-Log/MULTIVERSE-CANVAS-RFC2119-SPEC.md` Section 5 for complete R5RS integration details.
+
+### Obsidian Frontmatter Knowledge Model
+
+Agents MUST use the Obsidian Frontmatter Knowledge Model to analyze documentation:
+
+- **Knowledge Graph Building**: Build relationship graphs from document frontmatter
+- **Completeness Evaluation**: Assess document completeness and quality
+- **Relationship Validation**: Validate prerequisites, enables, and related links
+- **Agent Coordination**: Use blackboard metadata for multi-agent coordination
+- **Document Discovery**: Find relevant documents based on relationships
+
+**Usage**: See "Obsidian Frontmatter Knowledge Model Integration" section above for complete usage guide.
+
+**Reference**: See `evolutions/obsidian-frontmatter-knowledge-model/docs/README.md` for complete documentation.
 
 ### CanvasL Format Support
 
@@ -831,6 +933,290 @@ CI/CD operations generate the following message types:
 - **All Agents**: MUST use CI Pipeline Adapter interface for CI/CD operations
 
 **Reference**: See `docs/10-Github-CI-CD-Workflow/CI-PIPELINE-ADAPTER-OVERVIEW.md` for architecture details.
+
+## Obsidian Frontmatter Knowledge Model Integration
+
+### Overview
+
+Agents MUST use the **Obsidian Frontmatter Knowledge Model** (`evolutions/obsidian-frontmatter-knowledge-model/`) to analyze documentation frontmatter, build knowledge graphs, and evaluate document understanding. This enables agents to:
+
+- **Understand Documentation Structure**: Analyze document relationships and dependencies
+- **Track Agent Assignments**: Monitor which agents are assigned to which documents
+- **Evaluate Completeness**: Assess documentation quality and identify gaps
+- **Build Knowledge Graphs**: Create relationship graphs for navigation and understanding
+- **Coordinate Multi-Agent Work**: Use blackboard metadata for agent coordination
+
+### Knowledge Model Usage
+
+#### Basic Usage
+
+```typescript
+import { ObsidianFrontmatterKnowledgeModel } from './evolutions/obsidian-frontmatter-knowledge-model/obsidian-frontmatter-knowledge-model';
+
+// Initialize model with vault path
+const model = new ObsidianFrontmatterKnowledgeModel('/path/to/docs');
+
+// Build knowledge graph from all markdown files
+const graph = await model.buildKnowledgeGraph();
+
+// Generate report
+const report = model.generateReport();
+console.log(report);
+
+// Export JSON for further analysis
+const json = model.exportJSON();
+fs.writeFileSync('knowledge-graph.json', json);
+```
+
+#### Command Line Usage
+
+```bash
+# Analyze documentation vault
+tsx evolutions/obsidian-frontmatter-knowledge-model/obsidian-frontmatter-knowledge-model.ts ./docs
+
+# Output:
+# - Console report with statistics
+# - knowledge-graph.json file with complete graph
+```
+
+### Agent Integration Patterns
+
+#### 1. 6D-Intelligence-Agent: Documentation Analysis
+
+**Purpose**: Analyze documentation completeness and quality
+
+**Usage**:
+```typescript
+// 6D-Intelligence-Agent: Analyze documentation
+const model = new ObsidianFrontmatterKnowledgeModel('./docs');
+const graph = await model.buildKnowledgeGraph();
+
+// Find incomplete documents
+const incomplete = Array.from(graph.nodes.values())
+  .filter(n => n.understanding.completeness < 0.6)
+  .sort((a, b) => a.understanding.completeness - b.understanding.completeness);
+
+// Report to blackboard
+console.log(`Found ${incomplete.length} incomplete documents`);
+incomplete.forEach(doc => {
+  console.log(`- ${doc.title} (${doc.id}): ${(doc.understanding.completeness * 100).toFixed(1)}% complete`);
+  console.log(`  Missing: ${doc.understanding.missingFields.join(', ')}`);
+});
+```
+
+#### 2. 5D-Consensus-Agent: Relationship Validation
+
+**Purpose**: Validate document relationships and dependencies
+
+**Usage**:
+```typescript
+// 5D-Consensus-Agent: Validate relationships
+const model = new ObsidianFrontmatterKnowledgeModel('./docs');
+const graph = await model.buildKnowledgeGraph();
+
+// Check relationship integrity
+const stats = graph.statistics.relationshipIntegrity;
+console.log(`Relationship Integrity: ${(stats.integrityScore * 100).toFixed(1)}%`);
+console.log(`Broken Links: ${stats.brokenLinks} / ${stats.totalLinks}`);
+
+// Find broken prerequisites
+graph.nodes.forEach(node => {
+  const broken = node.understanding.relationshipIntegrity.brokenPrerequisites;
+  if (broken.length > 0) {
+    console.log(`⚠️  ${node.title}: Broken prerequisites: ${broken.join(', ')}`);
+  }
+});
+```
+
+#### 3. 4D-Network-Agent: Agent Assignment Tracking
+
+**Purpose**: Track agent assignments and coordinate work
+
+**Usage**:
+```typescript
+// 4D-Network-Agent: Track agent assignments
+const model = new ObsidianFrontmatterKnowledgeModel('./docs');
+const graph = await model.buildKnowledgeGraph();
+
+// Find documents assigned to specific agent
+const agentAssignments = new Map<string, KnowledgeNode[]>();
+graph.nodes.forEach(node => {
+  const agent = node.blackboard?.assignedAgent;
+  if (agent) {
+    if (!agentAssignments.has(agent)) {
+      agentAssignments.set(agent, []);
+    }
+    agentAssignments.get(agent)!.push(node);
+  }
+});
+
+// Report agent workloads
+agentAssignments.forEach((docs, agent) => {
+  console.log(`${agent}: ${docs.length} documents`);
+  const active = docs.filter(d => d.blackboard?.status === 'active');
+  console.log(`  Active: ${active.length}`);
+});
+```
+
+#### 4. 0D-Topology-Agent: Foundation Document Analysis
+
+**Purpose**: Analyze foundational documents and their relationships
+
+**Usage**:
+```typescript
+// 0D-Topology-Agent: Analyze foundation documents
+const model = new ObsidianFrontmatterKnowledgeModel('./docs');
+const graph = await model.buildKnowledgeGraph();
+
+// Find foundational documents
+const foundational = Array.from(graph.nodes.values())
+  .filter(n => n.level === 'foundational')
+  .sort((a, b) => a.difficulty - b.difficulty);
+
+// Analyze foundation structure
+foundational.forEach(doc => {
+  console.log(`📚 ${doc.title} (${doc.id})`);
+  console.log(`   Prerequisites: ${doc.relationships.prerequisites.length}`);
+  console.log(`   Enables: ${doc.relationships.enables.length}`);
+  console.log(`   Related: ${doc.relationships.related.length}`);
+});
+```
+
+### Knowledge Graph Queries
+
+#### Find Documents by Agent
+
+```typescript
+// Find all documents assigned to 6D-Intelligence-Agent
+const intelligenceDocs = Array.from(graph.nodes.values())
+  .filter(n => n.blackboard?.assignedAgent === '6D-Intelligence-Agent');
+```
+
+#### Find Documents by Status
+
+```typescript
+// Find all active documents
+const activeDocs = Array.from(graph.nodes.values())
+  .filter(n => n.blackboard?.status === 'active');
+```
+
+#### Find Documents Needing Attention
+
+```typescript
+// Find documents with low completeness
+const needsAttention = Array.from(graph.nodes.values())
+  .filter(n => n.understanding.completeness < 0.6)
+  .sort((a, b) => a.understanding.completeness - b.understanding.completeness);
+```
+
+#### Find Document Dependencies
+
+```typescript
+// Find all documents that depend on a specific document
+const dependents = Array.from(graph.edges.values())
+  .filter(e => e.to === 'target-doc-id' && e.type === 'prerequisite')
+  .map(e => graph.nodes.get(e.from));
+```
+
+### Integration with Blackboard Architecture
+
+The knowledge model integrates with the blackboard architecture:
+
+```typescript
+// Update blackboard with knowledge graph insights
+const model = new ObsidianFrontmatterKnowledgeModel('./docs');
+const graph = await model.buildKnowledgeGraph();
+
+// Update blackboard status based on completeness
+graph.nodes.forEach(node => {
+  if (node.understanding.completeness < 0.6) {
+    // Mark as needing attention
+    updateBlackboard(node.id, {
+      status: 'processing',
+      assignedAgent: '6D-Intelligence-Agent',
+      dependencies: node.relationships.prerequisites
+    });
+  }
+});
+```
+
+### Benefits for Multi-Agent Coordination
+
+1. **Document Discovery**: Agents can discover relevant documents based on relationships
+2. **Workload Distribution**: Track which agents are assigned to which documents
+3. **Dependency Management**: Understand document prerequisites and enables relationships
+4. **Quality Assurance**: Identify incomplete or broken documentation
+5. **Knowledge Navigation**: Navigate documentation through relationship graphs
+
+### Example: Complete Agent Workflow
+
+```typescript
+// Complete agent workflow using knowledge model
+async function agentDocumentationWorkflow() {
+  // 1. Build knowledge graph
+  const model = new ObsidianFrontmatterKnowledgeModel('./docs');
+  const graph = await model.buildKnowledgeGraph();
+  
+  // 2. Find documents assigned to this agent
+  const myDocs = Array.from(graph.nodes.values())
+    .filter(n => n.blackboard?.assignedAgent === '6D-Intelligence-Agent');
+  
+  // 3. Prioritize by completeness
+  const prioritized = myDocs
+    .sort((a, b) => a.understanding.completeness - b.understanding.completeness);
+  
+  // 4. Process incomplete documents
+  for (const doc of prioritized) {
+    if (doc.understanding.completeness < 0.6) {
+      console.log(`Processing: ${doc.title}`);
+      
+      // Check prerequisites
+      const prereqs = doc.relationships.prerequisites
+        .map(id => graph.nodes.get(id))
+        .filter(n => n && n.understanding.completeness < 0.6);
+      
+      if (prereqs.length > 0) {
+        console.log(`  Waiting for prerequisites: ${prereqs.map(n => n!.title).join(', ')}`);
+        continue;
+      }
+      
+      // Process document
+      await processDocument(doc);
+    }
+  }
+  
+  // 5. Generate updated report
+  const updatedGraph = await model.buildKnowledgeGraph();
+  console.log(updatedGraph.generateReport());
+}
+```
+
+### Knowledge Model Output
+
+The model generates:
+
+1. **Console Report**: Markdown report with:
+   - Overview statistics
+   - Documents by level and type
+   - Completeness distribution
+   - Documents needing attention
+   - Relationship graph summary
+
+2. **JSON Export**: Complete knowledge graph with:
+   - All nodes with full metadata
+   - All edges (relationships)
+   - Statistics
+   - Timestamp
+
+### Integration Requirements
+
+Agents MUST:
+- Use the knowledge model to analyze documentation before processing
+- Update blackboard metadata based on analysis results
+- Coordinate with other agents using relationship graphs
+- Track document completeness and quality metrics
+
+**Reference**: See `evolutions/obsidian-frontmatter-knowledge-model/docs/README.md` for complete documentation.
 
 ## Documentation Folder Connections and Context
 
@@ -1260,6 +1646,38 @@ The documentation folders form a connected system:
   - **`FILE-FORMAT-DETECTION.md`**: Format detection implementation and best practices
   - **`R5RS-INTEGRATION.md`**: R5RS function call support in automaton files
   - **`MIGRATION-GUIDE.md`**: Migration from JSONL to CanvasL format
+
+- **`docs/13-Federated-Provenance-Meta-Log/`**: Federated provenance tracking system
+  - **`README.md`**: Federated provenance documentation overview
+  - **`FEDERATED-PROVENANCE-RFC2119-SPEC.md`**: Complete RFC 2119 specification for federated provenance
+  - **`FEDERATED-PROVENANCE-SOLUTION.md`**: High-level explanation of embedded provenance solution
+  - **Related**: `DEDUPLICATION_PROVENANCE_EVALUATION.md` for deduplication implementation details
+
+- **`docs/14-Automaton-Evolution-Logging/`**: Automaton evolution logging system
+  - **`README.md`**: Evolution logging overview
+  - **`ARCHITECTURE.md`**: System architecture
+  - **`WORKFLOW_GUIDE.md`**: Workflow usage guide
+  - **`VARIANT_SPECIFICATIONS.md`**: Variant specifications
+  - **`EVOLUTION_SUMMARY.md`**: Evolution test summary
+  - **Related**: `docs/15-Automaton-Evolution-Testing-Optimizing/` for testing phase
+
+- **`docs/15-Automaton-Evolution-Testing-Optimizing/`**: Testing and optimization phase
+  - **`README.md`**: Testing phase overview
+  - **`TESTING_FRAMEWORK.md`**: Testing framework details
+  - **`OPTIMIZATION_STRATEGIES.md`**: Optimization approaches
+  - **`BENCHMARK_RESULTS.md`**: Performance benchmarks
+  - **`REGRESSION_TESTS.md`**: Regression test suite
+  - **`CONTINUOUS_IMPROVEMENT.md`**: CI/CD integration
+  - **`QUALITY_ASSURANCE.md`**: QA processes
+  - **`PHASE_TRANSITION.md`**: Transition from logging phase
+  - **`GETTING_STARTED.md`**: Quick start guide
+  - **`STATUS.md`**: Current phase status
+
+- **`evolutions/obsidian-frontmatter-knowledge-model/`**: Obsidian Frontmatter Knowledge Model
+  - **`obsidian-frontmatter-knowledge-model.ts`**: Knowledge model implementation
+  - **`docs/README.md`**: Complete documentation
+  - **Purpose**: Analyzes document frontmatter to build knowledge graphs
+  - **Usage**: See "Obsidian Frontmatter Knowledge Model Integration" section above
 
 ### Foundation Documentation
 

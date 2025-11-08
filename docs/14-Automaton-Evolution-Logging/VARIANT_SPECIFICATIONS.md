@@ -1,3 +1,23 @@
+---
+id: automaton-evolution-variant-specifications
+title: "Evolution Variant Specifications"
+level: practical
+type: specification
+tags: [automaton-evolution, variant-specifications, optimization-targets, llama-optimization, gpt-optimization]
+keywords: [automaton-evolution, variant-specifications, llama3.2-variant, gpt-oss-variant, native-variant, fast-variant, optimization-targets]
+prerequisites: [automaton-evolution-logging-readme]
+enables: [automaton-evolution-testing-optimizing]
+related: [automaton-evolution-architecture, automaton-evolution-workflow, canvasl-rfc2119-spec]
+readingTime: 60
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "6D-Intelligence-Agent"
+  lastUpdate: 2025-01-07
+  dependencies: [automaton-evolution-logging, variant-generation]
+  watchers: ["4D-Network-Agent"]
+---
+
 # Evolution Variant Specifications
 
 ## Overview

@@ -1,3 +1,28 @@
+---
+id: metaverse-canvas-3d
+title: "Metaverse Canvas 3D Editor"
+level: practical
+type: documentation
+tags: [metaverse-canvas-3d, 3d-editor, spatial-editing, canvasl, jsonl]
+keywords: [metaverse-canvas-3d, 3d-editor, spatial-editing, canvasl, jsonl, immersive-editing]
+prerequisites: [ui-integration-readme]
+enables: []
+related: [ui-integration-rfc2119-spec, unified-editor, metaverse-canvas-complete]
+readingTime: 35
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "Visualization-Agent"
+  lastUpdate: 2025-01-07
+  dependencies: [threejs, webgl]
+  watchers: []
+  r5rsEngine: "r5rs-canvas-engine.scm"
+  selfBuilding:
+    enabled: true
+    source: "r5rs-canvas-engine.scm"
+    pattern: "ui-visualization"
+---
+
 # Metaverse Canvas 3D Editor
 
 ## Overview

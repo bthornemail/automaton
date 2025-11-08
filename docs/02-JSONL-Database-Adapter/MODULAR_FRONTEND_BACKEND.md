@@ -1,3 +1,28 @@
+---
+id: modular-frontend-backend
+title: "Modular Frontend & Backend Architecture"
+level: foundational
+type: documentation
+tags: [frontend-backend, modular-architecture, react-hooks, api-integration]
+keywords: [frontend-backend, modular-architecture, react-hooks, api-integration, database-service]
+prerequisites: [modular-database-architecture]
+enables: []
+related: [jsonl-database-adapter-rfc2119-spec, jsonl-database-adapter-readme]
+readingTime: 40
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "2D-Structural-Agent"
+  lastUpdate: 2025-01-07
+  dependencies: [r5rs-canvas-engine]
+  watchers: []
+  r5rsEngine: "r5rs-canvas-engine.scm"
+  selfBuilding:
+    enabled: true
+    source: "r5rs-canvas-engine.scm"
+    pattern: "database-architecture"
+---
+
 # Modular Frontend & Backend Architecture
 
 ## Overview

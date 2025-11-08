@@ -16,6 +16,7 @@ on:
           - gpt-oss
           - native
           - fast
+          - wordnet
 
 jobs:
   evolution:

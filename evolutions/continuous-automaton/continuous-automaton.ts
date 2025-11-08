@@ -1,4 +1,4 @@
-import { AdvancedSelfReferencingAutomaton } from './advanced-automaton';
+import { AdvancedSelfReferencingAutomaton } from '../advanced-automaton/advanced-automaton';
 
 class ContinuousAutomatonRunner {
   private automaton: AdvancedSelfReferencingAutomaton;

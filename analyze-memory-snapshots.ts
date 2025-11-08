@@ -64,8 +64,9 @@ function analyzeMemoryPatterns(snapshots: MemorySnapshot[]): void {
   console.log(`\n💾 Memory Analysis:`);
   const memStartMB = first.memory.heapUsed / 1024 / 1024;
   const memEndMB = last.memory.heapUsed / 1024 / 1024;
-  const memPeakMB = Math.max(...snapshots.map(s => s.memory.heapUsed)) / 1024 / 1024;
-  const memMinMB = Math.min(...snapshots.map(s => s.memory.heapUsed)) / 1024 / 1024;
+  // Use reduce instead of spread operator to avoid stack overflow with large arrays
+  const memPeakMB = snapshots.reduce((max, s) => Math.max(max, s.memory.heapUsed), snapshots[0].memory.heapUsed) / 1024 / 1024;
+  const memMinMB = snapshots.reduce((min, s) => Math.min(min, s.memory.heapUsed), snapshots[0].memory.heapUsed) / 1024 / 1024;
   
   console.log(`   Start Memory: ${memStartMB.toFixed(2)}MB`);
   console.log(`   End Memory: ${memEndMB.toFixed(2)}MB`);
