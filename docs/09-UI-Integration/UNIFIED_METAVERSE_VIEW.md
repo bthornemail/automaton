@@ -1,3 +1,28 @@
+---
+id: unified-metaverse-view
+title: "Unified Metaverse View"
+level: practical
+type: documentation
+tags: [unified-metaverse-view, 3d-visualization, major-minor-modes, gltf-avatars]
+keywords: [unified-metaverse-view, 3d-visualization, major-minor-modes, gltf-avatars, environment-selection]
+prerequisites: [ui-integration-readme]
+enables: []
+related: [ui-integration-rfc2119-spec, grok-metaverse, unified-editor]
+readingTime: 40
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "Visualization-Agent"
+  lastUpdate: 2025-01-07
+  dependencies: [threejs, webgl]
+  watchers: []
+  r5rsEngine: "r5rs-canvas-engine.scm"
+  selfBuilding:
+    enabled: true
+    source: "r5rs-canvas-engine.scm"
+    pattern: "ui-visualization"
+---
+
 # Unified Metaverse View
 
 ## Overview

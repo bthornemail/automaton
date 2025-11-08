@@ -1,3 +1,28 @@
+---
+id: unified-editor
+title: "Unified Editor Documentation"
+level: practical
+type: documentation
+tags: [unified-editor, code-editor, canvas-editor, codemirror, lezer]
+keywords: [unified-editor, code-editor, canvas-editor, codemirror, lezer, hybrid-editing, file-type-detection]
+prerequisites: [ui-integration-readme]
+enables: []
+related: [ui-integration-rfc2119-spec, grok-metaverse, metaverse-canvas-complete]
+readingTime: 45
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "Visualization-Agent"
+  lastUpdate: 2025-01-07
+  dependencies: [codemirror, lezer]
+  watchers: []
+  r5rsEngine: "r5rs-canvas-engine.scm"
+  selfBuilding:
+    enabled: true
+    source: "r5rs-canvas-engine.scm"
+    pattern: "ui-visualization"
+---
+
 # Unified Editor Documentation
 
 ## Overview

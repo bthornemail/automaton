@@ -9,6 +9,11 @@ import * as path from 'path';
 import { spawn, ChildProcess } from 'child_process';
 import * as os from 'os';
 
+// Type declaration for global.gc (requires --expose-gc flag)
+declare global {
+  var gc: (() => void) | undefined;
+}
+
 interface MemorySnapshot {
   timestamp: number;
   isoTime: string;
@@ -50,6 +55,8 @@ const MEMORY_THRESHOLD_LOW = 50 * 1024 * 1024; // 50MB
 const MEMORY_THRESHOLD_MEDIUM = 200 * 1024 * 1024; // 200MB
 const MEMORY_THRESHOLD_HIGH = 500 * 1024 * 1024; // 500MB
 const MEMORY_THRESHOLD_CRITICAL = 1000 * 1024 * 1024; // 1GB
+const MAX_SNAPSHOTS = 1000; // Keep only last 1000 snapshots
+const CLEANUP_INTERVAL = 60000; // Cleanup every 60 seconds
 
 // Ensure snapshot directory exists
 if (!fs.existsSync(SNAPSHOT_DIR)) {
@@ -203,6 +210,42 @@ function saveSnapshot(snapshot: MemorySnapshot): void {
   const filepath = path.join(SNAPSHOT_DIR, filename);
   
   fs.writeFileSync(filepath, JSON.stringify(snapshot, null, 2));
+  
+  // Periodic cleanup: keep only last MAX_SNAPSHOTS
+  if (snapshotCount % 100 === 0) {
+    cleanupOldSnapshots();
+  }
+}
+
+function cleanupOldSnapshots(): void {
+  try {
+    const files = fs.readdirSync(SNAPSHOT_DIR)
+      .filter(f => f.startsWith('memory-snapshot-') && f.endsWith('.json'))
+      .map(f => ({
+        name: f,
+        path: path.join(SNAPSHOT_DIR, f),
+        mtime: fs.statSync(path.join(SNAPSHOT_DIR, f)).mtimeMs
+      }))
+      .sort((a, b) => b.mtime - a.mtime); // Newest first
+    
+    if (files.length > MAX_SNAPSHOTS) {
+      const toDelete = files.slice(MAX_SNAPSHOTS);
+      let deletedCount = 0;
+      toDelete.forEach(file => {
+        try {
+          fs.unlinkSync(file.path);
+          deletedCount++;
+        } catch (err) {
+          // Ignore deletion errors
+        }
+      });
+      if (deletedCount > 0) {
+        console.log(`🧹 Cleaned up ${deletedCount} old snapshots (kept ${MAX_SNAPSHOTS} most recent)`);
+      }
+    }
+  } catch (err) {
+    // Ignore cleanup errors
+  }
 }
 
 function spawnOptimizedVersion(memoryPressure: string): void {
@@ -315,11 +358,24 @@ async function main() {
       console.error('❌ Error taking snapshot:', error);
     }
   }, SNAPSHOT_INTERVAL);
+  
+  // Set up periodic cleanup and GC triggers
+  const cleanupInterval = setInterval(() => {
+    cleanupOldSnapshots();
+    // Trigger GC if available (Node.js with --expose-gc flag)
+    if (global.gc) {
+      global.gc();
+    }
+  }, CLEANUP_INTERVAL);
 
   // Handle graceful shutdown
   process.on('SIGINT', () => {
     console.log('\n\n🛑 Stopping memory-aware snapshot monitor...');
     clearInterval(interval);
+    clearInterval(cleanupInterval);
+    
+    // Final cleanup
+    cleanupOldSnapshots();
     
     // Kill spawned processes
     spawnedProcesses.forEach(child => {

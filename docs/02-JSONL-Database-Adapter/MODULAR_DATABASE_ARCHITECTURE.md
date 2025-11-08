@@ -1,3 +1,28 @@
+---
+id: modular-database-architecture
+title: "Modular Database Architecture"
+level: foundational
+type: documentation
+tags: [database-architecture, modular-design, database-adapter, jsonl, r5rs-functions]
+keywords: [database-architecture, modular-design, database-adapter, jsonl-support, r5rs-functions, database-abstraction]
+prerequisites: [jsonl-database-adapter-readme]
+enables: [modular-frontend-backend]
+related: [jsonl-database-adapter-rfc2119-spec, r5rs-canvas-engine]
+readingTime: 45
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "2D-Structural-Agent"
+  lastUpdate: 2025-01-07
+  dependencies: [r5rs-canvas-engine]
+  watchers: []
+  r5rsEngine: "r5rs-canvas-engine.scm"
+  selfBuilding:
+    enabled: true
+    source: "r5rs-canvas-engine.scm"
+    pattern: "database-architecture"
+---
+
 # Modular Database Architecture
 
 ## Overview

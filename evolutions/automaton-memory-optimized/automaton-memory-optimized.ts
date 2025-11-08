@@ -4,7 +4,7 @@
  * Implements: GC triggers, object trimming, execution history limits
  */
 
-import { AdvancedSelfReferencingAutomaton } from './advanced-automaton';
+import { AdvancedSelfReferencingAutomaton } from '../advanced-automaton/advanced-automaton';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -15,6 +15,10 @@ interface MemoryOptimizationConfig {
   trimInterval: number; // ms
   memoryPressureThreshold: number; // MB
   enableGC: boolean;
+  // Identity Evolution (0D) focus options
+  lockDimension?: number; // Lock to specific dimension (0 for Identity Evolution)
+  dimension0Focus?: boolean; // Cycle back to dimension 0 more frequently
+  dimension0Probability?: number; // Probability of staying/returning to dimension 0 (0-1)
 }
 
 class MemoryOptimizedAutomaton extends AdvancedSelfReferencingAutomaton {
@@ -34,7 +38,16 @@ class MemoryOptimizedAutomaton extends AdvancedSelfReferencingAutomaton {
       trimInterval: config?.trimInterval || 10000, // 10 seconds
       memoryPressureThreshold: config?.memoryPressureThreshold || 200, // 200MB
       enableGC: config?.enableGC ?? true,
+      lockDimension: config?.lockDimension,
+      dimension0Focus: config?.dimension0Focus ?? false,
+      dimension0Probability: config?.dimension0Probability ?? 0.5,
     };
+    
+    // Lock to dimension 0 if configured
+    if (this.config.lockDimension !== undefined) {
+      (this as any).currentDimension = this.config.lockDimension;
+      console.log(`🔒 Locked to dimension ${this.config.lockDimension} for Identity Evolution`);
+    }
     
     this.startOptimization();
   }
@@ -126,8 +139,20 @@ class MemoryOptimizedAutomaton extends AdvancedSelfReferencingAutomaton {
     }
   }
 
-  // Override executeSelfModification to add memory checks
+  // Override executeSelfModification to add memory checks and dimension control
   executeSelfModification(): void {
+    // Ensure we're at dimension 0 if locked or focused
+    if (this.config.lockDimension !== undefined) {
+      (this as any).currentDimension = this.config.lockDimension;
+    } else if (this.config.dimension0Focus) {
+      // Cycle back to dimension 0 with configured probability
+      const currentDim = (this as any).currentDimension || 0;
+      if (currentDim !== 0 && Math.random() < this.config.dimension0Probability!) {
+        (this as any).currentDimension = 0;
+        console.log(`🔄 Returning to dimension 0 for Identity Evolution`);
+      }
+    }
+    
     // Check memory before execution
     const memBefore = process.memoryUsage();
     const memMB = memBefore.heapUsed / 1024 / 1024;
@@ -148,6 +173,32 @@ class MemoryOptimizedAutomaton extends AdvancedSelfReferencingAutomaton {
     if (memDelta > 5) { // > 5MB growth
       console.log(`⚠️  Large memory growth detected: +${memDelta.toFixed(2)}MB`);
       this.forceGarbageCollection();
+    }
+    
+    // Log Identity Evolution (0D) count
+    const currentDim = (this as any).currentDimension || 0;
+    if (currentDim === 0) {
+      const identityEvolutions = ((this as any).objects || []).filter((obj: any) => 
+        obj.selfReference?.pattern === 'Identity Evolution (0D)'
+      ).length;
+      console.log(`✨ Identity Evolution (0D): ${identityEvolutions} total`);
+    }
+  }
+
+  // Override executeAction to prevent dimension progression when locked
+  executeAction(action: string, fromState: string, toState: string, context: any = {}): void {
+    // Prevent evolution if locked to dimension 0
+    if (this.config.lockDimension !== undefined && action === 'evolve') {
+      console.log(`🔒 Skipping evolution (locked to dimension ${this.config.lockDimension})`);
+      return;
+    }
+    
+    // Call parent method
+    super.executeAction(action, fromState, toState, context);
+    
+    // Ensure we stay at dimension 0 if locked
+    if (this.config.lockDimension !== undefined) {
+      (this as any).currentDimension = this.config.lockDimension;
     }
   }
 
@@ -178,6 +229,12 @@ export { MemoryOptimizedAutomaton, MemoryOptimizationConfig };
 
 // If run directly, create optimized instance
 if (require.main === module) {
+  // Check for command-line arguments to focus on Identity Evolution (0D)
+  const args = process.argv.slice(2);
+  const focus0D = args.includes('--0d') || args.includes('--identity-evolution');
+  const lock0D = args.includes('--lock-0d');
+  const probability = args.find(arg => arg.startsWith('--0d-prob='))?.split('=')[1];
+  
   const automaton = new MemoryOptimizedAutomaton('./automaton.jsonl', {
     maxObjects: 2000,
     maxExecutionHistory: 500,
@@ -185,12 +242,20 @@ if (require.main === module) {
     trimInterval: 10000,
     memoryPressureThreshold: 200,
     enableGC: true,
+    // Identity Evolution (0D) focus options
+    lockDimension: lock0D ? 0 : undefined,
+    dimension0Focus: focus0D || lock0D,
+    dimension0Probability: probability ? parseFloat(probability) : (focus0D ? 0.7 : 0.5),
   });
   
   // Run self-modification loop
+  // Default: 1000ms, but can be overridden with --interval flag
+  const intervalArg = args.find(arg => arg.startsWith('--interval='))?.split('=')[1];
+  const modificationInterval = intervalArg ? parseInt(intervalArg) : 1000;
+  
   setInterval(() => {
     automaton.executeSelfModification();
-  }, 1000);
+  }, modificationInterval);
   
   // Handle shutdown
   process.on('SIGINT', () => {
@@ -199,4 +264,15 @@ if (require.main === module) {
   });
   
   console.log('🚀 Memory-optimized automaton running...');
+  console.log(`   Modification Interval: ${modificationInterval}ms`);
+  if (lock0D) {
+    console.log('🔒 Locked to dimension 0 for maximum Identity Evolution');
+  } else if (focus0D) {
+    console.log(`🎯 Focusing on Identity Evolution (0D) with ${(focus0D ? 0.7 : 0.5) * 100}% probability`);
+  } else {
+    console.log('✅ Dimension progression enabled (not locked to 0D)');
+  }
+  console.log('💡 Usage: --0d or --identity-evolution to focus on 0D, --lock-0d to lock to 0D');
+  console.log('💡 Usage: --0d-prob=0.8 to set probability of returning to dimension 0');
+  console.log('💡 Usage: --interval=N to set modification interval in ms (default: 1000)');
 }

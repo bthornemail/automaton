@@ -1,4 +1,4 @@
-import { AdvancedSelfReferencingAutomaton } from './advanced-automaton';
+import { AdvancedSelfReferencingAutomaton } from '../advanced-automaton/advanced-automaton';
 import { spawn } from 'child_process';
 import { existsSync, readFileSync } from 'fs';
 import * as http from 'http';

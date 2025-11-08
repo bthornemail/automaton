@@ -1,3 +1,23 @@
+---
+id: automaton-evolution-workflow-guide
+title: "Evolution Workflow Guide"
+level: practical
+type: guide
+tags: [automaton-evolution, workflow, github-actions, ci-cd, automation]
+keywords: [automaton-evolution, workflow-guide, github-actions, ci-cd-pipeline, evolution-branch, variant-generation]
+prerequisites: [automaton-evolution-logging-readme]
+enables: [automaton-evolution-testing-optimizing]
+related: [automaton-evolution-architecture, automaton-evolution-variants, github-ci-cd-workflow-readme]
+readingTime: 45
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "4D-Network-Agent"
+  lastUpdate: 2025-01-07
+  dependencies: [automaton-evolution-logging, github-actions]
+  watchers: ["6D-Intelligence-Agent", "5D-Consensus-Agent"]
+---
+
 # Evolution Workflow Guide
 
 ## Overview
@@ -250,6 +270,19 @@ const VARIANTS: Record<string, VariantConfig> = {
 1. ✅ Document workflow process
 2. ✅ Create GitHub workflow
 3. ✅ Implement variant generation
-4. 🔄 Add variant testing
-5. 🔄 Create evolution dashboard
-6. 🔄 Add automated variant deployment
+4. ✅ **Transition to Testing & Optimizing Phase** - See `docs/15-Automaton-Evolution-Testing-Optimizing/`
+5. 🔄 Add variant testing (in progress)
+6. 🔄 Create evolution dashboard
+7. 🔄 Add automated variant deployment
+
+## Transition to Testing & Optimizing
+
+The logging workflow is complete. The system now transitions to the **Testing & Optimizing Phase**:
+
+**Next Phase:** `docs/15-Automaton-Evolution-Testing-Optimizing/`
+
+**Focus Areas:**
+- Automated variant testing
+- Performance benchmarking
+- Optimization strategies
+- Continuous improvement

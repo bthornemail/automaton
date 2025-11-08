@@ -1,3 +1,28 @@
+---
+id: jsonl-database-adapter-quick-reference
+title: "JSONL Database Adapter Quick Reference"
+level: practical
+type: quick-reference
+tags: [quick-reference, database-adapter, jsonl, r5rs-functions]
+keywords: [quick-reference, database-adapter, jsonl, r5rs-functions, usage-examples]
+prerequisites: [jsonl-database-adapter-readme]
+enables: []
+related: [modular-database-architecture, modular-frontend-backend]
+readingTime: 15
+difficulty: 2
+blackboard:
+  status: active
+  assignedAgent: "2D-Structural-Agent"
+  lastUpdate: 2025-01-07
+  dependencies: [r5rs-canvas-engine]
+  watchers: []
+  r5rsEngine: "r5rs-canvas-engine.scm"
+  selfBuilding:
+    enabled: true
+    source: "r5rs-canvas-engine.scm"
+    pattern: "database-architecture"
+---
+
 # Quick Reference Guide
 
 ## Database Adapter Quick Reference

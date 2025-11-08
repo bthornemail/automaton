@@ -1,6 +1,11 @@
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
+// Type declaration for global.gc (requires --expose-gc flag)
+declare global {
+  var gc: (() => void) | undefined;
+}
+
 interface AutomatonState {
   id: string;
   type: string;
@@ -11,6 +16,7 @@ interface AutomatonState {
     line: number;
     pattern: string;
   };
+  provenanceHistory?: Array<{ file: string; line: number; pattern?: string }>;
   x?: number;
   y?: number;
   width?: number;
@@ -42,7 +48,16 @@ interface VerticalTransition {
   label: string;
 }
 
-type CanvasObject = AutomatonState | Transition | VerticalTransition | any;
+type CanvasObject = (AutomatonState | Transition | VerticalTransition) & {
+  id?: string;
+  selfReference?: {
+    file: string;
+    line: number;
+    pattern?: string;
+  };
+  provenanceHistory?: Array<{ file: string; line: number; pattern?: string }>;
+  [key: string]: any;
+};
 
 class AdvancedSelfReferencingAutomaton {
   private filePath: string;
@@ -50,6 +65,7 @@ class AdvancedSelfReferencingAutomaton {
   private currentDimension: number = 0;
   private executionHistory: Array<string | { action: string; from?: string; to?: string; timestamp?: number; iteration?: number }> = [];
   private selfModificationCount: number = 0;
+  private readonly MAX_EXECUTION_HISTORY = 1000; // Limit history to prevent memory leaks
 
   constructor(filePath: string) {
     this.filePath = filePath;
@@ -65,13 +81,136 @@ class AdvancedSelfReferencingAutomaton {
     const lines = content.trim().split('\n');
     
     this.objects = [];
+    // Map: ID -> { obj, provenanceHistory, seenInFiles }
+    const seenIds = new Map<string, { 
+      obj: CanvasObject; 
+      provenanceHistory: Array<{ file: string; line: number; pattern?: string }>;
+      seenInFiles: Set<string>;
+    }>();
+    let duplicateCount = 0;
+    let provenanceMergedCount = 0;
+    
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i]!.trim();
       if (line.startsWith('{') && line.endsWith('}')) {
         try {
           const obj = JSON.parse(line);
           if (obj && typeof obj === 'object') {
-            this.objects.push(obj);
+            if (obj.id) {
+              const currentFile = obj.selfReference?.file || this.filePath;
+              const currentLine = obj.selfReference?.line || i + 1;
+              const currentProvenance = obj.selfReference 
+                ? { file: obj.selfReference.file, line: obj.selfReference.line, pattern: obj.selfReference.pattern }
+                : { file: this.filePath, line: i + 1 };
+              
+              if (seenIds.has(obj.id)) {
+                const existing = seenIds.get(obj.id)!;
+                const existingFile = existing.obj.selfReference?.file || this.filePath;
+                
+                // Check if this is a cross-file duplicate (federated provenance)
+                if (currentFile !== existingFile && currentFile !== this.filePath && existingFile !== this.filePath) {
+                  // Cross-file duplicate: preserve both for federated provenance
+                  // Add provenance history to existing object
+                  if (!existing.obj.provenanceHistory) {
+                    existing.obj.provenanceHistory = [];
+                    if (existing.obj.selfReference) {
+                      existing.obj.provenanceHistory.push({
+                        file: existing.obj.selfReference.file,
+                        line: existing.obj.selfReference.line,
+                        pattern: existing.obj.selfReference.pattern
+                      });
+                    }
+                  }
+                  existing.obj.provenanceHistory.push(currentProvenance);
+                  
+                  // Keep both objects (federated provenance requirement)
+                  this.objects.push(obj);
+                  provenanceMergedCount++;
+                  console.log(`📋 Cross-file provenance: ID "${obj.id}" found in ${existingFile} and ${currentFile} (preserving both)`);
+                } else {
+                  // Same-file duplicate: merge provenance history, keep latest
+                  const existingIndex = this.objects.findIndex(o => o.id === obj.id);
+                  if (existingIndex >= 0) {
+                    const existingObj = this.objects[existingIndex]!;
+                    
+                    // Merge provenance history
+                    if (!existingObj.provenanceHistory) {
+                      existingObj.provenanceHistory = [];
+                      if (existingObj.selfReference) {
+                        existingObj.provenanceHistory.push({
+                          file: existingObj.selfReference.file,
+                          line: existingObj.selfReference.line,
+                          pattern: existingObj.selfReference.pattern
+                        });
+                      }
+                    }
+                    
+                    // Add current provenance to history if different
+                    const existingProvenance = existingObj.selfReference
+                      ? `${existingObj.selfReference.file}:${existingObj.selfReference.line}`
+                      : 'unknown';
+                    const newProvenance = currentProvenance.file && currentProvenance.line
+                      ? `${currentProvenance.file}:${currentProvenance.line}`
+                      : 'unknown';
+                    
+                    if (newProvenance !== existingProvenance && newProvenance !== 'unknown') {
+                      existingObj.provenanceHistory.push(currentProvenance);
+                      provenanceMergedCount++;
+                    }
+                    
+                    // Replace with latest version (fixes memory leak)
+                    this.objects.splice(existingIndex, 1);
+                    duplicateCount++;
+                    
+                    // Update seenIds with latest object and merged history
+                    seenIds.set(obj.id, {
+                      obj,
+                      provenanceHistory: existingObj.provenanceHistory || [],
+                      seenInFiles: existing.seenInFiles
+                    });
+                    existing.seenInFiles.add(currentFile);
+                  }
+                }
+              } else {
+                // First occurrence: initialize provenance history
+                const provenanceHistory: Array<{ file: string; line: number; pattern?: string }> = [];
+                if (obj.selfReference) {
+                  provenanceHistory.push({
+                    file: obj.selfReference.file,
+                    line: obj.selfReference.line,
+                    pattern: obj.selfReference.pattern
+                  });
+                }
+                
+                seenIds.set(obj.id, {
+                  obj,
+                  provenanceHistory,
+                  seenInFiles: new Set([currentFile])
+                });
+              }
+            }
+            
+            // Add object to array
+            if (!obj.id) {
+              // No ID: always add
+              this.objects.push(obj);
+            } else if (!seenIds.has(obj.id)) {
+              // First occurrence: add object
+              this.objects.push(obj);
+            } else {
+              // Duplicate ID: check if already added
+              const existing = seenIds.get(obj.id)!;
+              const existingIndex = this.objects.findIndex(o => o.id === obj.id);
+              
+              if (existingIndex < 0) {
+                // Not yet added: add the tracked object (may have merged provenance)
+                this.objects.push(existing.obj);
+              } else if (existing.seenInFiles.size > 1) {
+                // Cross-file duplicate: add this one too (federated provenance)
+                this.objects.push(obj);
+              }
+              // Otherwise: already handled, skip
+            }
           }
         } catch (error) {
           console.warn(`Failed to parse line ${i + 1}: ${line}`);
@@ -79,13 +218,108 @@ class AdvancedSelfReferencingAutomaton {
       }
     }
     
-    console.log(`Loaded ${this.objects.length} objects from ${this.filePath}`);
+    if (duplicateCount > 0) {
+      console.log(`🧹 Removed ${duplicateCount} duplicate objects during load (same-file deduplication)`);
+    }
+    if (provenanceMergedCount > 0) {
+      console.log(`📋 Merged provenance history for ${provenanceMergedCount} objects (federated provenance preserved)`);
+    }
+    console.log(`✅ Loaded ${this.objects.length} unique objects from ${this.filePath}`);
   }
 
   private save(): void {
+    // Provenance-aware deduplication before saving
+    // Preserve provenance history while removing true duplicates
+    const deduplicated: CanvasObject[] = [];
+    const seenIds = new Map<string, { obj: CanvasObject; provenanceHistory: Array<{ file: string; line: number; pattern?: string }> }>();
+    let duplicateCount = 0;
+    let provenancePreservedCount = 0;
+    
+    // Process in reverse to keep last occurrence, but preserve provenance
+    for (let i = this.objects.length - 1; i >= 0; i--) {
+      const obj = this.objects[i]!;
+      if (obj.id) {
+        const currentFile = obj.selfReference?.file || this.filePath;
+        
+        if (seenIds.has(obj.id)) {
+          const existing = seenIds.get(obj.id)!;
+          const existingFile = existing.obj.selfReference?.file || this.filePath;
+          
+          // Cross-file duplicates: preserve both (federated provenance)
+          if (currentFile !== existingFile && currentFile !== this.filePath && existingFile !== this.filePath) {
+            // Add to deduplicated array (preserve both)
+            deduplicated.unshift(obj);
+            provenancePreservedCount++;
+            continue;
+          }
+          
+          // Same-file duplicate: merge provenance history
+          if (!existing.obj.provenanceHistory && obj.selfReference) {
+            existing.obj.provenanceHistory = [];
+            if (existing.obj.selfReference) {
+              existing.obj.provenanceHistory.push({
+                file: existing.obj.selfReference.file,
+                line: existing.obj.selfReference.line,
+                pattern: existing.obj.selfReference.pattern
+              });
+            }
+          }
+          
+          if (obj.selfReference && existing.obj.provenanceHistory) {
+            const existingProvenance = existing.obj.selfReference
+              ? `${existing.obj.selfReference.file}:${existing.obj.selfReference.line}`
+              : 'unknown';
+            const newProvenance = `${obj.selfReference.file}:${obj.selfReference.line}`;
+            
+            if (newProvenance !== existingProvenance) {
+              existing.obj.provenanceHistory.push({
+                file: obj.selfReference.file,
+                line: obj.selfReference.line,
+                pattern: obj.selfReference.pattern
+              });
+              provenancePreservedCount++;
+            }
+          }
+          
+          // Update with latest object but preserve history
+          Object.assign(existing.obj, obj);
+          if (existing.obj.provenanceHistory) {
+            existing.obj.provenanceHistory = existing.obj.provenanceHistory;
+          }
+          
+          duplicateCount++;
+          continue; // Skip duplicate, already have merged version
+        }
+        
+        // First occurrence: initialize provenance history
+        const provenanceHistory: Array<{ file: string; line: number; pattern?: string }> = [];
+        if (obj.selfReference) {
+          provenanceHistory.push({
+            file: obj.selfReference.file,
+            line: obj.selfReference.line,
+            pattern: obj.selfReference.pattern
+          });
+        }
+        
+        seenIds.set(obj.id, { obj, provenanceHistory });
+      }
+      
+      deduplicated.unshift(obj);
+    }
+    
+    // Update objects array with deduplicated version
+    this.objects = deduplicated;
+    
+    if (duplicateCount > 0) {
+      console.log(`🧹 Removed ${duplicateCount} duplicate objects before save (provenance preserved)`);
+    }
+    if (provenancePreservedCount > 0) {
+      console.log(`📋 Preserved provenance history for ${provenancePreservedCount} objects`);
+    }
+    
     const jsonlContent = this.objects.map(obj => JSON.stringify(obj)).join('\n');
     writeFileSync(this.filePath, jsonlContent + '\n');
-    console.log(`Saved ${this.objects.length} objects to ${this.filePath}`);
+    console.log(`✅ Saved ${this.objects.length} unique objects to ${this.filePath}`);
   }
 
   getAutomatonByDimension(level: number): AutomatonState | null {
@@ -170,6 +404,10 @@ class AdvancedSelfReferencingAutomaton {
     }
     
     this.executionHistory.push(`${action}:${fromState}→${toState}`);
+    // Trim execution history to prevent memory leaks
+    if (this.executionHistory.length > this.MAX_EXECUTION_HISTORY) {
+      this.executionHistory = this.executionHistory.slice(-this.MAX_EXECUTION_HISTORY);
+    }
   }
 
   private executeSelfReference(): void {
@@ -929,6 +1167,48 @@ class AdvancedSelfReferencingAutomaton {
     // Save any modifications or evolutions
     if (this.selfModificationCount > 0 || this.executionHistory.length > 0) {
       this.save();
+    }
+    
+    // Trigger GC if available (Node.js with --expose-gc flag)
+    if (global.gc) {
+      global.gc();
+    }
+  }
+  
+  /**
+   * Optimize memory by trimming history and deduplicating objects
+   */
+  optimizeMemory(): void {
+    // Trim execution history
+    if (this.executionHistory.length > this.MAX_EXECUTION_HISTORY) {
+      this.executionHistory = this.executionHistory.slice(-this.MAX_EXECUTION_HISTORY);
+    }
+    
+    // Deduplicate objects
+    const deduplicated: CanvasObject[] = [];
+    const seenIds = new Set<string>();
+    let duplicateCount = 0;
+    
+    for (let i = this.objects.length - 1; i >= 0; i--) {
+      const obj = this.objects[i]!;
+      if (obj.id && seenIds.has(obj.id)) {
+        duplicateCount++;
+        continue;
+      }
+      if (obj.id) {
+        seenIds.add(obj.id);
+      }
+      deduplicated.unshift(obj);
+    }
+    
+    if (duplicateCount > 0) {
+      console.log(`🧹 Memory optimization: Removed ${duplicateCount} duplicate objects`);
+      this.objects = deduplicated;
+    }
+    
+    // Trigger GC if available
+    if (global.gc) {
+      global.gc();
     }
   }
 
