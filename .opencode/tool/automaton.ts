@@ -1,5 +1,5 @@
 import { tool } from "@opencode-ai/plugin"
-import { ContinuousAutomatonRunner } from "../../continuous-automaton"
+import { ContinuousAutomatonRunner } from "../../evolutions/continuous-automaton/continuous-automaton"
 
 // Global runner instance to maintain state across tool calls
 let runner: ContinuousAutomatonRunner | null = null

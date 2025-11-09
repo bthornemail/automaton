@@ -26,65 +26,61 @@ export class OpenCodeMetaLogPlugin extends BaseMetaLogPlugin {
       const { tool } = await import('@opencode-ai/plugin');
       
       // ProLog query tool
-      this.tools.push(
-        tool({
-          description: "Query Meta-Log database with ProLog",
-          args: {
-            query: tool.schema.string().describe("ProLog query string")
-          },
-          async execute(args: any, context: any) {
-            const query = await this.beforeQuery(args.query);
-            const results = await this.db.prologQuery(query);
-            return await this.afterQuery(query, results);
-          }.bind(this)
-        })
-      );
+      const prologTool = tool({
+        description: "Query Meta-Log database with ProLog",
+        args: {
+          query: tool.schema.string().describe("ProLog query string")
+        },
+        execute: async (args: any, context: any) => {
+          const query = await this.beforeQuery(args.query);
+          const results = await this.db.prologQuery(query);
+          return await this.afterQuery(query, results);
+        }
+      });
+      this.tools.push(prologTool);
 
       // DataLog query tool
-      this.tools.push(
-        tool({
-          description: "Query Meta-Log database with DataLog",
-          args: {
-            query: tool.schema.string().describe("DataLog query string"),
-            program: tool.schema.string().optional().describe("DataLog program (optional)")
-          },
-          async execute(args: any, context: any) {
-            const query = await this.beforeQuery(args.query);
-            const program = args.program ? JSON.parse(args.program) : undefined;
-            const results = await this.db.datalogQuery(query, program);
-            return await this.afterQuery(query, results);
-          }.bind(this)
-        })
-      );
+      const datalogTool = tool({
+        description: "Query Meta-Log database with DataLog",
+        args: {
+          query: tool.schema.string().describe("DataLog query string"),
+          program: tool.schema.string().optional().describe("DataLog program (optional)")
+        },
+        execute: async (args: any, context: any) => {
+          const query = await this.beforeQuery(args.query);
+          const program = args.program ? JSON.parse(args.program) : undefined;
+          const results = await this.db.datalogQuery(query, program);
+          return await this.afterQuery(query, results);
+        }
+      });
+      this.tools.push(datalogTool);
 
       // SPARQL query tool
-      this.tools.push(
-        tool({
-          description: "Query Meta-Log database with SPARQL",
-          args: {
-            query: tool.schema.string().describe("SPARQL query string")
-          },
-          async execute(args: any, context: any) {
-            const query = await this.beforeQuery(args.query);
-            const results = await this.db.sparqlQuery(query);
-            return await this.afterQuery(query, results);
-          }.bind(this)
-        })
-      );
+      const sparqlTool = tool({
+        description: "Query Meta-Log database with SPARQL",
+        args: {
+          query: tool.schema.string().describe("SPARQL query string")
+        },
+        execute: async (args: any, context: any) => {
+          const query = await this.beforeQuery(args.query);
+          const results = await this.db.sparqlQuery(query);
+          return await this.afterQuery(query, results);
+        }
+      });
+      this.tools.push(sparqlTool);
 
       // Load canvas tool
-      this.tools.push(
-        tool({
-          description: "Load JSONL/CanvasL canvas file",
-          args: {
-            path: tool.schema.string().describe("Path to canvas file")
-          },
-          async execute(args: any, context: any) {
-            await this.loadCanvas(args.path);
-            return { success: true, path: args.path };
-          }.bind(this)
-        })
-      );
+      const loadCanvasTool = tool({
+        description: "Load JSONL/CanvasL canvas file",
+        args: {
+          path: tool.schema.string().describe("Path to canvas file")
+        },
+        execute: async (args: any, context: any) => {
+          await this.loadCanvas(args.path);
+          return { success: true, path: args.path };
+        }
+      });
+      this.tools.push(loadCanvasTool);
     } catch (error) {
       // OpenCode plugin API not available, continue without tools
       console.warn('OpenCode plugin API not available:', error);

@@ -72,22 +72,24 @@ export class MetaLogView extends BaseMetaLogView {
         placeholder: '(node ?Id ?Type)'
       },
       cls: 'meta-log-query-input'
-    });
-    this.queryInput.style.width = '100%';
-    this.queryInput.style.padding = '8px';
-    this.queryInput.style.marginBottom = '8px';
+    }) as HTMLInputElement;
+    if (this.queryInput) {
+      this.queryInput.style.width = '100%';
+      this.queryInput.style.padding = '8px';
+      this.queryInput.style.marginBottom = '8px';
+
+      // Enter key handler
+      this.queryInput.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+          this.executeQuery();
+        }
+      };
+    }
 
     // Execute button
     this.createButton(querySection, 'Execute Query', () => this.executeQuery(), {
       cls: 'mod-cta'
     });
-
-    // Enter key handler
-    this.queryInput.onkeydown = (e) => {
-      if (e.key === 'Enter') {
-        this.executeQuery();
-      }
-    };
   }
 
   /**
@@ -106,10 +108,12 @@ export class MetaLogView extends BaseMetaLogView {
     this.resultsEl = resultsSection.createEl('div', {
       cls: 'meta-log-results'
     });
-    this.resultsEl.style.padding = '8px';
-    this.resultsEl.style.backgroundColor = 'var(--background-secondary)';
-    this.resultsEl.style.borderRadius = '4px';
-    this.resultsEl.style.minHeight = '200px';
+    if (this.resultsEl) {
+      this.resultsEl.style.padding = '8px';
+      this.resultsEl.style.backgroundColor = 'var(--background-secondary)';
+      this.resultsEl.style.borderRadius = '4px';
+      this.resultsEl.style.minHeight = '200px';
+    }
   }
 
   /**
@@ -179,8 +183,10 @@ ${results.bindings.map((binding: any, index: number) => {
 `;
 
         // Clear and render markdown
-        this.resultsEl.empty();
-        await this.renderMarkdown(markdown, this.resultsEl);
+        if (this.resultsEl) {
+          this.resultsEl.empty();
+          await this.renderMarkdown(markdown, this.resultsEl);
+        }
       } else {
         const markdown = `
 ## Query Results
@@ -191,8 +197,10 @@ ${results.bindings.map((binding: any, index: number) => {
 > No results found
 `;
 
-        this.resultsEl.empty();
-        await this.renderMarkdown(markdown, this.resultsEl);
+        if (this.resultsEl) {
+          this.resultsEl.empty();
+          await this.renderMarkdown(markdown, this.resultsEl);
+        }
       }
 
       this.emit('queryExecuted', query, results);
@@ -210,8 +218,10 @@ ${error}
 \`\`\`
 `;
 
-      this.resultsEl.empty();
-      await this.renderMarkdown(errorMarkdown, this.resultsEl);
+      if (this.resultsEl) {
+        this.resultsEl.empty();
+        await this.renderMarkdown(errorMarkdown, this.resultsEl);
+      }
       this.showNotice(`Query error: ${error}`, 5000);
     }
   }

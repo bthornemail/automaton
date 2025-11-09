@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Brain, MessageSquare, Send, Bot, User, Zap, Play, Pause, RotateCcw, 
   Settings, Download, Upload, Lightbulb, TrendingUp, Cpu, Code, Sparkles, X,
-  FileText, BarChart3, Network, Cpu as CpuIcon, Maximize2, Minimize2, Users
+  FileText, BarChart3, Network, Cpu as CpuIcon, Maximize2, Minimize2, Users, Bot as BotIcon
 } from 'lucide-react';
 import { AgentChat, ChatMessage } from '@/types';
 import { apiService } from '@/services/api';
@@ -16,21 +16,25 @@ import { databaseService } from '@/services/database-service';
 import { llmService, LLMProviderConfig } from '@/services/llm-service';
 import { nlQueryService } from '@/services/nl-query-service';
 import { chatService, ChatMessage as ChatServiceMessage, ChatParticipant } from '@/services/chat-service';
-import WebGLMetaverseEvolution, { dimensionConfig } from '@/components/AdvancedAnimations/WebGLMetaverseEvolution';
-import MetaverseCanvas3D from '@/components/MetaverseCanvas3D/MetaverseCanvas3D';
 import UnifiedEditor from '@/components/UnifiedEditor';
-import UnifiedMetaverseView from '@/components/UnifiedMetaverseView';
+import { dimensionConfig } from '@/components/AdvancedAnimations/WebGLMetaverseEvolution';
+// Import refactored components
+import { ChatPanel } from './components/ChatPanel';
+import { AgentInterface } from './components/AgentInterface';
+import { MutationPanel, AIMutation } from './components/MutationPanel';
+import { ConfigPanel, AIPortalConfig } from './components/ConfigPanel';
+import { AIPortalHeader } from './components/AIPortalHeader';
+import { MetaverseView } from './components/MetaverseView';
+import { MetaversePortal } from './components/MetaversePortal';
+import { MetaversePortalTest } from './components/MetaversePortalTest';
+import { BridgeStatusModal } from './components/BridgeStatusModal';
+import { EvolutionMetricsPanel } from './components/EvolutionMetricsPanel';
+import { AgentSelectionModal } from './components/AgentSelectionModal';
+import { AIEvolutionModal } from './components/AIEvolutionModal';
+import { AgentAPIModal } from './components/AgentAPIModal';
+import { LegacyChatMessages } from './components/LegacyChatMessages';
 
-interface AIMutation {
-  id: string;
-  type: 'church-encoding' | 'dimensional' | 'topological' | 'self-reference';
-  description: string;
-  code: string;
-  confidence: number;
-  impact: 'low' | 'medium' | 'high' | 'critical';
-  timestamp: number;
-  applied: boolean;
-}
+// AIMutation interface moved to MutationPanel component
 
 interface WebLLMConfig {
   model: string;
@@ -154,7 +158,7 @@ const AIPortal: React.FC = () => {
   const [chatParticipants, setChatParticipants] = useState<ChatParticipant[]>([]);
   const [broadcastMessages, setBroadcastMessages] = useState<ChatServiceMessage[]>([]);
   const [directMessages, setDirectMessages] = useState<Map<string, ChatServiceMessage[]>>(new Map());
-  const [showChatPanel, setShowChatPanel] = useState(true);
+  const [showChatPanel, setShowChatPanel] = useState(false);
 
   // TinyML State
   const [tinyMLModels, setTinyMLModels] = useState<any[]>([]);
@@ -166,10 +170,12 @@ const AIPortal: React.FC = () => {
   const [showAgentSelectModal, setShowAgentSelectModal] = useState(false);
   const [showBridgeModal, setShowBridgeModal] = useState(false);
   const [showAIEvolutionModal, setShowAIEvolutionModal] = useState(false);
+  const [showAgentAPIModal, setShowAgentAPIModal] = useState(false);
   const [activeAITab, setActiveAITab] = useState<'evolution' | 'metrics' | 'canvas'>('evolution');
   const [showCanvasEditor, setShowCanvasEditor] = useState(false);
   const [selectedJSONLFile, setSelectedJSONLFile] = useState<string>('automaton-kernel.jsonl');
   const [metaverseMode, setMetaverseMode] = useState<'abstract' | 'canvasl-3d' | 'unified'>('unified');
+  const [showEvolutionMetrics, setShowEvolutionMetrics] = useState(false);
   
   // Metaverse Stats State
   const [metaverseStats, setMetaverseStats] = useState<{
@@ -187,9 +193,6 @@ const AIPortal: React.FC = () => {
     currentDimension: automatonState.currentDimension || 0,
     evolutionCounts: {}
   });
-  
-  // Chat Panel State
-  const [showChatPanel, setShowChatPanel] = useState(false);
 
   // Initialize all bridges
   useEffect(() => {
@@ -996,149 +999,77 @@ Generate a helpful, informative response:
   return (
     <div className="w-full h-full bg-gray-800 rounded-xl shadow-xl border border-gray-700 flex flex-col" data-testid="ai-portal">
       {/* Header */}
-      <div className="p-4 border-b border-gray-700 bg-gradient-to-r from-purple-900/50 to-pink-900/50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-              <Brain className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">AI Portal</h2>
-              <p className="text-xs text-gray-400">3D Metaverse Portal - Bridging Human NLP ↔ Automaton Metaverse ↔ WebLLM ↔ TinyML</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            {/* Metaverse Mode Toggle */}
-            <div className="flex items-center gap-2 bg-gray-700 rounded-lg p-1">
-              <button
-                onClick={() => setMetaverseMode('unified')}
-                className={`px-3 py-1 rounded text-sm transition-colors ${
-                  metaverseMode === 'unified' 
-                    ? 'bg-blue-600 text-white' 
-                    : 'text-gray-400 hover:text-white'
-                }`}
-                title="Unified View (Major/Minor Modes)"
-              >
-                Unified
-              </button>
-              <button
-                onClick={() => setMetaverseMode('abstract')}
-                className={`px-3 py-1 rounded text-sm transition-colors ${
-                  metaverseMode === 'abstract' 
-                    ? 'bg-blue-600 text-white' 
-                    : 'text-gray-400 hover:text-white'
-                }`}
-                title="Abstract Metaverse Only"
-              >
-                Abstract
-              </button>
-              <button
-                onClick={() => setMetaverseMode('canvasl-3d')}
-                className={`px-3 py-1 rounded text-sm transition-colors ${
-                  metaverseMode === 'canvasl-3d' 
-                    ? 'bg-blue-600 text-white' 
-                    : 'text-gray-400 hover:text-white'
-                }`}
-                title="CanvasL 3D Only"
-              >
-                CanvasL 3D
-              </button>
-            </div>
-            
-            {/* File Selection (for CanvasL 3D mode) */}
-            {metaverseMode === 'canvasl-3d' && (
-              <select
-                value={selectedJSONLFile}
-                onChange={(e) => setSelectedJSONLFile(e.target.value)}
-                className="px-3 py-1 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm"
-              >
-                <option value="automaton-kernel.jsonl">automaton-kernel.jsonl</option>
-                <option value="generate.metaverse.jsonl">generate.metaverse.jsonl</option>
-                <option value="automaton.jsonl">automaton.jsonl</option>
-                <option value="automaton.canvas.space.jsonl">automaton.canvas.space.jsonl</option>
-                <option value="automaton-kernel.canvasl">automaton-kernel.canvasl</option>
-                <option value="generate.metaverse.canvasl">generate.metaverse.canvasl</option>
-              </select>
-            )}
-            {/* View Changes / Chat Toggle */}
-            <button
-              onClick={() => setShowChatPanel(!showChatPanel)}
-              className="flex items-center gap-2 px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors"
-              title={showChatPanel ? "Hide Chat" : "View Chat"}
-            >
-              <MessageSquare className="w-4 h-4" />
-              <span className="text-sm">{showChatPanel ? 'Hide Chat' : 'View Chat'}</span>
-            </button>
-            
-            {/* Bridge Status Indicators */}
-            <button
-              onClick={() => setShowBridgeModal(true)}
-              className="flex items-center gap-2 px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors"
-              title="Bridge Status"
-            >
-              <Network className="w-4 h-4 text-gray-300" />
-              <div className="flex gap-1">
-                <div className={`w-2 h-2 rounded-full ${bridgeStatus.nlp ? 'bg-green-500' : 'bg-gray-500'}`} title="NLP"></div>
-                <div className={`w-2 h-2 rounded-full ${bridgeStatus.metaverse ? 'bg-green-500' : 'bg-gray-500'}`} title="Metaverse"></div>
-                <div className={`w-2 h-2 rounded-full ${bridgeStatus.webllm ? 'bg-green-500' : 'bg-gray-500'}`} title="WebLLM"></div>
-                <div className={`w-2 h-2 rounded-full ${bridgeStatus.tinyml ? 'bg-green-500' : 'bg-gray-500'}`} title="TinyML"></div>
-              </div>
-            </button>
-            
-            <div className={`px-2 py-1 rounded text-xs ${
-              isWebLLMLoaded ? 'bg-green-600/20 text-green-300' : 'bg-yellow-600/20 text-yellow-300'
-            }`}>
-              {isWebLLMLoaded ? 'WebLLM Ready' : 'Loading...'}
-            </div>
-            <button
-              onClick={() => setShowSettingsModal(true)}
-              className="p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition-colors"
-              title="Settings"
-            >
-              <Settings className="w-4 h-4 text-gray-300" />
-            </button>
-          </div>
-        </div>
-      </div>
+      <AIPortalHeader
+        metaverseMode={metaverseMode}
+        onMetaverseModeChange={setMetaverseMode}
+        selectedJSONLFile={selectedJSONLFile}
+        onJSONLFileChange={setSelectedJSONLFile}
+        showChatPanel={showChatPanel}
+        onToggleChatPanel={() => setShowChatPanel(!showChatPanel)}
+        bridgeStatus={bridgeStatus}
+        onBridgeStatusClick={() => setShowBridgeModal(true)}
+        isWebLLMLoaded={isWebLLMLoaded}
+        onAgentAPIClick={() => setShowAgentAPIModal(true)}
+        onSettingsClick={() => setShowSettingsModal(true)}
+      />
 
       {/* Main Layout: 3D Metaverse Portal with Chat Overlay */}
-      <div className="flex-1 overflow-hidden relative">
-        {/* 3D Metaverse Portal - Main Interface */}
-        <div className="w-full h-full">
-          {metaverseMode === 'unified' ? (
-            <UnifiedMetaverseView
-              initialMajorMode="environment"
-              initialMinorMode="3d-gltf"
-              onModeChange={(major, minor) => {
-                addEvolutionLog(`Mode changed: ${major}/${minor}`);
-              }}
-              onSymbolSelect={(symbol) => {
-                if (symbol) {
-                  addEvolutionLog(`Selected symbol: ${symbol.name} (${symbol.type})`);
-                }
-              }}
-              height="100%"
-            />
-          ) : metaverseMode === 'abstract' ? (
-            <WebGLMetaverseEvolution 
-              onOpenAIModal={() => setShowAIEvolutionModal(true)}
-              onDimensionChange={(dimension) => {
-                automatonActions.setDimension(dimension);
-              }}
-              onStatsUpdate={(stats) => {
-                setMetaverseStats(stats);
-              }}
-            />
-          ) : (
-            <MetaverseCanvas3D
-              filename={selectedJSONLFile}
-              onSave={(canvas3D) => {
-                addEvolutionLog(`Saved 3D canvas: ${selectedJSONLFile}`);
-              }}
-            />
-          )}
-        </div>
+      <div className="flex-1 overflow-hidden relative" style={{ minHeight: '600px', height: '100%' }}>
+        {/* Debug: Show mode */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="absolute top-2 right-2 z-50 bg-yellow-500 text-black px-2 py-1 text-xs">
+            Mode: {metaverseMode}
+          </div>
+        )}
+        {/* 3D Metaverse Portal - Bridging Human NLP ↔ Automaton Metaverse ↔ WebLLM ↔ TinyML */}
+        {metaverseMode === 'unified' ? (
+          <MetaversePortal
+            llmProviderConfig={llmProviderConfig}
+            onNLPMessage={(message) => {
+              addEvolutionLog(`NLP Input: ${message}`);
+              // Also send to chat
+              sendMessage(message);
+            }}
+            onMetaverseAction={(action, params) => {
+              addEvolutionLog(`Metaverse Action: ${action} with params ${JSON.stringify(params)}`);
+              // Execute automaton action
+              if (action === 'start') {
+                automatonActions.startAutomaton(params);
+              } else if (action === 'stop') {
+                automatonActions.stopAutomaton();
+              } else if (action === 'evolve' && params.dimension !== undefined) {
+                automatonActions.setDimension(params.dimension);
+              }
+            }}
+            onBridgeStatusChange={(status) => {
+              setBridgeStatus(status);
+            }}
+          />
+        ) : (
+          <MetaverseView
+            mode={metaverseMode}
+            selectedJSONLFile={selectedJSONLFile}
+            onOpenAIModal={() => setShowAIEvolutionModal(true)}
+            onDimensionChange={(dimension) => {
+              automatonActions.setDimension(dimension);
+            }}
+            onStatsUpdate={(stats) => {
+              setMetaverseStats(stats);
+            }}
+            onSave={(canvas3D) => {
+              addEvolutionLog(`Saved 3D canvas: ${selectedJSONLFile}`);
+            }}
+            onModeChange={(major, minor) => {
+              addEvolutionLog(`Mode changed: ${major}/${minor}`);
+            }}
+            onSymbolSelect={(symbol) => {
+              if (symbol) {
+                addEvolutionLog(`Selected symbol: ${symbol.name} (${symbol.type})`);
+              }
+            }}
+            onEvolutionLog={addEvolutionLog}
+          />
+        )}
 
         {/* Chat Panel Overlay - Toggleable */}
         <AnimatePresence>
@@ -1150,377 +1081,39 @@ Generate a helpful, informative response:
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className="absolute top-0 right-0 w-full md:w-96 h-full bg-gray-900/95 backdrop-blur-lg border-l border-gray-700 shadow-2xl z-50 flex flex-col"
             >
-              {/* Chat Panel Header */}
-              <div className="p-4 border-b border-gray-700 bg-gray-800/50 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="w-5 h-5 text-blue-400" />
-                  <h3 className="text-lg font-bold text-white">Agent Communication</h3>
-                </div>
-                <button
-                  onClick={() => setShowChatPanel(false)}
-                  className="p-1 rounded-lg hover:bg-gray-700 transition-colors"
-                  title="Close Chat"
-                >
-                  <X className="w-5 h-5 text-gray-400" />
-                </button>
-              </div>
+              <ChatPanel
+                onClose={() => setShowChatPanel(false)}
+                className="h-full"
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-              {/* Chat Content */}
-              <div className="flex-1 overflow-hidden flex flex-col p-4">
-                {/* Agent Selector */}
-                <div className="mb-4">
-                  <button
-                    onClick={() => setShowAgentSelectModal(true)}
-                    className="w-full p-3 bg-gray-800 hover:bg-gray-700 rounded-lg text-left transition-colors border border-gray-700"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-white font-medium text-sm">{chat.activeAgent.replace('-', ' ')}</div>
-                        <div className="text-xs text-gray-400">{getAgentDescription(chat.activeAgent)}</div>
-                      </div>
-                      <Bot className="w-5 h-5 text-[#6366f1]" />
-                    </div>
-                  </button>
-                </div>
+        {/* Legacy Chat Messages (kept for backward compatibility) */}
+        {showChatPanel && (
+          <LegacyChatMessages
+            messages={chat.messages}
+            isTyping={isTyping}
+            messagesEndRef={messagesEndRef}
+            onSuggestionClick={handleSuggestionClick}
+            activeAgent={chat.activeAgent}
+          />
+        )}
 
-                {/* Metaverse State Display */}
-                <div className="mb-4 p-2 bg-gray-800 rounded-lg border border-gray-700">
-                  <div className="text-xs text-gray-400 mb-1">Metaverse State</div>
-                  <div className="text-sm text-white">
-                    {automatonState.currentDimension}D - {automatonState.isRunning ? 'Running' : 'Idle'}
-                  </div>
-                  {patternPrediction && (
-                    <div className="text-xs text-green-400 mt-1">
-                      TinyML: Next → {patternPrediction.nextDimension}D ({(patternPrediction.confidence * 100).toFixed(0)}%)
-                    </div>
-                  )}
-                </div>
-
-                {/* Chat Messages */}
-                <div className="flex-1 bg-gray-900 rounded-lg p-4 mb-4 overflow-y-auto min-h-0 border border-gray-700">
-                  {chat.messages.length === 0 ? (
-                    <div className="text-center text-gray-400 py-8">
-                      <Bot className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      <div className="text-sm">Start a conversation with {chat.activeAgent.replace('-', ' ')}</div>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {chat.messages.map((message, index) => (
-                        <motion.div
-                          key={index}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                        >
-                          {message.role === 'agent' && (
-                            <div className="w-8 h-8 bg-[#6366f1] rounded-full flex items-center justify-center flex-shrink-0">
-                              <Bot className="w-4 h-4 text-white" />
-                            </div>
-                          )}
-                          
-                          <div className={`max-w-[80%] rounded-lg p-3 text-sm ${
-                            message.role === 'user'
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-gray-700 text-gray-100'
-                          }`}>
-                            <div className="whitespace-pre-wrap">{message.content}</div>
-                            
-                            {/* Citations */}
-                            {message.role === 'agent' && message.citations && message.citations.length > 0 && (
-                              <div className="mt-3 pt-3 border-t border-gray-600">
-                                <div className="text-xs text-gray-400 mb-2 flex items-center gap-1">
-                                  <FileText className="w-3 h-3" />
-                                  Sources:
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                  {message.citations.map((citation, idx) => (
-                                    <a
-                                      key={idx}
-                                      href={citation.url || `#${citation.source}`}
-                                      target={citation.url ? '_blank' : undefined}
-                                      rel={citation.url ? 'noopener noreferrer' : undefined}
-                                      className="text-xs px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-blue-400 hover:text-blue-300 transition-colors"
-                                      title={citation.title || citation.source.split('/').pop()}
-                                    >
-                                      {citation.title || citation.source.split('/').pop()}
-                                      {citation.type && (
-                                        <span className="ml-1 text-gray-500">({citation.type})</span>
-                                      )}
-                                    </a>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                            
-                            {/* Performance Metrics */}
-                            {message.role === 'agent' && message.performanceMetrics && (
-                              <div className="mt-2 text-xs text-gray-500">
-                                Response time: {message.performanceMetrics.responseTime.toFixed(0)}ms
-                                {message.confidence !== undefined && (
-                                  <span className="ml-2">
-                                    • Confidence: {(message.confidence * 100).toFixed(0)}%
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                            
-                            {/* Follow-up Suggestions */}
-                            {message.role === 'agent' && message.followUpSuggestions && message.followUpSuggestions.length > 0 && (
-                              <div className="mt-3 pt-3 border-t border-gray-600">
-                                <div className="text-xs text-gray-400 mb-2 flex items-center gap-1">
-                                  <Lightbulb className="w-3 h-3" />
-                                  Follow-up questions:
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                  {message.followUpSuggestions.slice(0, 3).map((suggestion, idx) => (
-                                    <button
-                                      key={idx}
-                                      onClick={() => handleSuggestionClick(suggestion)}
-                                      className="text-xs px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-gray-300 hover:text-white transition-colors"
-                                    >
-                                      {suggestion}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                          
-                          {message.role === 'user' && (
-                            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                              <User className="w-4 h-4 text-white" />
-                            </div>
-                          )}
-                        </motion.div>
-                      ))}
-                      
-                      {isTyping && (
-                        <div className="flex gap-3">
-                          <div className="w-8 h-8 bg-[#6366f1] rounded-full flex items-center justify-center">
-                            <Bot className="w-4 h-4 text-white" />
-                          </div>
-                          <div className="bg-gray-700 rounded-lg p-3">
-                            <div className="flex gap-1">
-                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      
-                      <div ref={messagesEndRef} />
-                    </div>
-                  )}
-                </div>
-
-                {/* Chat Mode Toggle */}
-                <div className="mb-4 flex gap-2">
-                  <button
-                    onClick={() => {
-                      setChatMode('broadcast');
-                      setSelectedParticipant(null);
-                    }}
-                    className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      chatMode === 'broadcast'
-                        ? 'bg-[#6366f1] text-white'
-                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    }`}
-                  >
-                    <MessageSquare className="w-4 h-4 inline mr-2" />
-                    Broadcast
-                  </button>
-                  <button
-                    onClick={() => setChatMode('direct')}
-                    className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      chatMode === 'direct'
-                        ? 'bg-[#6366f1] text-white'
-                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    }`}
-                  >
-                    <User className="w-4 h-4 inline mr-2" />
-                    Direct
-                  </button>
-                </div>
-
-                {/* Participant List (for Direct Mode) */}
-                {chatMode === 'direct' && (
-                  <div className="mb-4 p-3 bg-gray-900 rounded-lg border border-gray-700 max-h-48 overflow-y-auto">
-                    <div className="text-xs text-gray-400 mb-2 flex items-center gap-1">
-                      <Users className="w-3 h-3" />
-                      Participants ({chatParticipants.length})
-                    </div>
-                    <div className="space-y-1">
-                      {chatParticipants.map((participant) => (
-                        <button
-                          key={participant.id}
-                          onClick={() => handleParticipantClick(participant.id)}
-                          className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors ${
-                            selectedParticipant === participant.id
-                              ? 'bg-[#6366f1] text-white'
-                              : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            {participant.type === 'agent' ? (
-                              <Bot className={`w-3 h-3 ${participant.online ? 'text-green-400' : 'text-gray-500'}`} />
-                            ) : (
-                              <User className={`w-3 h-3 ${participant.online ? 'text-blue-400' : 'text-gray-500'}`} />
-                            )}
-                            <span className="flex-1 truncate">{participant.name}</span>
-                            {participant.dimension && (
-                              <span className="text-gray-500 text-[10px]">{participant.dimension}</span>
-                            )}
-                            {participant.online && (
-                              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                            )}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Chat Messages (Broadcast/Direct) */}
-                {showChatPanel && (
-                  <div className="mb-4 flex-1 bg-gray-900 rounded-lg p-4 overflow-y-auto min-h-0 border border-gray-700 max-h-64">
-                    {getCurrentMessages().length === 0 ? (
-                      <div className="text-center text-gray-400 py-4 text-xs">
-                        {chatMode === 'broadcast' 
-                          ? 'No broadcast messages yet. Start chatting!'
-                          : selectedParticipant 
-                            ? `No messages with ${chatParticipants.find(p => p.id === selectedParticipant)?.name || 'this participant'} yet.`
-                            : 'Select a participant to start a direct conversation.'}
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {getCurrentMessages().map((message) => {
-                          const sender = chatParticipants.find(p => p.id === message.from);
-                          const isFromMe = message.from === chatService.getCurrentUserId();
-                          
-                          return (
-                            <div
-                              key={message.id}
-                              className={`flex gap-2 ${isFromMe ? 'justify-end' : 'justify-start'}`}
-                            >
-                              {!isFromMe && (
-                                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
-                                  sender?.type === 'agent' ? 'bg-[#6366f1]' : 'bg-blue-600'
-                                }`}>
-                                  {sender?.type === 'agent' ? (
-                                    <Bot className="w-3 h-3 text-white" />
-                                  ) : (
-                                    <User className="w-3 h-3 text-white" />
-                                  )}
-                                </div>
-                              )}
-                              
-                              <div className={`max-w-[75%] rounded-lg p-2 text-xs ${
-                                isFromMe
-                                  ? 'bg-blue-600 text-white'
-                                  : sender?.type === 'agent'
-                                    ? 'bg-gray-700 text-gray-100'
-                                    : 'bg-gray-800 text-gray-200'
-                              }`}>
-                                {!isFromMe && (
-                                  <div className="text-[10px] text-gray-400 mb-1">
-                                    {sender?.name || 'Unknown'}
-                                  </div>
-                                )}
-                                <div className="whitespace-pre-wrap">{message.content}</div>
-                                <div className="text-[10px] text-gray-400 mt-1">
-                                  {new Date(message.timestamp).toLocaleTimeString()}
-                                </div>
-                              </div>
-                              
-                              {isFromMe && (
-                                <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                                  <User className="w-3 h-3 text-white" />
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Suggestions */}
-                {showSuggestions && chat.messages.length === 0 && (
-                  <div className="mb-4">
-                    <div className="flex items-center gap-2 mb-2 text-sm text-gray-400">
-                      <Lightbulb className="w-4 h-4" />
-                      Suggested questions:
-                    </div>
-                    <div className="grid grid-cols-1 gap-2">
-                      {chat.suggestions.slice(0, 3).map((suggestion, index) => (
-                        <button
-                          key={index}
-                          onClick={() => handleSuggestionClick(suggestion)}
-                          className="p-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-left text-xs text-gray-300 transition-colors border border-gray-700"
-                        >
-                          {suggestion}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Input Area */}
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        if (showChatPanel && chatMode) {
-                          handleSendChatMessage(inputMessage);
-                        } else {
-                          sendMessage(inputMessage);
-                        }
-                        setInputMessage('');
-                      }
-                    }}
-                    placeholder={
-                      showChatPanel && chatMode
-                        ? chatMode === 'broadcast'
-                          ? 'Broadcast message to all...'
-                          : selectedParticipant
-                            ? `Message ${chatParticipants.find(p => p.id === selectedParticipant)?.name || 'participant'}...`
-                            : 'Select a participant to message...'
-                        : `Message ${chat.activeAgent.replace('-', ' ')}...`
-                    }
-                    disabled={isTyping || (showChatPanel && chatMode === 'direct' && !selectedParticipant)}
-                    className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-400 focus:outline-none focus:border-[#6366f1] disabled:opacity-50"
-                  />
-                  
-                  <button
-                    onClick={() => {
-                      if (showChatPanel && chatMode) {
-                        handleSendChatMessage(inputMessage);
-                      } else {
-                        sendMessage(inputMessage);
-                      }
-                      setInputMessage('');
-                    }}
-                    disabled={!inputMessage.trim() || isTyping || (showChatPanel && chatMode === 'direct' && !selectedParticipant)}
-                    className="px-4 py-2 bg-[#6366f1] hover:bg-[#8b5cf6] text-white rounded-lg disabled:opacity-50 transition-colors"
-                    aria-label="Send message"
-                  >
-                    <Send className="w-4 h-4" aria-hidden="true" />
-                  </button>
-                  
-                  <button
-                    onClick={() => setShowChatPanel(!showChatPanel)}
-                    className="px-3 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
-                    title={showChatPanel ? 'Hide Chat Panel' : 'Show Chat Panel'}
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
+        {/* Chat Panel - Bottom Section */}
+        <AnimatePresence>
+          {showChatPanel && (
+            <motion.div
+              initial={{ y: '100%', opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: '100%', opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="absolute bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-lg border-t border-gray-700 shadow-2xl z-40 flex flex-col p-4"
+            >
+              <ChatPanel
+                onClose={() => setShowChatPanel(false)}
+                className="h-full"
+              />
             </motion.div>
           )}
         </AnimatePresence>
@@ -1823,250 +1416,146 @@ Generate a helpful, informative response:
             </div>
           </div>
 
-          {/* Evolution Metrics */}
-          <div className="grid grid-cols-2 gap-2 mb-4">
-            <div className="bg-gray-900 rounded p-2">
-              <div className="text-xs text-gray-400">Total</div>
-              <div className="text-lg font-bold text-white">{evolutionMetrics.totalMutations}</div>
-            </div>
-            <div className="bg-gray-900 rounded p-2">
-              <div className="text-xs text-gray-400">Success</div>
-              <div className="text-lg font-bold text-green-400">
-                {evolutionMetrics.totalMutations > 0 
-                  ? ((evolutionMetrics.successfulMutations / evolutionMetrics.totalMutations) * 100).toFixed(0)
-                  : 0}%
-              </div>
-            </div>
-            <div className="bg-gray-900 rounded p-2">
-              <div className="text-xs text-gray-400">Complexity</div>
-              <div className="text-lg font-bold text-purple-400">
-                {evolutionMetrics.complexityScore.toFixed(0)}
-              </div>
-            </div>
-            <div className="bg-gray-900 rounded p-2">
-              <div className="text-xs text-gray-400">Novelty</div>
-              <div className="text-lg font-bold text-pink-400">
-                {evolutionMetrics.noveltyScore.toFixed(0)}
-              </div>
-            </div>
-          </div>
-
-          {/* Evolution Log */}
-          <div className="flex-1 bg-gray-900 rounded-lg p-3 overflow-y-auto">
-            <div className="text-xs font-bold text-white mb-2">Evolution Log</div>
-            <div className="space-y-1">
-              {evolutionLog.slice(0, 10).map((log, index) => (
-                <div key={index} className="text-xs text-gray-400 font-mono">
-                  {log}
-                </div>
-              ))}
-            </div>
-          </div>
         </Card>
       </div>
+      
+      {/* Evolution Metrics Panel - Moved to header area */}
+      {showEvolutionMetrics && (
+        <div className="absolute top-16 right-4 z-30">
+          <EvolutionMetricsPanel
+            metrics={evolutionMetrics}
+            evolutionLog={evolutionLog}
+            isExpanded={showEvolutionMetrics}
+            onToggle={() => setShowEvolutionMetrics(!showEvolutionMetrics)}
+          />
+        </div>
+      )}
 
       {/* Bridge Status Modal */}
-      <Modal
+      <BridgeStatusModal
         isOpen={showBridgeModal}
         onClose={() => setShowBridgeModal(false)}
-        title="Bridge Status & Integration"
-        size="lg"
-      >
-        <div className="space-y-4">
-          <div>
-            <h3 className="text-white font-medium mb-3">System Bridges</h3>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between p-3 bg-gray-900 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full ${bridgeStatus.nlp ? 'bg-green-500' : 'bg-gray-500'}`}></div>
-                  <div>
-                    <div className="text-white font-medium">Human NLP</div>
-                    <div className="text-xs text-gray-400">Natural language processing for human input</div>
-                  </div>
-                </div>
-                <span className={`text-xs ${bridgeStatus.nlp ? 'text-green-400' : 'text-gray-500'}`}>
-                  {bridgeStatus.nlp ? 'Connected' : 'Disconnected'}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-gray-900 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full ${bridgeStatus.metaverse ? 'bg-green-500' : 'bg-gray-500'}`}></div>
-                  <div>
-                    <div className="text-white font-medium">Automaton Metaverse</div>
-                    <div className="text-xs text-gray-400">0D-7D dimensional topology state</div>
-                  </div>
-                </div>
-                <span className={`text-xs ${bridgeStatus.metaverse ? 'text-green-400' : 'text-gray-500'}`}>
-                  {bridgeStatus.metaverse ? 'Connected' : 'Disconnected'}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-gray-900 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full ${bridgeStatus.webllm ? 'bg-green-500' : 'bg-gray-500'}`}></div>
-                  <div>
-                    <div className="text-white font-medium">LLM Provider ({llmProviderConfig.provider.toUpperCase()})</div>
-                    <div className="text-xs text-gray-400">
-                      {llmProviderConfig.provider === 'webllm' && 'Browser-based LLM for AI evolution'}
-                      {llmProviderConfig.provider === 'ollama' && 'Local Ollama server'}
-                      {llmProviderConfig.provider === 'openai' && 'OpenAI API'}
-                      {llmProviderConfig.provider === 'opencode' && 'OpenCode SDK'}
+        bridgeStatus={bridgeStatus}
+        llmProviderConfig={llmProviderConfig}
+      />
+      
+      {/* TinyML Models & Predictions (shown in Bridge Modal if needed) */}
+      {(tinyMLModels.length > 0 || patternPrediction) && showBridgeModal && (
+        <Modal
+          isOpen={false}
+          onClose={() => {}}
+          title="TinyML Details"
+          size="md"
+        >
+          <div className="space-y-4">
+            {tinyMLModels.length > 0 && (
+              <div>
+                <h3 className="text-white font-medium mb-3">TinyML Models</h3>
+                <div className="space-y-2">
+                  {tinyMLModels.map((model) => (
+                    <div key={model.id} className="p-3 bg-gray-900 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-white font-medium text-sm">{model.name}</div>
+                          <div className="text-xs text-gray-400">{model.type} • {(model.size / 1024).toFixed(1)}KB</div>
+                        </div>
+                        <div className="text-xs text-green-400">
+                          {(model.accuracy * 100).toFixed(0)}% accuracy
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
-                <span className={`text-xs ${bridgeStatus.webllm ? 'text-green-400' : 'text-gray-500'}`}>
-                  {bridgeStatus.webllm ? 'Connected' : 'Disconnected'}
-                </span>
               </div>
+            )}
 
-              <div className="flex items-center justify-between p-3 bg-gray-900 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full ${bridgeStatus.tinyml ? 'bg-green-500' : 'bg-gray-500'}`}></div>
-                  <div>
-                    <div className="text-white font-medium">TinyML</div>
-                    <div className="text-xs text-gray-400">Lightweight ML for pattern recognition</div>
-                  </div>
+            {patternPrediction && (
+              <div className="p-3 bg-gray-900 rounded-lg">
+                <h3 className="text-white font-medium mb-2 text-sm">TinyML Prediction</h3>
+                <div className="text-sm text-gray-300">
+                  Next Dimension: <span className="text-green-400 font-bold">{patternPrediction.nextDimension}D</span>
                 </div>
-                <span className={`text-xs ${bridgeStatus.tinyml ? 'text-green-400' : 'text-gray-500'}`}>
-                  {bridgeStatus.tinyml ? 'Connected' : 'Disconnected'}
-                </span>
+                <div className="text-xs text-gray-400 mt-1">
+                  Confidence: {(patternPrediction.confidence * 100).toFixed(0)}% • {patternPrediction.reasoning}
+                </div>
               </div>
-            </div>
+            )}
           </div>
-
-          {tinyMLModels.length > 0 && (
-            <div>
-              <h3 className="text-white font-medium mb-3">TinyML Models</h3>
-              <div className="space-y-2">
-                {tinyMLModels.map((model) => (
-                  <div key={model.id} className="p-3 bg-gray-900 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="text-white font-medium text-sm">{model.name}</div>
-                        <div className="text-xs text-gray-400">{model.type} • {(model.size / 1024).toFixed(1)}KB</div>
-                      </div>
-                      <div className="text-xs text-green-400">
-                        {(model.accuracy * 100).toFixed(0)}% accuracy
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {patternPrediction && (
-            <div className="p-3 bg-gray-900 rounded-lg">
-              <h3 className="text-white font-medium mb-2 text-sm">TinyML Prediction</h3>
-              <div className="text-sm text-gray-300">
-                Next Dimension: <span className="text-green-400 font-bold">{patternPrediction.nextDimension}D</span>
-              </div>
-              <div className="text-xs text-gray-400 mt-1">
-                Confidence: {(patternPrediction.confidence * 100).toFixed(0)}% • {patternPrediction.reasoning}
-              </div>
-            </div>
-          )}
-        </div>
-      </Modal>
+        </Modal>
+      )}
 
       {/* Agent Selection Modal */}
-      <Modal
+      <AgentSelectionModal
         isOpen={showAgentSelectModal}
         onClose={() => setShowAgentSelectModal(false)}
-        title="Select Agent"
-        size="lg"
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {chat.availableAgents.map((agent) => (
-            <button
-              key={agent}
-              onClick={() => {
-                setChat(prev => ({ ...prev, activeAgent: agent }));
-                setShowAgentSelectModal(false);
-              }}
-              className={`p-4 rounded-lg text-left transition-all ${
-                chat.activeAgent === agent
-                  ? 'bg-[#6366f1] text-white'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-              }`}
-            >
-              <div className="font-medium mb-1">{agent.replace('-', ' ')}</div>
-              <div className="text-xs opacity-75">{getAgentDescription(agent)}</div>
-            </button>
-          ))}
-        </div>
-      </Modal>
+        availableAgents={chat.availableAgents}
+        activeAgent={chat.activeAgent}
+        onSelectAgent={(agent) => setChat(prev => ({ ...prev, activeAgent: agent }))}
+        getAgentDescription={getAgentDescription}
+      />
 
-      {/* Mutation Details Modal */}
+      {/* Mutation Details Modal - Using MutationPanel Component */}
       <Modal
         isOpen={showMutationModal && selectedMutation !== null}
         onClose={() => {
           setShowMutationModal(false);
           setSelectedMutation(null);
         }}
-        title={`Mutation: ${selectedMutation?.type}`}
+        title="AI Mutations"
         size="lg"
       >
-        {selectedMutation && (
-          <div className="space-y-4">
-            <div>
-              <div className="text-sm text-gray-400 mb-1">Description</div>
-              <div className="text-white">{selectedMutation.description}</div>
-            </div>
-            
-            <div>
-              <div className="text-sm text-gray-400 mb-1">Code</div>
-              <pre className="bg-gray-900 rounded p-3 text-xs text-gray-300 overflow-x-auto">
-                {selectedMutation.code}
-              </pre>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="text-sm text-gray-400 mb-1">Confidence</div>
-                <div className="text-lg font-bold text-green-400">
-                  {(selectedMutation.confidence * 100).toFixed(1)}%
-                </div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-400 mb-1">Impact</div>
-                <div className={`text-lg font-bold ${
-                  selectedMutation.impact === 'critical' ? 'text-red-400' :
-                  selectedMutation.impact === 'high' ? 'text-orange-400' :
-                  selectedMutation.impact === 'medium' ? 'text-yellow-400' :
-                  'text-gray-400'
-                }`}>
-                  {selectedMutation.impact}
-                </div>
-              </div>
-            </div>
-
-            {!selectedMutation.applied && (
-              <button
-                onClick={() => applyMutation(selectedMutation)}
-                className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium"
-              >
-                Apply Mutation
-              </button>
-            )}
-            {selectedMutation.applied && (
-              <div className="w-full px-4 py-2 bg-green-600/20 text-green-300 rounded-lg text-center font-medium">
-                Mutation Applied
-              </div>
-            )}
-          </div>
-        )}
+        <MutationPanel
+          mutations={mutations}
+          onApplyMutation={async (mutation) => {
+            await applyMutation(mutation);
+            setSelectedMutation(null);
+            setShowMutationModal(false);
+          }}
+          onRejectMutation={(mutationId) => {
+            setMutations(prev => prev.filter(m => m.id !== mutationId));
+            if (selectedMutation?.id === mutationId) {
+              setSelectedMutation(null);
+              setShowMutationModal(false);
+            }
+          }}
+        />
       </Modal>
 
-      {/* Settings Modal */}
+      {/* Settings Modal - Using ConfigPanel Component */}
       <Modal
         isOpen={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
         title="Portal Settings"
         size="md"
       >
-        <div className="space-y-6">
+        <ConfigPanel
+          config={{
+            webllm: {
+              model: llmProviderConfig.model,
+              temperature: llmProviderConfig.temperature,
+              topK: 40,
+              topP: llmProviderConfig.topP,
+              maxTokens: llmProviderConfig.maxTokens,
+            },
+            autoApplyMutations: false, // Can be added as state if needed
+            showCitations: true,
+            showPerformanceMetrics: true,
+          }}
+          onConfigChange={(config) => {
+            setLlmProviderConfig(prev => ({
+              ...prev,
+              model: config.webllm.model,
+              temperature: config.webllm.temperature,
+              topP: config.webllm.topP,
+              maxTokens: config.webllm.maxTokens,
+            }));
+          }}
+        />
+      </Modal>
+
+      {/* Legacy Settings Content (kept for reference) */}
+      {false && (
+        <div className="hidden">
           {/* LLM Provider Configuration */}
           <div>
             <h3 className="text-white font-medium mb-4">LLM Provider Configuration</h3>
@@ -2276,7 +1765,7 @@ Generate a helpful, informative response:
             </button>
           </div>
         </div>
-      </Modal>
+      )}
 
       {/* AI Evolution Engine & Metrics Modal - Merged with Tabs */}
       <Modal
@@ -2627,6 +2116,12 @@ Generate a helpful, informative response:
           </div>
         </div>
       </Modal>
+
+      {/* Agent API Modal */}
+      <AgentAPIModal
+        isOpen={showAgentAPIModal}
+        onClose={() => setShowAgentAPIModal(false)}
+      />
     </div>
   );
 };

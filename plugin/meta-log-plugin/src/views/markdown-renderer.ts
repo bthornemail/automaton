@@ -46,7 +46,8 @@ export class ObsidianMarkdownRenderer {
 
     try {
       // Use Obsidian's MarkdownRenderer if available
-      const { MarkdownRenderer } = await import('obsidian');
+      const obsidianModule = await import('obsidian');
+      const MarkdownRenderer = (obsidianModule as any).MarkdownRenderer || (obsidianModule as any).default?.MarkdownRenderer;
       
       // Create a temporary container for rendering
       const tempContainer = container.createEl('div', {
@@ -92,7 +93,7 @@ export class ObsidianMarkdownRenderer {
     });
 
     // Add click handler to open link in Obsidian
-    wikilinkEl.onclick = (e) => {
+    wikilinkEl.onclick = (e: MouseEvent) => {
       e.preventDefault();
       if (this.plugin.app && this.plugin.app.workspace) {
         const file = this.plugin.app.metadataCache.getFirstLinkpathDest(link, '');
@@ -265,9 +266,13 @@ export class ObsidianMarkdownRenderer {
       cls: 'task-list-item'
     });
 
+    const checkboxAttrs: Record<string, string> = {};
+    if (checked) {
+      checkboxAttrs.checked = '';
+    }
     const checkbox = taskEl.createEl('input', {
       type: 'checkbox',
-      attr: { checked: checked ? '' : undefined }
+      attr: checkboxAttrs
     });
 
     const label = taskEl.createEl('label', {

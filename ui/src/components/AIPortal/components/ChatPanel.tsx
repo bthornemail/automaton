@@ -26,22 +26,47 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose, className = '' })
     // Initialize chat participants
     const participants = chatService.getParticipants();
     setChatParticipants(participants);
-
-    // Subscribe to chat events
-    const unsubscribe = chatService.subscribe((event) => {
-      if (event.type === 'participant-joined') {
-        setChatParticipants(chatService.getParticipants());
-      } else if (event.type === 'participant-left') {
-        setChatParticipants(chatService.getParticipants());
-      } else if (event.type === 'broadcast') {
-        setBroadcastMessages(chatService.getBroadcastMessages());
-      } else if (event.type === 'direct') {
-        setDirectMessages(chatService.getDirectMessages());
+    
+    // Initialize messages
+    setBroadcastMessages(chatService.getBroadcastMessages());
+    const allDirectMessages = new Map<string, ChatMessage[]>();
+    participants.forEach(participant => {
+      const messages = chatService.getDirectMessages(participant.id);
+      if (messages.length > 0) {
+        const conversationId = `${chatService.getCurrentUserId()}-${participant.id}`;
+        allDirectMessages.set(conversationId, messages);
       }
+    });
+    setDirectMessages(allDirectMessages);
+
+    // Subscribe to participant changes
+    const unsubscribeParticipants = chatService.onParticipantsChange((participants) => {
+      setChatParticipants(participants);
+    });
+    
+    // Subscribe to broadcast messages
+    const unsubscribeBroadcast = chatService.onMessage('broadcast', null, (message) => {
+      setBroadcastMessages(chatService.getBroadcastMessages());
+    });
+    
+    // Subscribe to direct messages
+    const unsubscribeDirect = chatService.onMessage('direct', null, (message) => {
+      const conversationId = message.to === chatService.getCurrentUserId()
+        ? `${message.from}-${chatService.getCurrentUserId()}`
+        : `${chatService.getCurrentUserId()}-${message.to}`;
+      
+      setDirectMessages(prev => {
+        const newMap = new Map(prev);
+        const messages = newMap.get(conversationId) || [];
+        newMap.set(conversationId, [...messages, message]);
+        return newMap;
+      });
     });
 
     return () => {
-      unsubscribe();
+      unsubscribeParticipants();
+      unsubscribeBroadcast();
+      unsubscribeDirect();
     };
   }, []);
 
@@ -49,17 +74,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose, className = '' })
     if (!inputMessage.trim()) return;
 
     if (chatMode === 'broadcast') {
-      chatService.sendBroadcast({
-        role: 'user',
-        content: inputMessage,
-        timestamp: Date.now(),
-      });
+      chatService.sendBroadcast(inputMessage);
     } else if (chatMode === 'direct' && selectedParticipant) {
-      chatService.sendDirectMessage(selectedParticipant, {
-        role: 'user',
-        content: inputMessage,
-        timestamp: Date.now(),
-      });
+      chatService.sendDirectMessage(selectedParticipant, inputMessage);
     }
 
     setInputMessage('');
@@ -74,7 +91,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose, className = '' })
     if (chatMode === 'broadcast') {
       return broadcastMessages;
     } else if (chatMode === 'direct' && selectedParticipant) {
-      return directMessages.get(selectedParticipant) || [];
+      const conversationId = `${chatService.getCurrentUserId()}-${selectedParticipant}`;
+      return directMessages.get(conversationId) || [];
     }
     return [];
   };
@@ -131,19 +149,22 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose, className = '' })
           <div className="max-h-32 overflow-y-auto space-y-1">
             {chatParticipants.map((participant) => (
               <button
-                key={participant.userId}
-                onClick={() => handleParticipantClick(participant.userId)}
+                key={participant.id}
+                onClick={() => handleParticipantClick(participant.id)}
                 className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
-                  selectedParticipant === participant.userId
+                  selectedParticipant === participant.id
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500" />
-                  <span>{participant.userName}</span>
+                  <div className={`w-2 h-2 rounded-full ${participant.online ? 'bg-green-500' : 'bg-gray-500'}`} />
+                  <span>{participant.name}</span>
                   {participant.type === 'agent' && (
                     <span className="text-xs text-gray-400">(Agent)</span>
+                  )}
+                  {participant.dimension && (
+                    <span className="text-xs text-gray-500">{participant.dimension}</span>
                   )}
                 </div>
               </button>
@@ -207,7 +228,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({ onClose, className = '' })
             chatMode === 'broadcast'
               ? 'Type a message to broadcast...'
               : selectedParticipant
-              ? `Message ${chatParticipants.find((p) => p.userId === selectedParticipant)?.userName}...`
+              ? `Message ${chatParticipants.find((p) => p.id === selectedParticipant)?.name}...`
               : 'Select a participant to message...'
           }
           className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"

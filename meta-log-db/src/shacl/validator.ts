@@ -1,24 +1,164 @@
 import { ShaclShapes, ShaclValidationReport, ShaclViolation, RdfTriple } from '../types/index.js';
 import * as fs from 'fs';
+import { TurtleParser, TurtleTriple } from './turtle-parser.js';
 
 /**
- * SHACL Validator
+ * SHACL Validator with enhanced Turtle/RDF parsing
  */
 export class ShaclValidator {
   /**
    * Load SHACL shapes from file
    */
   async loadShapes(path: string): Promise<ShaclShapes> {
-    // Simplified: In a full implementation, this would parse Turtle/RDF
     const content = fs.readFileSync(path, 'utf-8');
-    return this.parseShapes(content);
+    
+    // Try to parse as Turtle first
+    try {
+      return this.parseShapesFromTurtle(content);
+    } catch (error) {
+      // Fallback to simplified parser
+      console.warn('Failed to parse as Turtle, using simplified parser:', error);
+      return this.parseShapesSimple(content);
+    }
   }
 
   /**
-   * Parse shapes from content (simplified)
+   * Parse shapes from Turtle content
    */
-  private parseShapes(content: string): ShaclShapes {
-    // Simplified parser - full implementation would parse Turtle/RDF
+  private parseShapesFromTurtle(content: string): ShaclShapes {
+    const triples = TurtleParser.parse(content);
+    const grouped = TurtleParser.groupBySubject(triples);
+    const shapes: ShaclShapes = {};
+
+    // SHACL namespace
+    const sh = 'http://www.w3.org/ns/shacl#';
+    const rdf = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
+    const rdfs = 'http://www.w3.org/2000/01/rdf-schema#';
+
+    for (const [subject, subjectTriples] of grouped.entries()) {
+      // Check if this is a NodeShape or PropertyShape
+      const typeTriples = subjectTriples.filter(t => 
+        t.predicate === `${rdf}type` || t.predicate === 'rdf:type'
+      );
+
+      const isNodeShape = typeTriples.some(t => {
+        const obj = typeof t.object === 'string' ? t.object : t.object.value;
+        return obj === `${sh}NodeShape` || obj === 'sh:NodeShape';
+      });
+
+      const isPropertyShape = typeTriples.some(t => {
+        const obj = typeof t.object === 'string' ? t.object : t.object.value;
+        return obj === `${sh}PropertyShape` || obj === 'sh:PropertyShape';
+      });
+
+      if (isNodeShape || isPropertyShape) {
+        const shape = this.buildShapeFromTriples(subject, subjectTriples, triples);
+        shapes[subject] = shape;
+      }
+    }
+
+    return shapes;
+  }
+
+  /**
+   * Build shape from triples
+   */
+  private buildShapeFromTriples(
+    subject: string,
+    subjectTriples: TurtleTriple[],
+    allTriples: TurtleTriple[]
+  ): any {
+    const shape: any = {
+      properties: [],
+      constraints: []
+    };
+
+    for (const triple of subjectTriples) {
+      const predicate = triple.predicate;
+      const object = typeof triple.object === 'string' ? triple.object : triple.object.value;
+
+      // Target class
+      if (predicate === 'sh:targetClass' || predicate.includes('targetClass')) {
+        shape.targetClass = object;
+      }
+
+      // Target node
+      if (predicate === 'sh:targetNode' || predicate.includes('targetNode')) {
+        shape.targetNode = object;
+      }
+
+      // Property shapes
+      if (predicate === 'sh:property' || predicate.includes('property')) {
+        const propertyTriples = allTriples.filter(t => t.subject === object);
+        const property = this.buildPropertyShape(object, propertyTriples);
+        shape.properties.push(property);
+      }
+
+      // Constraints
+      this.extractConstraints(triple, shape);
+    }
+
+    return shape;
+  }
+
+  /**
+   * Build property shape from triples
+   */
+  private buildPropertyShape(subject: string, triples: TurtleTriple[]): any {
+    const property: any = {};
+
+    for (const triple of triples) {
+      const predicate = triple.predicate;
+      const object = typeof triple.object === 'string' ? triple.object : triple.object.value;
+
+      if (predicate === 'sh:path' || predicate.includes('path')) {
+        property.path = object;
+      }
+      if (predicate === 'sh:minCount' || predicate.includes('minCount')) {
+        property.minCount = parseInt(object, 10);
+      }
+      if (predicate === 'sh:maxCount' || predicate.includes('maxCount')) {
+        property.maxCount = parseInt(object, 10);
+      }
+      if (predicate === 'sh:datatype' || predicate.includes('datatype')) {
+        property.datatype = object;
+      }
+      if (predicate === 'sh:class' || predicate.includes('class')) {
+        property.class = object;
+      }
+    }
+
+    return property;
+  }
+
+  /**
+   * Extract constraints from triple
+   */
+  private extractConstraints(triple: TurtleTriple, shape: any): void {
+    const predicate = triple.predicate;
+    const object = typeof triple.object === 'string' ? triple.object : triple.object.value;
+
+    // Common SHACL constraints
+    const constraintTypes = [
+      'sh:minCount', 'sh:maxCount', 'sh:minLength', 'sh:maxLength',
+      'sh:pattern', 'sh:minInclusive', 'sh:maxInclusive',
+      'sh:minExclusive', 'sh:maxExclusive', 'sh:node', 'sh:property'
+    ];
+
+    for (const constraintType of constraintTypes) {
+      if (predicate.includes(constraintType) || predicate === constraintType) {
+        shape.constraints.push({
+          type: constraintType,
+          value: object
+        });
+      }
+    }
+  }
+
+  /**
+   * Parse shapes from content (simplified fallback)
+   */
+  private parseShapesSimple(content: string): ShaclShapes {
     const shapes: ShaclShapes = {};
     
     // Basic shape structure

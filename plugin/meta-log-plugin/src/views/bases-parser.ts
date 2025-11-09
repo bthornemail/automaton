@@ -871,8 +871,8 @@ export class ObsidianBasesParser {
     });
 
     // Check for data loss (simplified check)
-    const originalLines = original.split('\n').filter(l => l.trim() && l.trim().startsWith('{'));
-    const convertedLines = converted.split('\n').filter(l => l.trim() && l.trim().startsWith('{'));
+    const originalLines = original.split('\n').filter((l: string) => l.trim() && l.trim().startsWith('{'));
+    const convertedLines = converted.split('\n').filter((l: string) => l.trim() && l.trim().startsWith('{'));
     
     const lossless = originalLines.length === convertedLines.length;
 

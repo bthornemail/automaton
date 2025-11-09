@@ -55,7 +55,7 @@ export class MetaLogDb {
    */
   async loadR5RSEngine(path: string): Promise<void> {
     this.r5rs = new R5RSRegistry(path);
-    await this.r5rs.load();
+    await this.r5rs.load(path);
   }
 
   /**

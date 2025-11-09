@@ -10,7 +10,7 @@ export interface ObsidianPlugin {
   onload?(): void | Promise<void>;
   onunload?(): void | Promise<void>;
   registerView?(viewType: string, viewCreator: (leaf: any) => any): void;
-  addRibbonIcon?(icon: string, tooltip: string, callback: () => void): HTMLElement;
+  addRibbonIcon(icon: string, tooltip: string, callback: () => void): HTMLElement;
   addCommand?(command: { id: string; name: string; callback: () => void }): void;
 }
 
@@ -237,11 +237,14 @@ export class ObsidianMetaLogPlugin extends BaseMetaLogPlugin implements Obsidian
   /**
    * Add ribbon icon (Obsidian-specific)
    */
-  addRibbonIcon(icon: string, tooltip: string, callback: () => void): HTMLElement | null {
+  addRibbonIcon(icon: string, tooltip: string, callback: () => void): HTMLElement {
     if (this.app && typeof (this as any).addRibbonIcon === 'function') {
       return (this as any).addRibbonIcon(icon, tooltip, callback);
     }
-    return null;
+    // Return a dummy element if not available (shouldn't happen in Obsidian)
+    const dummy = document.createElement('div');
+    dummy.style.display = 'none';
+    return dummy;
   }
 
   /**

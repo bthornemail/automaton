@@ -1,5 +1,5 @@
 import { tool } from "@opencode-ai/plugin"
-import { AdvancedSelfReferencingAutomaton } from "../../advanced-automaton"
+import { AdvancedSelfReferencingAutomaton } from "../../evolutions/advanced-automaton/advanced-automaton"
 
 /**
  * Automaton Query Tool

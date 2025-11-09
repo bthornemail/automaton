@@ -194,7 +194,7 @@ ${this.generateBaseTableMarkdown(base)}
     const header = `| ${fields.join(' | ')} |`;
     const separator = `| ${fields.map(() => '---').join(' | ')} |`;
     const rows = base.data.slice(0, 10).map((row: any) => {
-      return `| ${fields.map(field => String(row[field] || '')).replace(/\|/g, '\\|')} |`;
+      return `| ${fields.map((field: string) => String(row[field] || '')).replace(/\|/g, '\\|')} |`;
     }).join('\n');
 
     const moreRows = base.data.length > 10 ? `\n\n*... and ${base.data.length - 10} more rows*` : '';
@@ -328,58 +328,58 @@ ${result.lossless
   async refresh(): Promise<void> {
     if (!this.contentEl) return;
 
-    const markdown = `
-# Obsidian Bases Integration
-
-## Overview
-
-This view demonstrates Obsidian bases functionality:
-
-- **Parse bases** from `.base` files
-- **Convert files** to base format (CSV, JSON, Markdown tables, TSV)
-- **Embed bases** in markdown
-- **Filter and sort** base data
-
-## Supported File Types
-
-The following file types can be converted to bases:
-
-- **CSV** (`.csv`) - Comma-separated values
-- **JSON** (`.json`) - JSON objects or arrays
-- **Markdown Tables** (`.md`) - Markdown table syntax
-- **TSV** (`.tsv`) - Tab-separated values
-- **Base Files** (`.base`, `.base.json`, `.base.md`) - Native base format
-
-## Usage
-
-1. Enter a file path in the input field
-2. Click "Load Base" to parse an existing base
-3. Click "Convert File to Base" to convert a file to base format
-4. Click "Convert Base to JSONL" to convert base back to JSONL/CanvasL
-5. Click "Round-Trip Test" to test data integrity (JSONL/CanvasL only)
-
-## Base Embed Syntax
-
-In markdown, you can embed bases:
-
-\`\`\`markdown
-![[my-base.base]]
-![[my-base.base|limit=10]]
-![[my-base.base|fields=name,date|sort=date:desc|filter=status:equals:active]]
-\`\`\`
-
-## Examples
-
-### Load Base
-
-Enter: \`examples/my-base.base\`
-Click: "Load Base"
-
-### Convert CSV
-
-Enter: \`data/export.csv\`
-Click: "Convert File to Base"
-`;
+    const markdown = [
+      '# Obsidian Bases Integration',
+      '',
+      '## Overview',
+      '',
+      'This view demonstrates Obsidian bases functionality:',
+      '',
+      '- **Parse bases** from `.base` files',
+      '- **Convert files** to base format (CSV, JSON, Markdown tables, TSV)',
+      '- **Embed bases** in markdown',
+      '- **Filter and sort** base data',
+      '',
+      '## Supported File Types',
+      '',
+      'The following file types can be converted to bases:',
+      '',
+      '- **CSV** (`.csv`) - Comma-separated values',
+      '- **JSON** (`.json`) - JSON objects or arrays',
+      '- **Markdown Tables** (`.md`) - Markdown table syntax',
+      '- **TSV** (`.tsv`) - Tab-separated values',
+      '- **Base Files** (`.base`, `.base.json`, `.base.md`) - Native base format',
+      '',
+      '## Usage',
+      '',
+      '1. Enter a file path in the input field',
+      '2. Click "Load Base" to parse an existing base',
+      '3. Click "Convert File to Base" to convert a file to base format',
+      '4. Click "Convert Base to JSONL" to convert base back to JSONL/CanvasL',
+      '5. Click "Round-Trip Test" to test data integrity (JSONL/CanvasL only)',
+      '',
+      '## Base Embed Syntax',
+      '',
+      'In markdown, you can embed bases:',
+      '',
+      '```markdown',
+      '![[my-base.base]]',
+      '![[my-base.base|limit=10]]',
+      '![[my-base.base|fields=name,date|sort=date:desc|filter=status:equals:active]]',
+      '```',
+      '',
+      '## Examples',
+      '',
+      '### Load Base',
+      '',
+      'Enter: `examples/my-base.base`',
+      'Click: "Load Base"',
+      '',
+      '### Convert CSV',
+      '',
+      'Enter: `data/export.csv`',
+      'Click: "Convert File to Base"'
+    ].join('\n');
 
     this.contentEl.empty();
     await this.renderer.renderMarkdown(markdown, this.contentEl);

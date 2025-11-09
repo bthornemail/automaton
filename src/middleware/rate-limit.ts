@@ -122,6 +122,13 @@ export const rateLimiters = {
     message: 'Too many authentication attempts, please try again later',
   }),
 
+  // General rate limit for public endpoints
+  general: rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100, // 100 requests per 15 minutes
+    message: 'Too many requests, please try again later',
+  }),
+
   // Standard API rate limit
   api: rateLimit({
     windowMs: 15 * 60 * 1000,
