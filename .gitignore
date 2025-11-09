@@ -67,3 +67,4 @@ benchmark-results-*.jsonl
 
 #Ignore vscode AI rules
 .github/instructions/codacy.instructions.md
+.git-rewrite/
