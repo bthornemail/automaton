@@ -40,17 +40,14 @@ export default class ExampleObsidianPlugin extends ObsidianMetaLogPlugin {
     await super.onUnload();
   }
 
-  private addRibbonIcon(icon: string, tooltip: string, callback: () => void) {
+  private setupRibbonIcon(icon: string, tooltip: string, callback: () => void) {
     // Obsidian-specific: Add ribbon icon
     // This would typically use this.app.workspace methods
-    console.log(`Adding ribbon icon: ${icon}`);
+    // Use parent's addRibbonIcon method
+    this.addRibbonIcon(icon, tooltip, callback);
   }
 
-  private addCommand(command: { id: string; name: string; callback: () => void }) {
-    // Obsidian-specific: Add command
-    // This would typically use this.app.commands.addCommand
-    console.log(`Adding command: ${command.name}`);
-  }
+  // Note: addCommand is inherited from parent, no need to override
 
   private openMetaLogView() {
     // Open Meta-Log view in Obsidian

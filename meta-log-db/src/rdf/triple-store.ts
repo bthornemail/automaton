@@ -1,10 +1,14 @@
 import { RdfTriple, TriplePattern, SparqlQueryResult } from '../types/index.js';
+import { SparqlParser } from './sparql-parser.js';
+import { SparqlExecutor } from './sparql-executor.js';
 
 /**
  * RDF Triple Store
  */
 export class TripleStore {
   private triples: RdfTriple[] = [];
+  private queryCache: Map<string, any> = new Map();
+  private cacheEnabled: boolean = true;
 
   /**
    * Add triples to the store
@@ -37,9 +41,42 @@ export class TripleStore {
   }
 
   /**
-   * Execute SPARQL query (simplified implementation)
+   * Execute SPARQL query (enhanced implementation)
+   * Supports: SELECT, DISTINCT, ORDER BY, LIMIT, OFFSET, FILTER, OPTIONAL
    */
   async sparql(query: string): Promise<SparqlQueryResult> {
+    // Check cache
+    if (this.cacheEnabled) {
+      const cached = this.queryCache.get(query);
+      if (cached) {
+        return cached;
+      }
+    }
+
+    try {
+      // Parse query using enhanced parser
+      const parsedQuery = SparqlParser.parse(query);
+      
+      // Execute query using enhanced executor
+      const executor = new SparqlExecutor(this.triples);
+      const result = await executor.execute(parsedQuery);
+
+      // Cache result
+      if (this.cacheEnabled) {
+        this.queryCache.set(query, result);
+      }
+
+      return result;
+    } catch (error) {
+      // Fallback to simplified parser for backward compatibility
+      return this.sparqlSimple(query);
+    }
+  }
+
+  /**
+   * Simple SPARQL query execution (backward compatibility)
+   */
+  private async sparqlSimple(query: string): Promise<SparqlQueryResult> {
     // Simple SELECT query parser
     const selectMatch = query.match(/SELECT\s+(.*?)\s+WHERE/i);
     if (!selectMatch) {
@@ -57,7 +94,7 @@ export class TripleStore {
     const patterns = this.parseSparqlPatterns(whereMatch[1]);
     const bindings: Record<string, { value: string; type: string }>[] = [];
 
-    // Simple pattern matching (full SPARQL would be more complex)
+    // Simple pattern matching
     for (const pattern of patterns) {
       const matches = this.query(pattern);
       for (const match of matches) {
@@ -79,6 +116,23 @@ export class TripleStore {
     }
 
     return { results: { bindings } };
+  }
+
+  /**
+   * Enable/disable query caching
+   */
+  setCacheEnabled(enabled: boolean): void {
+    this.cacheEnabled = enabled;
+    if (!enabled) {
+      this.queryCache.clear();
+    }
+  }
+
+  /**
+   * Clear query cache
+   */
+  clearCache(): void {
+    this.queryCache.clear();
   }
 
   /**

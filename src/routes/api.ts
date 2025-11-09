@@ -9,8 +9,12 @@ import { authenticate, optionalAuthenticate, AuthenticatedRequest } from '../aut
 import { rateLimiters } from '../middleware/rate-limit';
 import { validate, schemas } from '../middleware/validation';
 import Joi from 'joi';
+import agentApiRoutes from './agent-api';
 
 const router = Router();
+
+// Agent API routes (agentApiRoutes already defines /agents paths)
+router.use('/', agentApiRoutes);
 
 /**
  * GET /api/status
@@ -22,7 +26,7 @@ router.get(
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       // Import automaton instance (would be injected in production)
-      const { AdvancedSelfReferencingAutomaton } = await import('../../advanced-automaton');
+      const { AdvancedSelfReferencingAutomaton } = await import('../../evolutions/advanced-automaton/advanced-automaton');
       const automaton = new AdvancedSelfReferencingAutomaton('./automaton.jsonl');
       
       res.json({

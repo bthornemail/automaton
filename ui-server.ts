@@ -1,4 +1,4 @@
-import { AdvancedSelfReferencingAutomaton } from './advanced-automaton';
+import { AdvancedSelfReferencingAutomaton } from './evolutions/advanced-automaton/advanced-automaton';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import express from 'express';

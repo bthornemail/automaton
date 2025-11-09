@@ -1,11 +1,13 @@
 import * as fs from 'fs';
+import { R5RSParser, SchemeExpression } from './parser.js';
 
 /**
- * R5RS Function Registry
+ * R5RS Function Registry with Scheme file parsing
  */
 export class R5RSRegistry {
   private functions: Map<string, Function> = new Map();
   private enginePath?: string;
+  private parsedExpressions: SchemeExpression[] = [];
 
   constructor(enginePath?: string) {
     this.enginePath = enginePath;
@@ -17,9 +19,41 @@ export class R5RSRegistry {
   async load(path: string): Promise<void> {
     this.enginePath = path;
     
-    // For now, register basic R5RS functions
-    // In a full implementation, this would parse the Scheme file
+    try {
+      // Try to parse Scheme file
+      if (fs.existsSync(path)) {
+        const content = fs.readFileSync(path, 'utf-8');
+        this.parsedExpressions = R5RSParser.parse(content);
+        
+        // Extract and register functions
+        const functionDefs = R5RSParser.extractFunctions(this.parsedExpressions);
+        for (const [name, def] of functionDefs.entries()) {
+          // Convert Scheme function definition to JavaScript function
+          // This is simplified - full implementation would need an evaluator
+          this.registerFromScheme(name, def);
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to parse Scheme file, using builtins only:', error);
+    }
+    
+    // Always register builtins
     this.registerBuiltins();
+  }
+
+  /**
+   * Register function from Scheme definition
+   */
+  private registerFromScheme(name: string, definition: SchemeExpression): void {
+    // Simplified registration - full implementation would evaluate Scheme code
+    // For now, we just store the definition for potential future evaluation
+    console.log(`Parsed Scheme function: ${name}`);
+    
+    // In a full implementation, this would:
+    // 1. Convert Scheme lambda to JavaScript function
+    // 2. Handle closures and lexical scoping
+    // 3. Support tail call optimization
+    // For now, we rely on builtins
   }
 
   /**
