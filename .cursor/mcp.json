@@ -1,27 +1,24 @@
 {
     "mcpServers": {
-	"playwright": {
-	    "command": "npx",
-	    "args": [ "@playwright/mcp@latest" ]
-	},
-	"kubectl-mcp-server": {
+"wikipedia-mcp": { 
+"command": "docker", 
+"args": [ "run", "-i", "--rm", "mcp/wikipedia-mcp" ]
+},
+"arxiv-mcp-server": {
       "command": "docker",
       "args": [
         "run",
         "-i",
         "--rm",
+        "-e",
+        "ARXIV_STORAGE_PATH",
         "-v",
         "/home/main/automaton:/home/main/automaton",
-        "mcp/kubectl-mcp-server"
-      ]
-	},
-	"kubernetes-mcp-server": {
-	    "command": "npx",
-	    "args": ["-y", "kubernetes-mcp-server@latest"]
-	},
-"wikipedia-mcp": { 
-"command": "docker", 
-"args": [ "run", "-i", "--rm", "mcp/wikipedia-mcp" ]
-}
+        "mcp/arxiv-mcp-server"
+      ],
+      "env": {
+        "ARXIV_STORAGE_PATH": "/home/main/automaton/papers"
+      }
+	 }
    }
 }

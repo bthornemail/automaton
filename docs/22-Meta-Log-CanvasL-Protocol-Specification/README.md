@@ -29,6 +29,44 @@ This folder contains the **unified RFC 2119 specification** that combines the Me
 
 ## Documents
 
+### [INTRODUCTION.md](./INTRODUCTION.md)
+
+**Introduction for all audiences** - Academics, developers, entrepreneurs, and Web3 enthusiasts:
+
+- **For Academics**: Research applications, key concepts, research questions
+- **For Developers**: What you can build, technical stack, getting started, key APIs
+- **For Entrepreneurs**: Business opportunities, market applications, competitive advantages
+- **For Web3 Enthusiasts**: Web3 integration, features, use cases, technologies
+
+**Use this document for**: Understanding what the protocol is, who it's for, and how to get started
+
+### [AGENTS.md](./AGENTS.md)
+
+**Complete agents guide** for the multi-agent system:
+
+- **Foundation Agents (0D-2D)**: Topology, temporal, structural agents
+- **Operational Agents (3D-4D)**: Algebraic and network agents
+- **Advanced Agents (5D-7D)**: Consensus, intelligence, quantum agents
+- **Interface Agents**: Query interface, visualization agents
+- **Collaborative Agents**: Multiplayer, AI-assist agents
+- **Evolutionary Agents**: Self-modification, goal-oriented agents
+- **Agent API**: Discovery, execution, workflows, coordination
+
+**Use this document for**: Understanding the multi-agent system, agent capabilities, and agent coordination
+
+### [BRIAN-THORNE-EXPLANATION.md](./BRIAN-THORNE-EXPLANATION.md)
+
+**Personalized explanation** tailored for Brian Thorne:
+
+- What you've built and why it matters
+- Key components and how they fit together
+- The big picture and dimensional progression
+- What makes this special and unique
+- What you can do with this system
+- Future enhancements and next steps
+
+**Use this document for**: Understanding the system from the creator's perspective
+
 ### [META-LOG-CANVASL-PROTOCOL-RFC2119-SPEC.md](./META-LOG-CANVASL-PROTOCOL-RFC2119-SPEC.md)
 
 **Complete unified RFC 2119 specification** for the Meta-Log CanvasL Protocol:
@@ -45,6 +83,71 @@ This folder contains the **unified RFC 2119 specification** that combines the Me
 - **Automatons CanvasL**: Format detection, backward/forward compatibility, R5RS integration
 
 **Use this document for**: Complete protocol specification reference, implementation requirements, unified architecture
+
+## Sovereign Federated Identities
+
+### [SOVEREIGN-FEDERATED-IDENTITIES-ACADEMICS.md](./SOVEREIGN-FEDERATED-IDENTITIES-ACADEMICS.md)
+
+**Academic perspective** on sovereign federated identities:
+
+- **Theoretical Foundations**: Identity theory, cryptographic foundations, distributed systems theory
+- **Research Applications**: Identity verification, privacy and security, interoperability
+- **Academic Frameworks**: DIDs, Verifiable Credentials, Federated Provenance
+- **Research Questions**: Theoretical, practical, and integration questions
+- **Academic Resources**: Standards, papers, research areas
+
+**Use this document for**: Understanding sovereign identity from an academic research perspective
+
+### [SOVEREIGN-FEDERATED-IDENTITIES-DEVELOPERS.md](./SOVEREIGN-FEDERATED-IDENTITIES-DEVELOPERS.md)
+
+**Developer guide** for implementing sovereign federated identities:
+
+- **Implementation Patterns**: DIDs, Verifiable Credentials, Federated Provenance
+- **API Integration**: Identity creation, verification, federation
+- **Code Examples**: Complete identity system implementation
+- **Best Practices**: Security, privacy, provenance tracking
+- **Integration**: CanvasL format, ProLog/DataLog/SPARQL queries, Agent integration
+
+**Use this document for**: Implementing sovereign identity systems with code examples
+
+### [SOVEREIGN-FEDERATED-IDENTITIES-ENTREPRENEURS.md](./SOVEREIGN-FEDERATED-IDENTITIES-ENTREPRENEURS.md)
+
+**Business perspective** on sovereign federated identities:
+
+- **Market Opportunity**: Identity problem, solution, market size
+- **Business Opportunities**: Identity providers, verification services, wallets, federation platforms
+- **Competitive Advantages**: User control, federated provenance, interoperability, privacy
+- **Market Applications**: Enterprise, government, healthcare, education
+- **Business Models**: SaaS, enterprise solutions, developer tools, marketplace
+
+**Use this document for**: Understanding business opportunities and market applications
+
+### [SOVEREIGN-FEDERATED-IDENTITIES-WEB3.md](./SOVEREIGN-FEDERATED-IDENTITIES-WEB3.md)
+
+**Web3 perspective** on sovereign federated identities:
+
+- **Web3 Identity Revolution**: Problems and solutions
+- **Web3 Concepts**: DIDs, Verifiable Credentials, Federated Provenance
+- **Web3 Use Cases**: DApps, DeFi, NFTs, DAOs
+- **Blockchain Integration**: Ethereum, Polygon, Solana
+- **Web3 Standards**: W3C DIDs, W3C Verifiable Credentials
+- **Web3 Wallets**: MetaMask, WalletConnect integration
+
+**Use this document for**: Understanding sovereign identity in Web3 and decentralized applications
+
+### [SOVEREIGN-FEDERATED-IDENTITIES-BLOCKCHAIN.md](./SOVEREIGN-FEDERATED-IDENTITIES-BLOCKCHAIN.md)
+
+**Blockchain-focused guide** for sovereign federated identities:
+
+- **Blockchain Foundations**: Distributed ledger technology, cryptographic foundations
+- **Identity Models**: On-chain, off-chain, hybrid identity
+- **Smart Contract Integration**: Identity contracts, VC contracts, code examples
+- **Consensus Mechanisms**: Proof of Stake, Proof of Authority, Byzantine Fault Tolerance
+- **Blockchain Networks**: Ethereum, Hyperledger, Polkadot
+- **Cryptographic Primitives**: Public-key cryptography, zero-knowledge proofs, Merkle trees
+- **Blockchain Standards**: ERC-725, DID methods
+
+**Use this document for**: Understanding blockchain-specific identity implementation and smart contracts
 
 ## Specification Scope
 
