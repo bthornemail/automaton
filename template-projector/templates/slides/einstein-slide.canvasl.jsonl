@@ -1,0 +1,18 @@
+{"@include": "src/macros/RDF_DBpedia.canvasl.jsonl"}
+{"type": "macro", "call": "dbpedia-prefix"}
+
+{"id": "einstein-slide", "type": "slide", "title": "Albert Einstein", "dimension": "3D", "dbpediaId": "Albert_Einstein", "plugin": "DBpedia"}
+
+{"type": "macro", "call": "ui-container", "args": [
+  "#einstein", "column", ["#photo", "#bio", "#relations"]
+]}
+
+{"type": "macro", "call": "ui-component", "args": ["#photo", "ui:Image", "Einstein Photo"]}
+
+{"type": "macro", "call": "ui-component", "args": ["#bio", "ui:Text", "Biography"]}
+
+{"type": "macro", "call": "ui-component", "args": ["#relations", "ui:Card", "Connections"]}
+
+{"type": "rdf-triple", "subject": "#einstein", "predicate": "schema:sameAs", "object": "dbr:Albert_Einstein"}
+
+{"type": "macro", "call": "ui-slide-from-dbpedia", "args": ["einstein-slide", "#einstein", "Albert_Einstein"]}

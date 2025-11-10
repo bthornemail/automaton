@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CanvasL Semantic Slides Viewer</title>
+  <link rel="stylesheet" href="css/viewer.css">
+</head>
+<body>
+  <div id="viewer">
+    <nav id="slide-nav">
+      <button id="prev">←</button>
+      <span id="slide-counter">1 / 1</span>
+      <button id="next">→</button>
+      <button id="fullscreen">⛶</button>
+    </nav>
+    
+    <canvas id="render-canvas"></canvas>
+    
+    <div id="interaction-layer"></div>
+    
+    <div id="status-bar">
+      <span id="status">Ready</span>
+    </div>
+  </div>
+
+  <script type="module">
+    import { Projector } from './src/projector/Projector.js';
+    
+    // Initialize projector
+    const projector = new Projector();
+    
+    // Initialize on load
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        await projector.init(projector.metaLog);
+        
+        // Load demo deck
+        const deck = await projector.loadDeck('templates/documents/demo-deck.canvasl.jsonl');
+        
+        console.log('Deck loaded:', deck);
+        document.getElementById('status').textContent = `Loaded ${deck.slides.length} slides`;
+      } catch (error) {
+        console.error('Failed to initialize:', error);
+        document.getElementById('status').textContent = `Error: ${error.message}`;
+      }
+    });
+    
+    // Export for debugging
+    window.projector = projector;
+  </script>
+</body>
+</html>

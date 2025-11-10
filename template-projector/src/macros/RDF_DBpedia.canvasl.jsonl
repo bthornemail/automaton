@@ -1,0 +1,67 @@
+{"@version": "1.0", "type": "macro", "name": "dbpedia-prefix", "description": "DBpedia ontology prefixes", "expansion": [
+  {"type": "rdf-prefix", "prefix": "dbpedia", "uri": "http://dbpedia.org/resource/"},
+  {"type": "rdf-prefix", "prefix": "dbp", "uri": "http://dbpedia.org/property/"},
+  {"type": "rdf-prefix", "prefix": "dbo", "uri": "http://dbpedia.org/ontology/"},
+  {"type": "rdf-prefix", "prefix": "dbr", "uri": "http://dbpedia.org/resource/"},
+  {"type": "rdf-prefix", "prefix": "schema", "uri": "http://schema.org/"},
+  {"type": "rdf-prefix", "prefix": "owl", "uri": "http://www.w3.org/2002/07/owl#"},
+  {"type": "rdf-prefix", "prefix": "sh", "uri": "http://www.w3.org/ns/shacl#"},
+  {"type": "rdf-prefix", "prefix": "prov", "uri": "http://www.w3.org/ns/prov#"},
+  {"type": "rdf-prefix", "prefix": "ui", "uri": "https://canvasl.org/ui#"},
+  {"type": "rdf-prefix", "prefix": "anno", "uri": "https://canvasl.org/annotation#"}
+]}
+
+{"@version": "1.0", "type": "macro", "name": "dbpedia-query", "description": "Query DBpedia property", "params": ["localId", "dbpediaId", "property", "target"], "expansion": [
+  {"type": "sparql-construct", "query": {
+    "template": "PREFIX dbr: <http://dbpedia.org/resource/>\nPREFIX dbo: <http://dbpedia.org/ontology/>\nCONSTRUCT { ?local {target} ?value . << ?local {target} ?value >> anno:retrievedAt ?time . }\nWHERE { BIND(dbr:{dbpediaId} AS ?dbr) ?dbr {property} ?value . BIND(NOW() AS ?time) }"
+  }, "bindings": {
+    "dbpediaId": {"var": "dbpediaId"},
+    "property": {"var": "property"},
+    "target": {"var": "target"}
+  }, "endpoint": "https://dbpedia.org/sparql", "cache": "15m", "onError": "ui:error-dbpedia-fetch"}
+]}
+
+{"@version": "1.0", "type": "macro", "name": "dbpedia-abstract", "description": "Query DBpedia abstract", "params": ["localId", "dbpediaId"], "expansion": [
+  {"type": "macro", "call": "dbpedia-query", "args": [
+    {"var": "localId"}, {"var": "dbpediaId"}, "dbo:abstract", "ui:summary"
+  ]},
+  {"type": "r5rs-call", "function": "truncate", "args": [{"var": "value"}, 280]}
+]}
+
+{"@version": "1.0", "type": "macro", "name": "dbpedia-thumbnail", "description": "Query DBpedia thumbnail", "params": ["localId", "dbpediaId"], "expansion": [
+  {"type": "macro", "call": "dbpedia-query", "args": [
+    {"var": "localId"}, {"var": "dbpediaId"}, "dbo:thumbnail", "ui:image"
+  ]}
+]}
+
+{"@version": "1.0", "type": "macro", "name": "dbpedia-birthDate", "description": "Query DBpedia birth date", "params": ["localId", "dbpediaId"], "expansion": [
+  {"type": "macro", "call": "dbpedia-query", "args": [
+    {"var": "localId"}, {"var": "dbpediaId"}, "dbo:birthDate", "ui:born"
+  ]},
+  {"type": "r5rs-call", "function": "format-date", "args": [{"var": "value"}]}
+]}
+
+{"@version": "1.0", "type": "macro", "name": "dbpedia-related", "description": "Query DBpedia related entities", "params": ["localId", "dbpediaId", "relation", "label"], "expansion": [
+  {"type": "sparql-construct", "query": {
+    "template": "PREFIX dbr: <http://dbpedia.org/resource/>\nPREFIX dbo: <http://dbpedia.org/ontology/>\nCONSTRUCT { ?local ui:related ?related . ?related rdfs:label ?label . }\nWHERE { BIND(dbr:{dbpediaId} AS ?src) ?src {relation} ?related . OPTIONAL { ?related rdfs:label ?label FILTER(LANG(?label)='en') } }"
+  }, "bindings": {"dbpediaId": {"var": "dbpediaId"}, "relation": {"var": "relation"}}}
+]}
+
+{"@version": "1.0", "type": "macro", "name": "dbpedia-federate", "description": "Enrich with multiple DBpedia properties", "params": ["localId", "dbpediaId"], "expansion": [
+  {"type": "macro", "call": "dbpedia-abstract", "args": [{"var": "localId"}, {"var": "dbpediaId"}]},
+  {"type": "macro", "call": "dbpedia-thumbnail", "args": [{"var": "localId"}, {"var": "dbpediaId"}]},
+  {"type": "macro", "call": "dbpedia-birthDate", "args": [{"var": "localId"}, {"var": "dbpediaId"}]},
+  {"type": "macro", "call": "dbpedia-related", "args": [{"var": "localId"}, {"var": "dbpediaId"}, "dbo:influencedBy", "Influenced By"]},
+  {"type": "macro", "call": "dbpedia-related", "args": [{"var": "localId"}, {"var": "dbpediaId"}, "dbo:almaMater", "Alma Mater"]}
+]}
+
+{"@version": "1.0", "type": "macro", "name": "ui-slide-from-dbpedia", "description": "Generate slide with DBpedia enrichment", "params": ["slideId", "root", "dbpediaId"], "expansion": [
+  {"type": "try", "steps": [
+    {"type": "macro", "call": "dbpedia-federate", "args": [{"var": "root"}, {"var": "dbpediaId"}]},
+    {"type": "macro", "call": "ui-infer-layout"},
+    {"type": "macro", "call": "ui-infer-style"},
+    {"type": "r5rs-call", "function": "render-slide", "args": [{"var": "slideId"}, {"var": "root"}]}
+  ], "catch": "error", "finally": [
+    {"type": "log", "level": "info", "message": "DBpedia slide {slideId} rendered"}
+  ]}
+]}

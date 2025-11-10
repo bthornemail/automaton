@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DBpedia Integration Test</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #0a0a0a;
+      color: #f0f0f0;
+    }
+    .test-section {
+      margin: 20px 0;
+      padding: 15px;
+      border: 1px solid #333;
+      border-radius: 5px;
+    }
+    .success { color: #4ECDC4; }
+    .error { color: #FF6B6B; }
+    .info { color: #F7DC6F; }
+    pre {
+      background: #1a1a1a;
+      padding: 10px;
+      border-radius: 3px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>CanvasL Semantic Slides - DBpedia Integration Test</h1>
+  
+  <div class="test-section">
+    <h2>Test 1: Meta-Log Bridge Initialization</h2>
+    <div id="test1-result" class="info">Running...</div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 2: DBpedia Plugin Loading</h2>
+    <div id="test2-result" class="info">Waiting...</div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 3: DBpedia Abstract Query</h2>
+    <div id="test3-result" class="info">Waiting...</div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 4: Macro Expansion</h2>
+    <div id="test4-result" class="info">Waiting...</div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 5: @include Directive</h2>
+    <div id="test5-result" class="info">Waiting...</div>
+  </div>
+
+  <script type="module">
+    import { Projector } from '../src/projector/Projector.js';
+    import { DBpediaPlugin } from '../src/plugin/dbpedia-plugin.js';
+
+    const projector = new Projector();
+    
+    async function runTests() {
+      // Test 1: Meta-Log Bridge Initialization
+      try {
+        await projector.init(projector.metaLog);
+        document.getElementById('test1-result').innerHTML = 
+          '<span class="success">✅ PASSED</span> - Meta-Log Bridge initialized';
+      } catch (error) {
+        document.getElementById('test1-result').innerHTML = 
+          `<span class="error">❌ FAILED</span> - ${error.message}`;
+        return;
+      }
+
+      // Test 2: DBpedia Plugin Loading
+      try {
+        const dbpediaPlugin = new DBpediaPlugin();
+        await projector.registerPlugin(dbpediaPlugin);
+        document.getElementById('test2-result').innerHTML = 
+          '<span class="success">✅ PASSED</span> - DBpedia plugin loaded';
+      } catch (error) {
+        document.getElementById('test2-result').innerHTML = 
+          `<span class="error">❌ FAILED</span> - ${error.message}`;
+      }
+
+      // Test 3: DBpedia Abstract Query
+      try {
+        const dbpediaPlugin = projector.getPlugin('DBpedia');
+        if (dbpediaPlugin) {
+          const result = await dbpediaPlugin.queryAbstract('Albert_Einstein');
+          document.getElementById('test3-result').innerHTML = 
+            `<span class="success">✅ PASSED</span> - Abstract: ${result.value ? result.value.substring(0, 100) + '...' : 'null'}`;
+        } else {
+          document.getElementById('test3-result').innerHTML = 
+            '<span class="error">❌ FAILED</span> - DBpedia plugin not found';
+        }
+      } catch (error) {
+        document.getElementById('test3-result').innerHTML = 
+          `<span class="error">❌ FAILED</span> - ${error.message}`;
+      }
+
+      // Test 4: Macro Expansion
+      try {
+        const testMacro = {
+          type: 'macro',
+          name: 'test-macro',
+          params: ['id', 'label'],
+          expansion: [
+            { type: 'rdf-triple', subject: { var: 'id' }, predicate: 'rdfs:label', object: { literal: { var: 'label' } } }
+          ]
+        };
+        
+        projector.macroExpander.registerMacro('test-macro', testMacro);
+        const call = { type: 'macro', call: 'test-macro', args: ['#test', 'Test Label'] };
+        const expanded = projector.macroExpander.expandMacroCall(call);
+        
+        document.getElementById('test4-result').innerHTML = 
+          `<span class="success">✅ PASSED</span> - Expanded ${expanded.length} objects`;
+      } catch (error) {
+        document.getElementById('test4-result').innerHTML = 
+          `<span class="error">❌ FAILED</span> - ${error.message}`;
+      }
+
+      // Test 5: @include Directive
+      try {
+        const testContent = `@include "templates/slides/basic-slide.canvasl.jsonl"
+{"id": "test-slide", "type": "slide"}`;
+        
+        const objects = projector.includeLoader.parseCanvasL(testContent, 'test.canvasl.jsonl');
+        const hasInclude = objects.some(obj => obj.type === '@include');
+        
+        document.getElementById('test5-result').innerHTML = 
+          `<span class="success">✅ PASSED</span> - @include directive parsed: ${hasInclude}`;
+      } catch (error) {
+        document.getElementById('test5-result').innerHTML = 
+          `<span class="error">❌ FAILED</span> - ${error.message}`;
+      }
+    }
+
+    // Run tests on load
+    window.addEventListener('DOMContentLoaded', runTests);
+  </script>
+</body>
+</html>

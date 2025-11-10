@@ -1,0 +1,25 @@
+{
+  "name": "base-plugin-template",
+  "version": "0.1.0",
+  "description": "Template for creating CanvasL Semantic Slides plugins",
+  "hooks": [
+    "r5rs",
+    "prolog",
+    "datalog",
+    "sparql"
+  ],
+  "dependencies": [],
+  "endpoints": {
+    "sparql": []
+  },
+  "metaLog": {
+    "required": true,
+    "features": [
+      "r5rs",
+      "prolog",
+      "datalog",
+      "sparql",
+      "shacl"
+    ]
+  }
+}

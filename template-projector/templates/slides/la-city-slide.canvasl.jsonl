@@ -1,0 +1,22 @@
+{"@include": "src/macros/RDF_DBpedia.canvasl.jsonl"}
+{"type": "macro", "call": "dbpedia-prefix"}
+
+{"id": "la-slide", "type": "slide", "title": "Los Angeles", "dimension": "4D", "dbpediaId": "Los_Angeles", "plugin": "DBpedia"}
+
+{"type": "macro", "call": "ui-container", "args": [
+  "#la", "column", ["#title", "#stats", "#map"]
+]}
+
+{"type": "macro", "call": "ui-component", "args": ["#title", "ui:Text", "Los Angeles"]}
+
+{"type": "macro", "call": "ui-component", "args": ["#stats", "ui:Card", "City Statistics"]}
+
+{"type": "macro", "call": "ui-component", "args": ["#map", "ui:Map", "Location"]}
+
+{"type": "rdf-triple", "subject": "#la", "predicate": "schema:sameAs", "object": "dbr:Los_Angeles"}
+
+{"type": "macro", "call": "dbpedia-query", "args": ["#la", "Los_Angeles", "dbo:populationTotal", "ui:population"]}
+
+{"type": "macro", "call": "dbpedia-query", "args": ["#la", "Los_Angeles", "dbo:areaTotal", "ui:area"]}
+
+{"type": "macro", "call": "ui-slide-from-dbpedia", "args": ["la-slide", "#la", "Los_Angeles"]}

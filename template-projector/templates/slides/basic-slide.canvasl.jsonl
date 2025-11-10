@@ -1,0 +1,12 @@
+{"@include": "src/macros/RDF_SPARQL.canvasl.jsonl"}
+{"type": "macro", "call": "rdf-prefix"}
+
+{"id": "slide-1", "type": "slide", "title": "Basic Slide Example", "dimension": "0D"}
+
+{"type": "macro", "call": "ui-container", "args": [
+  "#main", "column", ["#header", "#content"]
+]}
+
+{"type": "macro", "call": "ui-component", "args": ["#header", "ui:Text", "Welcome to CanvasL Semantic Slides"]}
+
+{"type": "macro", "call": "ui-component", "args": ["#content", "ui:Text", "This is a basic slide example using CanvasL macros."]}

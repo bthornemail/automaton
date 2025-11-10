@@ -1,0 +1,7 @@
+{"@version": "1.0", "type": "deck", "title": "Demo Deck", "description": "Example deck demonstrating CanvasL Semantic Slides"}
+
+{"@include": "templates/slides/basic-slide.canvasl.jsonl"}
+{"@include": "templates/slides/einstein-slide.canvasl.jsonl"}
+{"@include": "templates/slides/la-city-slide.canvasl.jsonl"}
+
+{"id": "deck-1", "type": "deck", "slides": ["slide-1", "einstein-slide", "la-slide"]}

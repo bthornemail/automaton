@@ -1,0 +1,20 @@
+{"@version": "1.0", "type": "macro", "name": "rdf-prefix", "description": "Declare standard UI ontology prefixes", "expansion": [
+  {"type": "rdf-prefix", "prefix": "rdf", "uri": "http://www.w3.org/1999/02/22-rdf-syntax-ns#"},
+  {"type": "rdf-prefix", "prefix": "rdfs", "uri": "http://www.w3.org/2000/01/rdf-schema#"},
+  {"type": "rdf-prefix", "prefix": "owl", "uri": "http://www.w3.org/2002/07/owl#"},
+  {"type": "rdf-prefix", "prefix": "xsd", "uri": "http://www.w3.org/2001/XMLSchema#"},
+  {"type": "rdf-prefix", "prefix": "sh", "uri": "http://www.w3.org/ns/shacl#"},
+  {"type": "rdf-prefix", "prefix": "ui", "uri": "https://canvasl.org/ui#"},
+  {"type": "rdf-prefix", "prefix": "proj", "uri": "https://canvasl.org/projector#"}
+]}
+
+{"@version": "1.0", "type": "macro", "name": "ui-component", "description": "Base component with validation", "params": ["id", "type", "label"], "expansion": [
+  {"type": "rdf-triple", "subject": {"var": "id"}, "predicate": "rdf:type", "object": {"var": "type"}},
+  {"type": "rdf-triple", "subject": {"var": "id"}, "predicate": "rdfs:label", "object": {"literal": {"var": "label"}}}
+]}
+
+{"@version": "1.0", "type": "macro", "name": "ui-container", "description": "Recursion-safe container", "params": ["id", "layout", "children"], "expansion": [
+  {"type": "macro", "call": "ui-component", "args": [{"var": "id"}, "ui:Container", {"literal": "Container"}]},
+  {"type": "rdf-triple", "subject": {"var": "id"}, "predicate": "ui:layout", "object": {"literal": {"var": "layout"}}},
+  {"type": "rdf-triple", "subject": {"var": "id"}, "predicate": "ui:contains", "object": {"var": "child"}, "repeat": {"var": "children"}}
+]}

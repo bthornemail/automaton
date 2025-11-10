@@ -1782,6 +1782,83 @@ The documentation folders form a connected system:
 
 **Reference**: See individual folder README files for complete documentation.
 
+## CanvasL Semantic Slides Project
+
+### Overview
+
+The **CanvasL Semantic Slides Project** (`docs/26-CanvasL-Semantic-Slides-Project/`) represents a major evolution of the presentation system, transforming static slides into **living knowledge graphs** that integrate public knowledge (DBpedia, Wikidata) with private user data through agent-protected federation.
+
+**Status**: ✅ **Documentation Complete** (2025-01-07)
+
+### Key Components
+
+#### 1. **Semantic Slides System**
+- **Browser-Native**: Full semantic reasoning stack runs in browser without backend
+- **RDF-Annotated**: Every slide is a queryable RDF graph with RDF* provenance
+- **DBpedia-Powered**: Live Wikipedia knowledge enrichment via SPARQL federation
+- **Extensible**: Plugin architecture enables community contributions
+
+#### 2. **Federated Knowledge Model**
+- **Public-Private Integration**: Query public endpoints (DBpedia, Wikidata) alongside private user bases
+- **Agent Protection**: Multi-agent system enforces consent before federating private data
+- **Zero-Knowledge Federation**: Private data never leaves user's browser/device
+- **RDF* Provenance**: Full audit trail with confidence scores and timestamps
+
+#### 3. **Technical Foundation** (`docs/25-Church-Encoding-Metaverse-Presentation/`)
+- **SPARQL Agent Protection**: Secure, consent-driven federated query execution
+- **ProLog Rules**: Declarative logic for agent protection and UI inference
+- **DataLog Integration**: Rule-based reasoning over RDF for materialization
+- **Answer Set Programming**: Non-monotonic reasoning with preferences and defaults
+
+### Agent Integration
+
+| Component | Assigned Agent | Role |
+|-----------|---------------|------|
+| **Semantic Slides Project** | 6D-Intelligence-Agent | Overall coordination and AI-powered features |
+| **SPARQL Federation** | 4D-Network-Agent | Network operations and endpoint coordination |
+| **Agent Protection** | 5D-Consensus-Agent | Access control and consent management |
+| **CanvasL Macros** | 2D-Structural-Agent | Pattern operations and macro expansion |
+| **Visualization** | Visualization-Agent | Slide rendering and UI generation |
+
+### Key Features
+
+1. **Semantic UI Inference**: OWL reasoning + SPARQL CONSTRUCT infers layouts, styles, and render order
+2. **Self-Evolving Presentations**: CanvasL macros invoke Meta-Log queries, slides modify themselves
+3. **Browser-Native Logic Programming**: ProLog/DataLog/ASP execute in browser via lightweight JS engines
+4. **Agent-Protected Federation**: Multi-agent system ensures user consent before federating private data
+5. **RDF* Provenance Tracking**: Every triple annotated with confidence scores and timestamps
+
+### Documentation Structure
+
+- **`docs/25-Church-Encoding-Metaverse-Presentation/`**: Foundational research and evolution
+  - **`00-OVERVIEW.md`**: Comprehensive overview of all documentation
+  - **`01-SPARQL Agent Protection System.md`**: Security model for federated queries
+  - **`02-ProLog Rules Explained.md`**: Logic programming foundations
+  - **`03-Datalog in the Semantic Web.md`**: Materialization strategies
+  - **`04-Answer Set Programming in the Semantic Web.md`**: Non-monotonic reasoning
+  - **`01-Grok-Chat/`**: Project evolution documents (10 files)
+
+- **`docs/26-CanvasL-Semantic-Slides-Project/`**: Implementation project
+  - **`01-CanvasL Semantic Slides Project.md`**: Complete project specification
+  - **`02-Public-Private Integration with Agent Protection.md`**: Federated knowledge model
+
+### Integration Points
+
+- **Meta-Log System**: Uses ProLog, DataLog, and R5RS for logic operations
+- **CanvasL Format**: Slides defined in CanvasL (extended JSONL) with macros
+- **Multi-Agent System**: Agents coordinate access control and federation
+- **Automaton System**: Self-modification capabilities via automaton engine
+
+### Current Status
+
+- ✅ **Documentation Complete**: All documents have frontmatter and comprehensive overview
+- ✅ **Technical Foundation**: Complete macro library examples (RDF, SPARQL, Wikidata, Federation)
+- ✅ **Agent Integration**: Multi-agent coordination flow defined
+- 🚧 **Implementation**: Ready for development phase
+- 📋 **Planned**: Public demo deployment, community plugins, extended federation patterns
+
+**Reference**: See `docs/25-Church-Encoding-Metaverse-Presentation/00-OVERVIEW.md` for complete documentation overview and `docs/26-CanvasL-Semantic-Slides-Project/` for implementation details.
+
 ## Related Documentation
 
 ### Core Documentation Folders
