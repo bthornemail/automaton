@@ -5,10 +5,18 @@
   "type": "module",
   "main": "src/projector/Projector.js",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:e2e": "vite preview --open test/e2e-test.html",
+    "test:dbpedia": "vite preview --open test/dbpedia-test.html",
+    "test:cors": "vite preview --open test/cors-test.html",
+    "test:recovery": "vite preview --open test/error-recovery-test.html",
+    "test:federation": "vite preview --open test/federation-test.html",
+    "test:federation-verify": "vite preview --open test/federation-verification.html",
+    "test:agent-protection": "vite preview --open test/agent-protection-browser-test.html",
+    "test:performance": "vite preview --open test/performance-test.html"
   },
   "keywords": [
     "canvasl",

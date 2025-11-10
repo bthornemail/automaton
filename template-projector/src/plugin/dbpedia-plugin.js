@@ -7,6 +7,30 @@
 
 import { BasePlugin } from './BasePlugin.js';
 
+/**
+ * Error types for DBpedia plugin
+ */
+export const DBpediaErrorTypes = {
+  NETWORK: 'network',
+  PARSE: 'parse',
+  NOT_FOUND: 'notfound',
+  RATE_LIMIT: 'ratelimit',
+  INVALID_ID: 'invalid_id',
+  QUERY_FAILED: 'query_failed'
+};
+
+/**
+ * DBpedia-specific error class
+ */
+export class DBpediaError extends Error {
+  constructor(type, message, context = {}) {
+    super(message);
+    this.name = 'DBpediaError';
+    this.type = type;
+    this.context = context;
+  }
+}
+
 export class DBpediaPlugin extends BasePlugin {
   constructor(config = {}) {
     super({
@@ -72,10 +96,22 @@ export class DBpediaPlugin extends BasePlugin {
     `;
     
     try {
+      // Validate DBpedia ID
+      if (!dbpediaId || typeof dbpediaId !== 'string') {
+        throw new DBpediaError(DBpediaErrorTypes.INVALID_ID, 
+          `Invalid DBpedia ID: ${dbpediaId}`, { dbpediaId, property });
+      }
+
       const result = await this.hook('sparql', {
         query,
         endpoint: this.config.endpoint
       });
+      
+      // Check for SPARQL errors
+      if (result.error) {
+        throw new DBpediaError(DBpediaErrorTypes.QUERY_FAILED,
+          `SPARQL query failed: ${result.error}`, { dbpediaId, property, query });
+      }
       
       const data = {
         triples: [],
@@ -94,7 +130,7 @@ export class DBpediaPlugin extends BasePlugin {
         });
       }
       
-      // Cache result
+      // Cache result (even if empty, to avoid repeated queries)
       this.cache.set(cacheKey, {
         data,
         timestamp: Date.now()
@@ -102,12 +138,33 @@ export class DBpediaPlugin extends BasePlugin {
       
       return data;
     } catch (error) {
-      console.error(`DBpedia query failed for ${dbpediaId}.${property}:`, error);
-      return {
-        triples: [],
-        value: null,
-        error: error.message
-      };
+      // Enhanced error handling
+      if (error instanceof DBpediaError) {
+        throw error;
+      }
+
+      // Classify error
+      const errorMessage = error.message || String(error);
+      let errorType = DBpediaErrorTypes.NETWORK;
+      
+      if (errorMessage.includes('404') || errorMessage.includes('not found')) {
+        errorType = DBpediaErrorTypes.NOT_FOUND;
+      } else if (errorMessage.includes('429') || errorMessage.includes('rate limit')) {
+        errorType = DBpediaErrorTypes.RATE_LIMIT;
+      } else if (errorMessage.includes('parse') || errorMessage.includes('JSON')) {
+        errorType = DBpediaErrorTypes.PARSE;
+      }
+
+      const dbpediaError = new DBpediaError(errorType,
+        `DBpedia query failed for ${dbpediaId}.${property}: ${errorMessage}`,
+        { dbpediaId, property, originalError: error });
+
+      // Emit error event if available
+      if (this.onError) {
+        this.onError(dbpediaError);
+      }
+
+      throw dbpediaError;
     }
   }
 

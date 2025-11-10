@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SERVICE Block Parsing Verification</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #0a0a0a;
+      color: #f0f0f0;
+    }
+    .test-section {
+      margin: 20px 0;
+      padding: 15px;
+      border: 1px solid #333;
+      border-radius: 5px;
+    }
+    .success { color: #4ECDC4; }
+    .error { color: #FF6B6B; }
+    .info { color: #F7DC6F; }
+    pre {
+      background: #1a1a1a;
+      padding: 10px;
+      border-radius: 3px;
+      overflow-x: auto;
+      font-size: 11px;
+    }
+    .query-box {
+      background: #0f0f0f;
+      padding: 10px;
+      margin: 10px 0;
+      border-left: 3px solid #4ECDC4;
+    }
+    .parsed-result {
+      background: #1a1a2a;
+      padding: 10px;
+      margin: 10px 0;
+      border-left: 3px solid #F7DC6F;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 SERVICE Block Parsing Verification</h1>
+  
+  <div class="test-section">
+    <h2>Test 1: Single SERVICE Block</h2>
+    <div id="test1-result" class="info">Running...</div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 2: Multiple SERVICE Blocks</h2>
+    <div id="test2-result" class="info">Waiting...</div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 3: SERVICE with VALUES</h2>
+    <div id="test3-result" class="info">Waiting...</div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 4: Nested SERVICE Blocks</h2>
+    <div id="test4-result" class="info">Waiting...</div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 5: SERVICE with Complex Patterns</h2>
+    <div id="test5-result" class="info">Waiting...</div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 6: VALUES Extraction</h2>
+    <div id="test6-result" class="info">Waiting...</div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 7: VALUES Binding Flow</h2>
+    <div id="test7-result" class="info">Waiting...</div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 8: Query Rewriting</h2>
+    <div id="test8-result" class="info">Waiting...</div>
+  </div>
+
+  <script type="module">
+    import { SparqlFederation } from '../src/utils/SparqlFederation.js';
+    import { MetaLogBridge } from '../src/projector/MetaLogBridge.js';
+    import { ErrorHandler } from '../src/utils/ErrorHandler.js';
+
+    const metaLog = new MetaLogBridge();
+    const errorHandler = new ErrorHandler();
+    const federation = new SparqlFederation(metaLog, errorHandler);
+
+    function setResult(testId, success, message, details = null) {
+      const element = document.getElementById(`test-${testId}-result`);
+      element.className = `test-result ${success ? 'success' : 'error'}`;
+      
+      let html = success ? '✅ ' : '❌ ';
+      html += message;
+      
+      if (details) {
+        html += '<pre>' + JSON.stringify(details, null, 2) + '</pre>';
+      }
+      
+      element.innerHTML = html;
+    }
+
+    function displayQuery(query, label) {
+      return `<div class="query-box"><strong>${label}:</strong><pre>${query}</pre></div>`;
+    }
+
+    function displayParsed(parsed, label) {
+      return `<div class="parsed-result"><strong>${label}:</strong><pre>${JSON.stringify(parsed, null, 2)}</pre></div>`;
+    }
+
+    async function test1_SingleService() {
+      const query = `
+        SELECT ?abstract WHERE {
+          SERVICE <https://dbpedia.org/sparql> {
+            dbr:Albert_Einstein dbo:abstract ?abstract .
+            FILTER(LANG(?abstract) = "en")
+          }
+        }
+      `;
+
+      const blocks = federation.parseServiceBlocks(query);
+      const success = blocks.length === 1 && 
+                     blocks[0].endpoint === 'https://dbpedia.org/sparql' &&
+                     blocks[0].query.includes('dbr:Albert_Einstein');
+
+      setResult(1, success,
+        success ? 'Single SERVICE block parsed correctly' : 'Parsing failed',
+        {
+          query: displayQuery(query, 'Query'),
+          parsed: displayParsed(blocks, 'Parsed Blocks'),
+          blockCount: blocks.length,
+          endpoint: blocks[0]?.endpoint
+        }
+      );
+    }
+
+    async function test2_MultipleServices() {
+      const query = `
+        SELECT ?abstract ?thumbnail WHERE {
+          SERVICE <https://dbpedia.org/sparql> {
+            dbr:Albert_Einstein dbo:abstract ?abstract .
+          }
+          SERVICE <https://dbpedia.org/sparql> {
+            dbr:Albert_Einstein dbo:thumbnail ?thumbnail .
+          }
+        }
+      `;
+
+      const blocks = federation.parseServiceBlocks(query);
+      const success = blocks.length === 2 &&
+                     blocks.every(b => b.endpoint === 'https://dbpedia.org/sparql');
+
+      setResult(2, success,
+        success ? `Multiple SERVICE blocks parsed correctly (${blocks.length} blocks)` : 'Parsing failed',
+        {
+          query: displayQuery(query, 'Query'),
+          parsed: displayParsed(blocks, 'Parsed Blocks'),
+          blockCount: blocks.length
+        }
+      );
+    }
+
+    async function test3_ServiceWithValues() {
+      const query = `
+        VALUES ?city { "Los_Angeles" "New_York" }
+        SELECT ?city ?pop WHERE {
+          SERVICE <https://dbpedia.org/sparql> {
+            ?city dbo:populationTotal ?pop .
+          }
+        }
+      `;
+
+      const blocks = federation.parseServiceBlocks(query);
+      const values = federation.extractValuesBindings(query);
+      
+      const success = blocks.length === 1 &&
+                     values.city &&
+                     values.city.length === 2 &&
+                     values.city.includes('Los_Angeles') &&
+                     values.city.includes('New_York');
+
+      setResult(3, success,
+        success ? 'SERVICE with VALUES parsed correctly' : 'Parsing failed',
+        {
+          query: displayQuery(query, 'Query'),
+          parsed: displayParsed({ blocks, values }, 'Parsed Result'),
+          valuesCount: values.city?.length || 0
+        }
+      );
+    }
+
+    async function test4_NestedServices() {
+      const query = `
+        SELECT ?result WHERE {
+          SERVICE <https://dbpedia.org/sparql> {
+            SERVICE <https://query.wikidata.org/sparql> {
+              ?s ?p ?result .
+            }
+          }
+        }
+      `;
+
+      const blocks = federation.parseServiceBlocks(query);
+      // Should parse outer SERVICE block
+      const success = blocks.length >= 1;
+
+      setResult(4, success,
+        success ? `Nested SERVICE blocks parsed (${blocks.length} outer blocks)` : 'Parsing failed',
+        {
+          query: displayQuery(query, 'Query'),
+          parsed: displayParsed(blocks, 'Parsed Blocks'),
+          note: 'Nested SERVICE blocks may require recursive parsing'
+        }
+      );
+    }
+
+    async function test5_ComplexPatterns() {
+      const query = `
+        SELECT ?name ?abstract ?birthDate WHERE {
+          SERVICE <https://dbpedia.org/sparql> {
+            ?person rdfs:label ?name ;
+                    dbo:abstract ?abstract ;
+                    dbo:birthDate ?birthDate .
+            FILTER(LANG(?name) = "en")
+            FILTER(LANG(?abstract) = "en")
+          }
+        }
+      `;
+
+      const blocks = federation.parseServiceBlocks(query);
+      const success = blocks.length === 1 &&
+                     blocks[0].query.includes('FILTER') &&
+                     blocks[0].query.includes('rdfs:label');
+
+      setResult(5, success,
+        success ? 'Complex SERVICE patterns parsed correctly' : 'Parsing failed',
+        {
+          query: displayQuery(query, 'Query'),
+          parsed: displayParsed(blocks[0], 'First Block'),
+          hasFilters: blocks[0]?.query.includes('FILTER') || false
+        }
+      );
+    }
+
+    async function test6_ValuesExtraction() {
+      const queries = [
+        {
+          query: 'VALUES ?x { "a" "b" }',
+          expected: { x: ['a', 'b'] }
+        },
+        {
+          query: 'VALUES ?city { "LA" "NY" "SF" } SELECT ?city WHERE { ?city ?p ?o }',
+          expected: { city: ['LA', 'NY', 'SF'] }
+        },
+        {
+          query: 'VALUES ?id { 1 2 3 } VALUES ?name { "Alice" "Bob" }',
+          expected: { id: ['1', '2', '3'], name: ['Alice', 'Bob'] }
+        }
+      ];
+
+      let allPassed = true;
+      const results = [];
+
+      for (const test of queries) {
+        const values = federation.extractValuesBindings(test.query);
+        const passed = JSON.stringify(values) === JSON.stringify(test.expected);
+        allPassed = allPassed && passed;
+        results.push({
+          query: test.query,
+          expected: test.expected,
+          actual: values,
+          passed
+        });
+      }
+
+      setResult(6, allPassed,
+        allPassed ? 'All VALUES extraction tests passed' : 'Some VALUES extraction tests failed',
+        { results }
+      );
+    }
+
+    async function test7_ValuesBindingFlow() {
+      const query = `
+        VALUES ?entity { "Einstein" "Newton" }
+        SELECT ?entity ?abstract WHERE {
+          SERVICE <https://dbpedia.org/sparql> {
+            ?person rdfs:label ?entity ;
+                    dbo:abstract ?abstract .
+          }
+        }
+      `;
+
+      const values = federation.extractValuesBindings(query);
+      const serviceQuery = federation.buildServiceQuery(
+        '?person rdfs:label ?entity ; dbo:abstract ?abstract .',
+        values
+      );
+
+      const success = serviceQuery.includes('VALUES ?entity') &&
+                     serviceQuery.includes('"Einstein"') &&
+                     serviceQuery.includes('"Newton"');
+
+      setResult(7, success,
+        success ? 'VALUES binding flow working correctly' : 'Binding flow failed',
+        {
+          originalQuery: displayQuery(query, 'Original Query'),
+          values: displayParsed(values, 'Extracted VALUES'),
+          rewrittenQuery: displayQuery(serviceQuery, 'Rewritten Query'),
+          hasValues: serviceQuery.includes('VALUES')
+        }
+      );
+    }
+
+    async function test8_QueryRewriting() {
+      const query = `
+        VALUES ?id { "Q42" "Q123" }
+        SELECT ?id ?label WHERE {
+          SERVICE <https://query.wikidata.org/sparql> {
+            ?id rdfs:label ?label .
+            FILTER(LANG(?label) = "en")
+          }
+        }
+      `;
+
+      const blocks = federation.parseServiceBlocks(query);
+      const values = federation.extractValuesBindings(query);
+      
+      if (blocks.length > 0) {
+        const rewritten = federation.buildServiceQuery(blocks[0].query, values);
+        const success = rewritten.includes('VALUES') && rewritten.includes('Q42');
+
+        setResult(8, success,
+          success ? 'Query rewriting working correctly' : 'Query rewriting failed',
+          {
+            originalQuery: displayQuery(query, 'Original Query'),
+            rewrittenQuery: displayQuery(rewritten, 'Rewritten Query'),
+            valuesIncluded: rewritten.includes('VALUES'),
+            bindingsIncluded: rewritten.includes('Q42')
+          }
+        );
+      } else {
+        setResult(8, false, 'No SERVICE blocks found for rewriting');
+      }
+    }
+
+    async function runAllTests() {
+      await test1_SingleService();
+      await test2_MultipleServices();
+      await test3_ServiceWithValues();
+      await test4_NestedServices();
+      await test5_ComplexPatterns();
+      await test6_ValuesExtraction();
+      await test7_ValuesBindingFlow();
+      await test8_QueryRewriting();
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(runAllTests, 500);
+    });
+  </script>
+</body>
+</html>

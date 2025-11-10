@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CORS Test - DBpedia Endpoint</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #0a0a0a;
+      color: #f0f0f0;
+    }
+    .test-section {
+      margin: 20px 0;
+      padding: 15px;
+      border: 1px solid #333;
+      border-radius: 5px;
+    }
+    .success { color: #4ECDC4; }
+    .error { color: #FF6B6B; }
+    .info { color: #F7DC6F; }
+    pre {
+      background: #1a1a1a;
+      padding: 10px;
+      border-radius: 3px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+    button {
+      background: #4ECDC4;
+      color: #0a0a0a;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      margin: 5px;
+    }
+    button:hover {
+      background: #5EDDD4;
+    }
+  </style>
+</head>
+<body>
+  <h1>🌐 CORS Test - DBpedia Endpoint</h1>
+  
+  <div class="test-section">
+    <h2>Test 1: Direct Fetch to DBpedia SPARQL Endpoint</h2>
+    <div id="test1-result" class="info">Click "Run Test" to start</div>
+    <button onclick="testDirectFetch()">Run Test</button>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 2: SPARQL Query via Fetch API</h2>
+    <div id="test2-result" class="info">Waiting...</div>
+    <button onclick="testSparqlQuery()">Run Test</button>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 3: DBpedia Plugin Query</h2>
+    <div id="test3-result" class="info">Waiting...</div>
+    <button onclick="testDBpediaPlugin()">Run Test</button>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 4: Error Handling (Invalid Endpoint)</h2>
+    <div id="test4-result" class="info">Waiting...</div>
+    <button onclick="testErrorHandling()">Run Test</button>
+  </div>
+
+  <div class="test-section">
+    <h2>CORS Headers Check</h2>
+    <div id="cors-headers" class="info">Click "Check Headers" to inspect CORS headers</div>
+    <button onclick="checkCorsHeaders()">Check Headers</button>
+  </div>
+
+  <script type="module">
+    const DBPEDIA_ENDPOINT = 'https://dbpedia.org/sparql';
+
+    async function testDirectFetch() {
+      const resultDiv = document.getElementById('test1-result');
+      resultDiv.innerHTML = '<span class="info">⏳ Testing...</span>';
+
+      try {
+        const query = `
+          PREFIX dbr: <http://dbpedia.org/resource/>
+          PREFIX dbo: <http://dbpedia.org/ontology/>
+          
+          SELECT ?abstract WHERE {
+            dbr:Albert_Einstein dbo:abstract ?abstract .
+            FILTER(LANG(?abstract) = "en")
+          }
+          LIMIT 1
+        `;
+
+        const response = await fetch(DBPEDIA_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/sparql-results+json',
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: new URLSearchParams({ query })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const abstract = data.results?.bindings[0]?.abstract?.value || 'No abstract found';
+
+        resultDiv.innerHTML = `
+          <span class="success">✅ PASSED</span> - CORS working!<br>
+          <strong>Abstract:</strong> ${abstract.substring(0, 200)}...
+          <pre>${JSON.stringify(data, null, 2)}</pre>
+        `;
+      } catch (error) {
+        resultDiv.innerHTML = `
+          <span class="error">❌ FAILED</span> - ${error.message}<br>
+          <pre>${error.stack || error}</pre>
+        `;
+      }
+    }
+
+    async function testSparqlQuery() {
+      const resultDiv = document.getElementById('test2-result');
+      resultDiv.innerHTML = '<span class="info">⏳ Testing...</span>';
+
+      try {
+        const query = `
+          PREFIX dbr: <http://dbpedia.org/resource/>
+          PREFIX dbo: <http://dbpedia.org/ontology/>
+          
+          SELECT ?name ?birthDate WHERE {
+            dbr:Albert_Einstein dbo:birthDate ?birthDate ;
+                               rdfs:label ?name .
+            FILTER(LANG(?name) = "en")
+          }
+          LIMIT 1
+        `;
+
+        const response = await fetch(DBPEDIA_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/sparql-results+json',
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: new URLSearchParams({ query })
+        });
+
+        const data = await response.json();
+        const binding = data.results?.bindings[0];
+
+        if (binding) {
+          resultDiv.innerHTML = `
+            <span class="success">✅ PASSED</span><br>
+            <strong>Name:</strong> ${binding.name?.value}<br>
+            <strong>Birth Date:</strong> ${binding.birthDate?.value}
+          `;
+        } else {
+          resultDiv.innerHTML = '<span class="error">❌ FAILED</span> - No results';
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `<span class="error">❌ FAILED</span> - ${error.message}`;
+      }
+    }
+
+    async function testDBpediaPlugin() {
+      const resultDiv = document.getElementById('test3-result');
+      resultDiv.innerHTML = '<span class="info">⏳ Testing...</span>';
+
+      try {
+        // Import plugin
+        const { DBpediaPlugin } = await import('../src/plugin/dbpedia-plugin.js');
+        const { Projector } = await import('../src/projector/Projector.js');
+
+        const projector = new Projector();
+        await projector.onInit();
+
+        const plugin = projector.getPlugin('DBpedia');
+        if (!plugin) {
+          throw new Error('DBpedia plugin not found');
+        }
+
+        const result = await plugin.queryAbstract('Albert_Einstein');
+
+        if (result.value) {
+          resultDiv.innerHTML = `
+            <span class="success">✅ PASSED</span><br>
+            <strong>Abstract:</strong> ${result.value.substring(0, 200)}...<br>
+            <strong>Triples:</strong> ${result.triples.length}
+          `;
+        } else {
+          resultDiv.innerHTML = '<span class="error">❌ FAILED</span> - No abstract returned';
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `
+          <span class="error">❌ FAILED</span> - ${error.message}<br>
+          <pre>${error.stack}</pre>
+        `;
+      }
+    }
+
+    async function testErrorHandling() {
+      const resultDiv = document.getElementById('test4-result');
+      resultDiv.innerHTML = '<span class="info">⏳ Testing...</span>';
+
+      try {
+        // Try invalid endpoint
+        const response = await fetch('https://invalid-endpoint.example.org/sparql', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/sparql-results+json',
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: new URLSearchParams({ query: 'SELECT * WHERE { ?s ?p ?o } LIMIT 1' })
+        });
+
+        // Should fail
+        throw new Error('Request should have failed');
+      } catch (error) {
+        // Expected error
+        if (error.message.includes('Failed to fetch') || error.message.includes('network')) {
+          resultDiv.innerHTML = `
+            <span class="success">✅ PASSED</span> - Error handling working correctly<br>
+            <strong>Error:</strong> ${error.message}
+          `;
+        } else {
+          resultDiv.innerHTML = `
+            <span class="error">❌ FAILED</span> - Unexpected error: ${error.message}
+          `;
+        }
+      }
+    }
+
+    async function checkCorsHeaders() {
+      const resultDiv = document.getElementById('cors-headers');
+      resultDiv.innerHTML = '<span class="info">⏳ Checking...</span>';
+
+      try {
+        const response = await fetch(DBPEDIA_ENDPOINT, {
+          method: 'OPTIONS',
+          headers: {
+            'Origin': window.location.origin,
+            'Access-Control-Request-Method': 'POST',
+            'Access-Control-Request-Headers': 'Content-Type'
+          }
+        });
+
+        const headers = {};
+        response.headers.forEach((value, key) => {
+          headers[key] = value;
+        });
+
+        const corsHeaders = {
+          'access-control-allow-origin': headers['access-control-allow-origin'] || 'Not set',
+          'access-control-allow-methods': headers['access-control-allow-methods'] || 'Not set',
+          'access-control-allow-headers': headers['access-control-allow-headers'] || 'Not set',
+          'access-control-max-age': headers['access-control-max-age'] || 'Not set'
+        };
+
+        resultDiv.innerHTML = `
+          <span class="success">✅ CORS Headers Retrieved</span><br>
+          <pre>${JSON.stringify(corsHeaders, null, 2)}</pre>
+          <pre>All Headers:\n${JSON.stringify(headers, null, 2)}</pre>
+        `;
+      } catch (error) {
+        // OPTIONS might not be supported, try GET to check headers
+        try {
+          const response = await fetch(DBPEDIA_ENDPOINT + '?query=SELECT%20*%20WHERE%20%7B%3Fs%20%3Fp%20%3Fo%7D%20LIMIT%201', {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/sparql-results+json'
+            }
+          });
+
+          const headers = {};
+          response.headers.forEach((value, key) => {
+            headers[key] = value;
+          });
+
+          resultDiv.innerHTML = `
+            <span class="info">⚠️ OPTIONS not supported, using GET headers</span><br>
+            <pre>${JSON.stringify(headers, null, 2)}</pre>
+          `;
+        } catch (getError) {
+          resultDiv.innerHTML = `
+            <span class="error">❌ Failed to check headers</span><br>
+            <pre>${getError.message}</pre>
+          `;
+        }
+      }
+    }
+
+    // Make functions available globally
+    window.testDirectFetch = testDirectFetch;
+    window.testSparqlQuery = testSparqlQuery;
+    window.testDBpediaPlugin = testDBpediaPlugin;
+    window.testErrorHandling = testErrorHandling;
+    window.checkCorsHeaders = checkCorsHeaders;
+
+    // Auto-run first test
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(testDirectFetch, 500);
+    });
+  </script>
+</body>
+</html>

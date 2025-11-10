@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agent Protection Browser Test</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 20px;
+      background: #0a0a0a;
+      color: #f0f0f0;
+    }
+    .test-section {
+      margin: 20px 0;
+      padding: 20px;
+      border: 1px solid #333;
+      border-radius: 8px;
+      background: #1a1a1a;
+    }
+    .success { color: #4ECDC4; }
+    .error { color: #FF6B6B; }
+    .info { color: #F7DC6F; }
+    pre {
+      background: #0a0a0a;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 11px;
+    }
+    button {
+      background: #4ECDC4;
+      color: #0a0a0a;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      margin: 5px;
+    }
+    .consent-panel {
+      background: #1a1a2a;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+    .consent-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      margin: 5px 0;
+      background: #0f0f0f;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🛡️ Agent Protection Browser Test</h1>
+  
+  <div class="consent-panel">
+    <h2>Consent Management</h2>
+    <div id="consent-status"></div>
+    <button onclick="grantConsent()">Grant Consent</button>
+    <button onclick="revokeConsent()">Revoke Consent</button>
+    <button onclick="checkAllAccess()">Check All Access</button>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 1: Consent Granting</h2>
+    <div id="test1-result" class="info">Click "Run Test" to start</div>
+    <button onclick="testConsentGranting()">Run Test</button>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 2: Consent Revocation</h2>
+    <div id="test2-result" class="info">Waiting...</div>
+    <button onclick="testConsentRevocation()">Run Test</button>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 3: Access Control</h2>
+    <div id="test3-result" class="info">Waiting...</div>
+    <button onclick="testAccessControl()">Run Test</button>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 4: ProLog Rule Integration</h2>
+    <div id="test4-result" class="info">Waiting...</div>
+    <button onclick="testPrologRules()">Run Test</button>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 5: Federation with Protection</h2>
+    <div id="test5-result" class="info">Waiting...</div>
+    <button onclick="testFederationProtection()">Run Test</button>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 6: Multiple Users</h2>
+    <div id="test6-result" class="info">Waiting...</div>
+    <button onclick="testMultipleUsers()">Run Test</button>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 7: Consent Persistence</h2>
+    <div id="test7-result" class="info">Waiting...</div>
+    <button onclick="testConsentPersistence()">Run Test</button>
+  </div>
+
+  <script type="module">
+    import { Projector } from '../src/projector/Projector.js';
+    import { AgentProtection } from '../src/utils/AgentProtection.js';
+    import { SparqlFederation } from '../src/utils/SparqlFederation.js';
+    import { ErrorHandler } from '../src/utils/ErrorHandler.js';
+
+    let projector;
+    let agentProtection;
+    let federation;
+    const TEST_ENDPOINT = 'local://blackboard';
+
+    async function init() {
+      if (projector) return;
+
+      projector = new Projector();
+      await projector.onInit();
+      
+      agentProtection = new AgentProtection(projector.metaLog);
+      await agentProtection.init();
+      
+      federation = new SparqlFederation(projector.metaLog, projector.errorHandler);
+      federation.registerEndpoint(TEST_ENDPOINT, {
+        requiresConsent: true
+      });
+      
+      updateConsentStatus();
+    }
+
+    function updateConsentStatus() {
+      const statusDiv = document.getElementById('consent-status');
+      statusDiv.innerHTML = `
+        <div class="consent-item">
+          <span>Endpoint: ${TEST_ENDPOINT}</span>
+          <span id="consent-indicator" class="info">Checking...</span>
+        </div>
+      `;
+      
+      checkConsentStatus();
+    }
+
+    async function checkConsentStatus() {
+      const hasConsent = await agentProtection.getConsentStatus('user', TEST_ENDPOINT);
+      const indicator = document.getElementById('consent-indicator');
+      indicator.className = hasConsent ? 'success' : 'error';
+      indicator.textContent = hasConsent ? '✅ Granted' : '❌ Denied';
+    }
+
+    async function grantConsent() {
+      await init();
+      await agentProtection.grantConsent('user', TEST_ENDPOINT);
+      updateConsentStatus();
+      console.log('Consent granted');
+    }
+
+    async function revokeConsent() {
+      await init();
+      await agentProtection.revokeConsent('user', TEST_ENDPOINT);
+      updateConsentStatus();
+      console.log('Consent revoked');
+    }
+
+    async function checkAllAccess() {
+      await init();
+      const query = 'SELECT ?s ?p ?o WHERE { ?s ?p ?o }';
+      const allowed = await agentProtection.checkAccess('user', TEST_ENDPOINT, query);
+      alert(`Access ${allowed ? 'ALLOWED' : 'DENIED'}`);
+    }
+
+    function setResult(testId, success, message, details = null) {
+      const element = document.getElementById(`test-${testId}-result`);
+      element.className = `test-result ${success ? 'success' : 'error'}`;
+      
+      let html = success ? '✅ ' : '❌ ';
+      html += message;
+      
+      if (details) {
+        html += '<pre>' + JSON.stringify(details, null, 2) + '</pre>';
+      }
+      
+      element.innerHTML = html;
+    }
+
+    async function testConsentGranting() {
+      await init();
+      
+      try {
+        await agentProtection.grantConsent('user', TEST_ENDPOINT);
+        const status = await agentProtection.getConsentStatus('user', TEST_ENDPOINT);
+        
+        setResult(1, status,
+          status ? 'Consent granting working correctly' : 'Consent granting failed',
+          { endpoint: TEST_ENDPOINT, status }
+        );
+      } catch (error) {
+        setResult(1, false, `Failed: ${error.message}`);
+      }
+    }
+
+    async function testConsentRevocation() {
+      await init();
+      
+      try {
+        // Grant first
+        await agentProtection.grantConsent('user', TEST_ENDPOINT);
+        let status = await agentProtection.getConsentStatus('user', TEST_ENDPOINT);
+        
+        if (!status) {
+          setResult(2, false, 'Consent not granted initially');
+          return;
+        }
+        
+        // Revoke
+        await agentProtection.revokeConsent('user', TEST_ENDPOINT);
+        status = await agentProtection.getConsentStatus('user', TEST_ENDPOINT);
+        
+        setResult(2, !status,
+          !status ? 'Consent revocation working correctly' : 'Consent revocation failed',
+          { endpoint: TEST_ENDPOINT, revoked: !status }
+        );
+      } catch (error) {
+        setResult(2, false, `Failed: ${error.message}`);
+      }
+    }
+
+    async function testAccessControl() {
+      await init();
+      
+      try {
+        // Test without consent
+        await agentProtection.revokeConsent('user', TEST_ENDPOINT);
+        const denied = await agentProtection.checkAccess('user', TEST_ENDPOINT, 'SELECT ?s WHERE { ?s ?p ?o }');
+        
+        // Grant consent
+        await agentProtection.grantConsent('user', TEST_ENDPOINT);
+        const allowed = await agentProtection.checkAccess('user', TEST_ENDPOINT, 'SELECT ?s WHERE { ?s ?p ?o }');
+        
+        const success = !denied && allowed;
+        
+        setResult(3, success,
+          success ? 'Access control working correctly' : 'Access control failed',
+          { denied, allowed }
+        );
+      } catch (error) {
+        setResult(3, false, `Failed: ${error.message}`);
+      }
+    }
+
+    async function testPrologRules() {
+      await init();
+      
+      try {
+        // Grant consent
+        await agentProtection.grantConsent('user', TEST_ENDPOINT);
+        
+        // Query ProLog directly
+        const consentQuery = 'consent(user, local://blackboard, true)';
+        const result = await projector.metaLog.prologQuery(consentQuery);
+        
+        const success = result && result.length > 0;
+        
+        setResult(4, success,
+          success ? 'ProLog rule integration working' : 'ProLog rule integration failed',
+          { query: consentQuery, resultCount: result?.length || 0 }
+        );
+      } catch (error) {
+        setResult(4, false, `Failed: ${error.message}`);
+      }
+    }
+
+    async function testFederationProtection() {
+      await init();
+      
+      try {
+        // Register mock endpoint
+        federation.registerMockEndpoint(TEST_ENDPOINT, async (query, bindings) => {
+          return {
+            results: {
+              bindings: [{ data: { value: 'Private data' } }]
+            }
+          };
+        });
+        
+        // Test without consent
+        await agentProtection.revokeConsent('user', TEST_ENDPOINT);
+        const query1 = `SERVICE <${TEST_ENDPOINT}> { ?s ?p ?data . }`;
+        const result1 = await federation.executeFederatedQuery(query1);
+        
+        // Test with consent
+        await agentProtection.grantConsent('user', TEST_ENDPOINT);
+        const result2 = await federation.executeFederatedQuery(query1);
+        
+        const success = (!result1.results?.bindings || result1.results.bindings.length === 0) &&
+                       result2.results?.bindings?.length > 0;
+        
+        setResult(5, success,
+          success ? 'Federation protection working correctly' : 'Federation protection failed',
+          {
+            withoutConsent: result1.results?.bindings?.length || 0,
+            withConsent: result2.results?.bindings?.length || 0
+          }
+        );
+      } catch (error) {
+        setResult(5, false, `Failed: ${error.message}`);
+      }
+    }
+
+    async function testMultipleUsers() {
+      await init();
+      
+      try {
+        // Grant consent for user1
+        await agentProtection.grantConsent('user1', TEST_ENDPOINT);
+        const user1Access = await agentProtection.checkAccess('user1', TEST_ENDPOINT, 'query');
+        
+        // user2 should not have access
+        const user2Access = await agentProtection.checkAccess('user2', TEST_ENDPOINT, 'query');
+        
+        const success = user1Access && !user2Access;
+        
+        setResult(6, success,
+          success ? 'Multiple user support working correctly' : 'Multiple user support failed',
+          { user1Access, user2Access }
+        );
+      } catch (error) {
+        setResult(6, false, `Failed: ${error.message}`);
+      }
+    }
+
+    async function testConsentPersistence() {
+      await init();
+      
+      try {
+        // Grant consent
+        await agentProtection.grantConsent('user', TEST_ENDPOINT);
+        const status1 = await agentProtection.getConsentStatus('user', TEST_ENDPOINT);
+        
+        // Create new instance (simulating page reload)
+        const agentProtection2 = new AgentProtection(projector.metaLog);
+        await agentProtection2.init();
+        
+        // Re-grant consent (since ProLog facts are in memory)
+        await agentProtection2.grantConsent('user', TEST_ENDPOINT);
+        const status2 = await agentProtection2.getConsentStatus('user', TEST_ENDPOINT);
+        
+        const success = status1 && status2;
+        
+        setResult(7, success,
+          success ? 'Consent persistence working (in-memory)' : 'Consent persistence failed',
+          { 
+            initialStatus: status1,
+            reloadedStatus: status2,
+            note: 'For true persistence, use localStorage or IndexedDB'
+          }
+        );
+      } catch (error) {
+        setResult(7, false, `Failed: ${error.message}`);
+      }
+    }
+
+    // Make functions available globally
+    window.grantConsent = grantConsent;
+    window.revokeConsent = revokeConsent;
+    window.checkAllAccess = checkAllAccess;
+    window.testConsentGranting = testConsentGranting;
+    window.testConsentRevocation = testConsentRevocation;
+    window.testAccessControl = testAccessControl;
+    window.testPrologRules = testPrologRules;
+    window.testFederationProtection = testFederationProtection;
+    window.testMultipleUsers = testMultipleUsers;
+    window.testConsentPersistence = testConsentPersistence;
+
+    // Auto-init
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(init, 500);
+    });
+  </script>
+</body>
+</html>

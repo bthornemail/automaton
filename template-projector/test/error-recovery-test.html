@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Error Recovery Test</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #0a0a0a;
+      color: #f0f0f0;
+    }
+    .test-section {
+      margin: 20px 0;
+      padding: 15px;
+      border: 1px solid #333;
+      border-radius: 5px;
+    }
+    .success { color: #4ECDC4; }
+    .error { color: #FF6B6B; }
+    .info { color: #F7DC6F; }
+    pre {
+      background: #1a1a1a;
+      padding: 10px;
+      border-radius: 3px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+    button {
+      background: #4ECDC4;
+      color: #0a0a0a;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      margin: 5px;
+    }
+    button:hover {
+      background: #5EDDD4;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+    .stat-card {
+      background: #1a1a1a;
+      padding: 15px;
+      border-radius: 4px;
+      border: 1px solid #333;
+    }
+    .stat-value {
+      font-size: 2em;
+      font-weight: bold;
+      color: #4ECDC4;
+    }
+    .stat-label {
+      color: #888;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔄 Error Recovery Test</h1>
+  
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-value" id="total-errors">0</div>
+      <div class="stat-label">Total Errors</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="recovered-errors">0</div>
+      <div class="stat-label">Recovered</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="failed-recoveries">0</div>
+      <div class="stat-label">Failed Recoveries</div>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 1: Network Error Recovery (Retry)</h2>
+    <div id="test1-result" class="info">Click "Run Test" to start</div>
+    <button onclick="testNetworkRecovery()">Run Test</button>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 2: Rate Limit Recovery</h2>
+    <div id="test2-result" class="info">Waiting...</div>
+    <button onclick="testRateLimitRecovery()">Run Test</button>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 3: Error Classification</h2>
+    <div id="test3-result" class="info">Waiting...</div>
+    <button onclick="testErrorClassification()">Run Test</button>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 4: Error History</h2>
+    <div id="test4-result" class="info">Waiting...</div>
+    <button onclick="testErrorHistory()">Run Test</button>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 5: Projector Error Recovery</h2>
+    <div id="test5-result" class="info">Waiting...</div>
+    <button onclick="testProjectorRecovery()">Run Test</button>
+  </div>
+
+  <script type="module">
+    import { ErrorHandler } from '../src/utils/ErrorHandler.js';
+    import { Projector } from '../src/projector/Projector.js';
+
+    let errorHandler;
+    let stats = { total: 0, recovered: 0, failed: 0 };
+
+    function updateStats() {
+      document.getElementById('total-errors').textContent = stats.total;
+      document.getElementById('recovered-errors').textContent = stats.recovered;
+      document.getElementById('failed-recoveries').textContent = stats.failed;
+    }
+
+    async function testNetworkRecovery() {
+      const resultDiv = document.getElementById('test1-result');
+      resultDiv.innerHTML = '<span class="info">⏳ Testing...</span>';
+
+      try {
+        errorHandler = new ErrorHandler();
+        
+        // Register network recovery strategy
+        errorHandler.registerRecoveryStrategy('network', async (errorInfo, context) => {
+          if (context.retry) {
+            const maxRetries = 3;
+            const baseDelay = 100; // Shortened for testing
+            
+            for (let i = 0; i < maxRetries; i++) {
+              await new Promise(resolve => setTimeout(resolve, baseDelay * Math.pow(2, i)));
+              try {
+                return await context.retry();
+              } catch (retryError) {
+                if (i === maxRetries - 1) throw retryError;
+              }
+            }
+          }
+          throw new Error('Network recovery failed');
+        });
+
+        // Simulate network error with retry
+        let attemptCount = 0;
+        const simulateNetworkCall = async () => {
+          attemptCount++;
+          if (attemptCount < 3) {
+            throw new Error('Network request failed');
+          }
+          return { success: true, data: 'Recovered after retries' };
+        };
+
+        const networkError = new Error('Network request failed');
+        networkError.name = 'NetworkError';
+
+        const recovery = await errorHandler.handle(networkError, {
+          context: 'network_test',
+          retry: simulateNetworkCall
+        });
+
+        stats.total++;
+        if (recovery.recovered) {
+          stats.recovered++;
+          resultDiv.innerHTML = `
+            <span class="success">✅ PASSED</span> - Network recovery successful<br>
+            <strong>Attempts:</strong> ${attemptCount}<br>
+            <strong>Result:</strong> ${JSON.stringify(recovery.recovery)}
+          `;
+        } else {
+          stats.failed++;
+          resultDiv.innerHTML = `<span class="error">❌ FAILED</span> - Recovery failed`;
+        }
+        updateStats();
+      } catch (error) {
+        stats.total++;
+        stats.failed++;
+        resultDiv.innerHTML = `<span class="error">❌ FAILED</span> - ${error.message}`;
+        updateStats();
+      }
+    }
+
+    async function testRateLimitRecovery() {
+      const resultDiv = document.getElementById('test2-result');
+      resultDiv.innerHTML = '<span class="info">⏳ Testing...</span>';
+
+      try {
+        if (!errorHandler) {
+          errorHandler = new ErrorHandler();
+        }
+
+        errorHandler.registerRecoveryStrategy('ratelimit', async (errorInfo, context) => {
+          await new Promise(resolve => setTimeout(resolve, 100)); // Shortened for testing
+          if (context.retry) {
+            return await context.retry();
+          }
+          throw new Error('Rate limit recovery failed');
+        });
+
+        let retryCalled = false;
+        const simulateRateLimit = async () => {
+          if (!retryCalled) {
+            retryCalled = true;
+            throw new Error('429 Too Many Requests');
+          }
+          return { success: true, data: 'Recovered from rate limit' };
+        };
+
+        const rateLimitError = new Error('429 Too Many Requests');
+        const recovery = await errorHandler.handle(rateLimitError, {
+          context: 'ratelimit_test',
+          retry: simulateRateLimit
+        });
+
+        stats.total++;
+        if (recovery.recovered && retryCalled) {
+          stats.recovered++;
+          resultDiv.innerHTML = `
+            <span class="success">✅ PASSED</span> - Rate limit recovery successful<br>
+            <strong>Result:</strong> ${JSON.stringify(recovery.recovery)}
+          `;
+        } else {
+          stats.failed++;
+          resultDiv.innerHTML = `<span class="error">❌ FAILED</span> - Recovery failed`;
+        }
+        updateStats();
+      } catch (error) {
+        stats.total++;
+        stats.failed++;
+        resultDiv.innerHTML = `<span class="error">❌ FAILED</span> - ${error.message}`;
+        updateStats();
+      }
+    }
+
+    async function testErrorClassification() {
+      const resultDiv = document.getElementById('test3-result');
+      resultDiv.innerHTML = '<span class="info">⏳ Testing...</span>';
+
+      try {
+        if (!errorHandler) {
+          errorHandler = new ErrorHandler();
+        }
+
+        const testErrors = [
+          { error: new Error('Network request failed'), expectedType: 'network' },
+          { error: new Error('Failed to parse JSON'), expectedType: 'parse' },
+          { error: new Error('404 Not Found'), expectedType: 'notfound' },
+          { error: new Error('429 Rate limit exceeded'), expectedType: 'ratelimit' },
+          { error: new Error('Permission denied'), expectedType: 'permission' }
+        ];
+
+        let passed = 0;
+        let failed = 0;
+
+        for (const test of testErrors) {
+          const errorInfo = errorHandler.normalizeError(test.error);
+          if (errorInfo.type === test.expectedType) {
+            passed++;
+          } else {
+            failed++;
+          }
+        }
+
+        stats.total += testErrors.length;
+        if (failed === 0) {
+          stats.recovered += passed;
+          resultDiv.innerHTML = `
+            <span class="success">✅ PASSED</span> - All ${passed} errors classified correctly<br>
+            <pre>${JSON.stringify(testErrors.map(t => ({
+              message: t.error.message,
+              expected: t.expectedType,
+              actual: errorHandler.normalizeError(t.error).type
+            })), null, 2)}</pre>
+          `;
+        } else {
+          stats.failed += failed;
+          resultDiv.innerHTML = `
+            <span class="error">❌ FAILED</span> - ${failed} classification(s) failed<br>
+            <pre>${JSON.stringify(testErrors, null, 2)}</pre>
+          `;
+        }
+        updateStats();
+      } catch (error) {
+        stats.total++;
+        stats.failed++;
+        resultDiv.innerHTML = `<span class="error">❌ FAILED</span> - ${error.message}`;
+        updateStats();
+      }
+    }
+
+    async function testErrorHistory() {
+      const resultDiv = document.getElementById('test4-result');
+      resultDiv.innerHTML = '<span class="info">⏳ Testing...</span>';
+
+      try {
+        if (!errorHandler) {
+          errorHandler = new ErrorHandler();
+        }
+
+        // Generate some errors
+        for (let i = 0; i < 5; i++) {
+          await errorHandler.handle(new Error(`Test error ${i}`), { context: 'history_test' });
+        }
+
+        const history = errorHandler.getHistory(10);
+        const statistics = errorHandler.getStatistics();
+
+        stats.total++;
+        if (history.length >= 5 && statistics.total >= 5) {
+          stats.recovered++;
+          resultDiv.innerHTML = `
+            <span class="success">✅ PASSED</span> - Error history working<br>
+            <strong>History Length:</strong> ${history.length}<br>
+            <strong>Total Errors:</strong> ${statistics.total}<br>
+            <pre>${JSON.stringify(statistics, null, 2)}</pre>
+          `;
+        } else {
+          stats.failed++;
+          resultDiv.innerHTML = `<span class="error">❌ FAILED</span> - History not working correctly`;
+        }
+        updateStats();
+      } catch (error) {
+        stats.total++;
+        stats.failed++;
+        resultDiv.innerHTML = `<span class="error">❌ FAILED</span> - ${error.message}`;
+        updateStats();
+      }
+    }
+
+    async function testProjectorRecovery() {
+      const resultDiv = document.getElementById('test5-result');
+      resultDiv.innerHTML = '<span class="info">⏳ Testing...</span>';
+
+      try {
+        const projector = new Projector();
+        await projector.onInit();
+
+        // Try to load non-existent deck (should trigger error recovery)
+        try {
+          await projector.loadDeck('non-existent-deck.canvasl.jsonl');
+          resultDiv.innerHTML = '<span class="error">❌ FAILED</span> - Should have thrown error';
+          stats.total++;
+          stats.failed++;
+        } catch (error) {
+          // Expected error
+          stats.total++;
+          stats.recovered++;
+          resultDiv.innerHTML = `
+            <span class="success">✅ PASSED</span> - Error handling working<br>
+            <strong>Error:</strong> ${error.message}<br>
+            <strong>Error Handler:</strong> ${projector.errorHandler ? 'Available' : 'Not available'}
+          `;
+        }
+        updateStats();
+      } catch (error) {
+        stats.total++;
+        stats.failed++;
+        resultDiv.innerHTML = `<span class="error">❌ FAILED</span> - ${error.message}`;
+        updateStats();
+      }
+    }
+
+    // Make functions available globally
+    window.testNetworkRecovery = testNetworkRecovery;
+    window.testRateLimitRecovery = testRateLimitRecovery;
+    window.testErrorClassification = testErrorClassification;
+    window.testErrorHistory = testErrorHistory;
+    window.testProjectorRecovery = testProjectorRecovery;
+  </script>
+</body>
+</html>

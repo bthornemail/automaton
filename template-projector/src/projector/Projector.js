@@ -10,6 +10,7 @@ import { MetaLogBridge } from './MetaLogBridge.js';
 import { MacroExpander } from './MacroExpander.js';
 import { IncludeLoader } from './IncludeLoader.js';
 import { CanvasLExecutor } from './CanvasLExecutor.js';
+import { ErrorHandler } from '../utils/ErrorHandler.js';
 
 export class Projector extends BasePlugin {
   constructor(config = {}) {
@@ -25,22 +26,71 @@ export class Projector extends BasePlugin {
     this.macroExpander = new MacroExpander();
     this.includeLoader = new IncludeLoader();
     this.executor = new CanvasLExecutor(this.metaLog);
+    this.errorHandler = new ErrorHandler();
     this.slides = [];
     this.currentSlide = null;
+    
+    // Set error handler for federation
+    this.metaLog.setErrorHandler(this.errorHandler);
+    
+    // Register default recovery strategies
+    this.setupErrorRecovery();
+  }
+
+  /**
+   * Setup error recovery strategies
+   */
+  setupErrorRecovery() {
+    // Network error recovery
+    this.errorHandler.registerRecoveryStrategy('network', async (errorInfo, context) => {
+      if (context.retry) {
+        const maxRetries = 3;
+        const baseDelay = 1000;
+        
+        for (let i = 0; i < maxRetries; i++) {
+          await new Promise(resolve => setTimeout(resolve, baseDelay * Math.pow(2, i)));
+          try {
+            return await context.retry();
+          } catch (retryError) {
+            if (i === maxRetries - 1) throw retryError;
+          }
+        }
+      }
+      throw new Error('Network recovery failed');
+    });
+
+    // Rate limit recovery
+    this.errorHandler.registerRecoveryStrategy('ratelimit', async (errorInfo, context) => {
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      if (context.retry) {
+        return await context.retry();
+      }
+      throw new Error('Rate limit recovery failed');
+    });
   }
 
   /**
    * Initialize projector
    */
   async onInit() {
-    // Initialize Meta-Log bridge (includes meta-log-db initialization)
-    await this.metaLog.init();
-    
-    // Initialize R5RS fallback
-    await this.metaLog.evalR5RS('(define projector-version "0.1.0")');
-    
-    // Load built-in plugins
-    await this.loadBuiltInPlugins();
+    try {
+      // Initialize Meta-Log bridge (includes meta-log-db initialization)
+      await this.metaLog.init();
+      
+      // Initialize R5RS fallback
+      await this.metaLog.evalR5RS('(define projector-version "0.1.0")');
+      
+      // Load built-in plugins
+      await this.loadBuiltInPlugins();
+    } catch (error) {
+      const recovery = await this.errorHandler.handle(error, {
+        context: 'projector_init'
+      });
+      
+      if (!recovery.recovered) {
+        throw error;
+      }
+    }
   }
 
   /**
@@ -169,6 +219,16 @@ export class Projector extends BasePlugin {
       
       return result;
     } catch (error) {
+      const recovery = await this.errorHandler.handle(error, {
+        context: 'load_deck',
+        deckPath,
+        retry: () => this.loadDeck(deckPath)
+      });
+      
+      if (recovery.recovered) {
+        return recovery.recovery;
+      }
+      
       throw new Error(`Failed to load deck ${deckPath}: ${error.message}`);
     }
   }

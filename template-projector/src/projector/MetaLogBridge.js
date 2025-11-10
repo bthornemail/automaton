@@ -9,13 +9,14 @@
  * - R5RS Scheme evaluation (via BiwaScheme, fallback)
  */
 
-import { Interpreter } from 'biwascheme';
+import BiwaScheme from 'biwascheme';
 import { MetaLogBrowserAdapter } from './MetaLogBrowserAdapter.js';
 
 export class MetaLogBridge {
   constructor() {
     this.adapter = new MetaLogBrowserAdapter();
-    this.r5rsInterpreter = new Interpreter(); // Fallback for R5RS
+    // BiwaScheme exports Interpreter as a property of the default export
+    this.r5rsInterpreter = new BiwaScheme.Interpreter(); // Fallback for R5RS
     this.sparqlCache = new Map();
     this.initialized = false;
   }
@@ -36,6 +37,17 @@ export class MetaLogBridge {
       console.warn('Failed to initialize meta-log-db adapter, using fallback:', error);
       // Continue with fallback implementations
       this.initialized = false;
+    }
+  }
+
+  /**
+   * Set error handler for federation
+   * @param {ErrorHandler} errorHandler - Error handler instance
+   */
+  setErrorHandler(errorHandler) {
+    this.errorHandler = errorHandler;
+    if (errorHandler && !this.federation) {
+      this.federation = new SparqlFederation(this, errorHandler);
     }
   }
 
@@ -231,10 +243,19 @@ export class MetaLogBridge {
    * Execute SPARQL query
    * @param {string} query - SPARQL query
    * @param {string} endpoint - SPARQL endpoint URL (optional, null for local)
+   * @param {Object} options - Query options (recoverPartial, etc.)
    * @returns {Promise<Object>} Query results
    */
-  async sparqlQuery(query, endpoint = null) {
+  async sparqlQuery(query, endpoint = null, options = {}) {
     await this.init();
+    
+    // Check if query contains SERVICE blocks (federated query)
+    const hasService = /SERVICE\s+<[^>]+>/i.test(query);
+    
+    if (hasService && this.federation) {
+      // Use federation handler
+      return await this.federation.executeFederatedQuery(query, options);
+    }
     
     // Check cache
     const cacheKey = `${endpoint || 'local'}:${query}`;

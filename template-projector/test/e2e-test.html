@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CanvasL Semantic Slides - End-to-End Tests</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 20px;
+      background: #0a0a0a;
+      color: #f0f0f0;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #4ECDC4;
+      border-bottom: 2px solid #4ECDC4;
+      padding-bottom: 10px;
+    }
+    .test-section {
+      margin: 20px 0;
+      padding: 20px;
+      border: 1px solid #333;
+      border-radius: 8px;
+      background: #1a1a1a;
+    }
+    .test-section h2 {
+      margin-top: 0;
+      color: #F7DC6F;
+    }
+    .test-result {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+    .success { 
+      background: #1a3a2a;
+      color: #4ECDC4;
+      border-left: 4px solid #4ECDC4;
+    }
+    .error { 
+      background: #3a1a1a;
+      color: #FF6B6B;
+      border-left: 4px solid #FF6B6B;
+    }
+    .info { 
+      background: #2a2a1a;
+      color: #F7DC6F;
+      border-left: 4px solid #F7DC6F;
+    }
+    .loading {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid #333;
+      border-top-color: #4ECDC4;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    pre {
+      background: #0a0a0a;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 12px;
+      margin: 10px 0;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+    .stat-card {
+      background: #1a1a1a;
+      padding: 15px;
+      border-radius: 4px;
+      border: 1px solid #333;
+    }
+    .stat-value {
+      font-size: 2em;
+      font-weight: bold;
+      color: #4ECDC4;
+    }
+    .stat-label {
+      color: #888;
+      font-size: 0.9em;
+    }
+    button {
+      background: #4ECDC4;
+      color: #0a0a0a;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      margin: 5px;
+    }
+    button:hover {
+      background: #5EDDD4;
+    }
+    button:disabled {
+      background: #333;
+      color: #666;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎯 CanvasL Semantic Slides - End-to-End Tests</h1>
+    
+    <div class="stats" id="stats">
+      <div class="stat-card">
+        <div class="stat-value" id="total-tests">0</div>
+        <div class="stat-label">Total Tests</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="passed-tests">0</div>
+        <div class="stat-label">Passed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="failed-tests">0</div>
+        <div class="stat-label">Failed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="test-duration">0ms</div>
+        <div class="stat-label">Duration</div>
+      </div>
+    </div>
+
+    <div style="margin: 20px 0;">
+      <button id="run-all-btn" onclick="runAllTests()">Run All Tests</button>
+      <button id="run-dbpedia-btn" onclick="runDBpediaTests()">Test DBpedia</button>
+      <button id="run-meta-log-btn" onclick="runMetaLogTests()">Test Meta-Log</button>
+      <button id="run-macro-btn" onclick="runMacroTests()">Test Macros</button>
+    </div>
+
+    <div class="test-section">
+      <h2>1. Meta-Log Bridge Initialization</h2>
+      <div id="test-1-result" class="test-result info">Waiting...</div>
+    </div>
+
+    <div class="test-section">
+      <h2>2. DBpedia Plugin Loading</h2>
+      <div id="test-2-result" class="test-result info">Waiting...</div>
+    </div>
+
+    <div class="test-section">
+      <h2>3. DBpedia Abstract Query (Albert Einstein)</h2>
+      <div id="test-3-result" class="test-result info">Waiting...</div>
+    </div>
+
+    <div class="test-section">
+      <h2>4. DBpedia Thumbnail Query</h2>
+      <div id="test-4-result" class="test-result info">Waiting...</div>
+    </div>
+
+    <div class="test-section">
+      <h2>5. DBpedia Related Entities Query</h2>
+      <div id="test-5-result" class="test-result info">Waiting...</div>
+    </div>
+
+    <div class="test-section">
+      <h2>6. ProLog Query Execution</h2>
+      <div id="test-6-result" class="test-result info">Waiting...</div>
+    </div>
+
+    <div class="test-section">
+      <h2>7. DataLog Query Execution</h2>
+      <div id="test-7-result" class="test-result info">Waiting...</div>
+    </div>
+
+    <div class="test-section">
+      <h2>8. SPARQL Local Query</h2>
+      <div id="test-8-result" class="test-result info">Waiting...</div>
+    </div>
+
+    <div class="test-section">
+      <h2>9. Macro Expansion</h2>
+      <div id="test-9-result" class="test-result info">Waiting...</div>
+    </div>
+
+    <div class="test-section">
+      <h2>10. @include Directive</h2>
+      <div id="test-10-result" class="test-result info">Waiting...</div>
+    </div>
+
+    <div class="test-section">
+      <h2>11. Error Handling</h2>
+      <div id="test-11-result" class="test-result info">Waiting...</div>
+    </div>
+
+    <div class="test-section">
+      <h2>12. Slide Loading (Einstein)</h2>
+      <div id="test-12-result" class="test-result info">Waiting...</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { Projector } from '../src/projector/Projector.js';
+    import { DBpediaPlugin } from '../src/plugin/dbpedia-plugin.js';
+    import { ErrorHandler } from '../src/utils/ErrorHandler.js';
+
+    let projector;
+    let errorHandler;
+    let testStats = { total: 0, passed: 0, failed: 0, startTime: null };
+
+    function updateStats() {
+      document.getElementById('total-tests').textContent = testStats.total;
+      document.getElementById('passed-tests').textContent = testStats.passed;
+      document.getElementById('failed-tests').textContent = testStats.failed;
+      
+      if (testStats.startTime) {
+        const duration = Date.now() - testStats.startTime;
+        document.getElementById('test-duration').textContent = `${duration}ms`;
+      }
+    }
+
+    function setResult(testId, success, message, details = null) {
+      const element = document.getElementById(`test-${testId}-result`);
+      const className = success ? 'success' : 'error';
+      element.className = `test-result ${className}`;
+      
+      let html = success ? '✅ ' : '❌ ';
+      html += message;
+      
+      if (details) {
+        html += '<pre>' + JSON.stringify(details, null, 2) + '</pre>';
+      }
+      
+      element.innerHTML = html;
+      
+      testStats.total++;
+      if (success) {
+        testStats.passed++;
+      } else {
+        testStats.failed++;
+      }
+      updateStats();
+    }
+
+    async function test1_MetaLogInit() {
+      try {
+        projector = new Projector();
+        await projector.onInit();
+        setResult(1, true, 'Meta-Log Bridge initialized successfully');
+        return true;
+      } catch (error) {
+        setResult(1, false, `Failed: ${error.message}`, { stack: error.stack });
+        return false;
+      }
+    }
+
+    async function test2_DBpediaPlugin() {
+      try {
+        const dbpediaPlugin = new DBpediaPlugin();
+        await projector.registerPlugin(dbpediaPlugin);
+        const plugin = projector.getPlugin('DBpedia');
+        setResult(2, plugin !== null, plugin ? 'DBpedia plugin loaded' : 'Plugin not found');
+        return plugin !== null;
+      } catch (error) {
+        setResult(2, false, `Failed: ${error.message}`);
+        return false;
+      }
+    }
+
+    async function test3_DBpediaAbstract() {
+      try {
+        const plugin = projector.getPlugin('DBpedia');
+        const result = await plugin.queryAbstract('Albert_Einstein');
+        
+        const success = result.value && result.value.length > 0;
+        const preview = result.value ? result.value.substring(0, 150) + '...' : 'null';
+        
+        setResult(3, success, 
+          success ? `Abstract retrieved (${result.value.length} chars)` : 'No abstract found',
+          { preview, triples: result.triples.length }
+        );
+        return success;
+      } catch (error) {
+        setResult(3, false, `Failed: ${error.message}`);
+        return false;
+      }
+    }
+
+    async function test4_DBpediaThumbnail() {
+      try {
+        const plugin = projector.getPlugin('DBpedia');
+        const result = await plugin.queryThumbnail('Albert_Einstein');
+        
+        const success = result.value && result.value.startsWith('http');
+        setResult(4, success,
+          success ? `Thumbnail URL: ${result.value}` : 'No thumbnail found',
+          { url: result.value }
+        );
+        return success;
+      } catch (error) {
+        setResult(4, false, `Failed: ${error.message}`);
+        return false;
+      }
+    }
+
+    async function test5_DBpediaRelated() {
+      try {
+        const plugin = projector.getPlugin('DBpedia');
+        const result = await plugin.queryRelated('Albert_Einstein', 'influencedBy', 5);
+        
+        const success = result.related && result.related.length > 0;
+        setResult(5, success,
+          success ? `Found ${result.related.length} related entities` : 'No related entities found',
+          { related: result.related.slice(0, 3) }
+        );
+        return success;
+      } catch (error) {
+        setResult(5, false, `Failed: ${error.message}`);
+        return false;
+      }
+    }
+
+    async function test6_ProLogQuery() {
+      try {
+        // Add some facts
+        projector.metaLog.addPrologFact('parent(alice, bob).');
+        projector.metaLog.addPrologFact('parent(bob, charlie).');
+        
+        // Query
+        const result = await projector.metaLog.prologQuery('(parent ?X ?Y)');
+        
+        const success = result && result.length > 0;
+        setResult(6, success,
+          success ? `Found ${result.length} bindings` : 'No results',
+          { bindings: result.slice(0, 3) }
+        );
+        return success;
+      } catch (error) {
+        setResult(6, false, `Failed: ${error.message}`);
+        return false;
+      }
+    }
+
+    async function test7_DataLogQuery() {
+      try {
+        const program = `
+          ancestor(X,Y) :- parent(X,Y).
+          ancestor(X,Z) :- parent(X,Y), ancestor(Y,Z).
+          parent(alice, bob).
+          parent(bob, charlie).
+        `;
+        
+        const result = await projector.metaLog.datalogQuery('(ancestor ?X ?Y)', program);
+        
+        const success = result && result.length > 0;
+        setResult(7, success,
+          success ? `Found ${result.length} facts` : 'No results',
+          { facts: result.slice(0, 3) }
+        );
+        return success;
+      } catch (error) {
+        setResult(7, false, `Failed: ${error.message}`);
+        return false;
+      }
+    }
+
+    async function test8_SPARQLLocal() {
+      try {
+        // Add triples
+        projector.metaLog.addTriple('http://example.org/alice', 'rdf:type', 'Person');
+        projector.metaLog.addTriple('http://example.org/alice', 'rdfs:label', 'Alice');
+        
+        // Query
+        const query = `
+          SELECT ?s ?o WHERE {
+            ?s rdfs:label ?o
+          }
+        `;
+        
+        const result = await projector.metaLog.sparqlQuery(query);
+        
+        const success = result.results && result.results.bindings && result.results.bindings.length > 0;
+        setResult(8, success,
+          success ? `Found ${result.results.bindings.length} bindings` : 'No results',
+          { bindings: result.results.bindings }
+        );
+        return success;
+      } catch (error) {
+        setResult(8, false, `Failed: ${error.message}`);
+        return false;
+      }
+    }
+
+    async function test9_MacroExpansion() {
+      try {
+        const macro = {
+          type: 'macro',
+          name: 'test-macro',
+          params: ['id', 'label'],
+          expansion: [
+            { type: 'rdf-triple', subject: { var: 'id' }, predicate: 'rdfs:label', object: { literal: { var: 'label' } } }
+          ]
+        };
+        
+        projector.macroExpander.registerMacro('test-macro', macro);
+        const call = { type: 'macro', call: 'test-macro', args: ['#test', 'Test Label'] };
+        const expanded = projector.macroExpander.expandMacroCall(call);
+        
+        const success = expanded && expanded.length > 0;
+        setResult(9, success,
+          success ? `Expanded to ${expanded.length} objects` : 'Expansion failed',
+          { expanded }
+        );
+        return success;
+      } catch (error) {
+        setResult(9, false, `Failed: ${error.message}`);
+        return false;
+      }
+    }
+
+    async function test10_IncludeDirective() {
+      try {
+        const testContent = `@include "templates/slides/basic-slide.canvasl.jsonl"
+{"id": "test-slide", "type": "slide"}`;
+        
+        const objects = projector.includeLoader.parseCanvasL(testContent, 'test.canvasl.jsonl');
+        const hasInclude = objects.some(obj => obj.type === '@include');
+        
+        setResult(10, hasInclude,
+          hasInclude ? '@include directive parsed successfully' : '@include not found',
+          { objects: objects.length }
+        );
+        return hasInclude;
+      } catch (error) {
+        setResult(10, false, `Failed: ${error.message}`);
+        return false;
+      }
+    }
+
+    async function test11_ErrorHandling() {
+      try {
+        errorHandler = new ErrorHandler();
+        
+        // Test error classification
+        const networkError = new Error('Network request failed');
+        const errorInfo = errorHandler.normalizeError(networkError);
+        
+        const success = errorInfo.type === 'network';
+        setResult(11, success,
+          success ? 'Error handling working correctly' : 'Error classification failed',
+          { errorType: errorInfo.type, message: errorInfo.message }
+        );
+        return success;
+      } catch (error) {
+        setResult(11, false, `Failed: ${error.message}`);
+        return false;
+      }
+    }
+
+    async function test12_SlideLoading() {
+      try {
+        const slidePath = 'templates/slides/einstein-slide.canvasl.jsonl';
+        const result = await projector.loadDeck(slidePath);
+        
+        const success = result.slides && result.slides.length > 0;
+        setResult(12, success,
+          success ? `Loaded ${result.slides.length} slide(s)` : 'No slides loaded',
+          { slides: result.slides.length, errors: result.errors?.length || 0 }
+        );
+        return success;
+      } catch (error) {
+        setResult(12, false, `Failed: ${error.message}`);
+        return false;
+      }
+    }
+
+    async function runAllTests() {
+      testStats = { total: 0, passed: 0, failed: 0, startTime: Date.now() };
+      updateStats();
+      
+      // Reset all results
+      for (let i = 1; i <= 12; i++) {
+        document.getElementById(`test-${i}-result`).className = 'test-result info';
+        document.getElementById(`test-${i}-result`).innerHTML = '<span class="loading"></span> Running...';
+      }
+
+      await test1_MetaLogInit();
+      await test2_DBpediaPlugin();
+      await test3_DBpediaAbstract();
+      await test4_DBpediaThumbnail();
+      await test5_DBpediaRelated();
+      await test6_ProLogQuery();
+      await test7_DataLogQuery();
+      await test8_SPARQLLocal();
+      await test9_MacroExpansion();
+      await test10_IncludeDirective();
+      await test11_ErrorHandling();
+      await test12_SlideLoading();
+    }
+
+    async function runDBpediaTests() {
+      await test1_MetaLogInit();
+      await test2_DBpediaPlugin();
+      await test3_DBpediaAbstract();
+      await test4_DBpediaThumbnail();
+      await test5_DBpediaRelated();
+    }
+
+    async function runMetaLogTests() {
+      await test1_MetaLogInit();
+      await test6_ProLogQuery();
+      await test7_DataLogQuery();
+      await test8_SPARQLLocal();
+    }
+
+    async function runMacroTests() {
+      await test1_MetaLogInit();
+      await test9_MacroExpansion();
+      await test10_IncludeDirective();
+    }
+
+    // Make functions available globally
+    window.runAllTests = runAllTests;
+    window.runDBpediaTests = runDBpediaTests;
+    window.runMetaLogTests = runMetaLogTests;
+    window.runMacroTests = runMacroTests;
+
+    // Auto-run on load
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(runAllTests, 500);
+    });
+  </script>
+</body>
+</html>

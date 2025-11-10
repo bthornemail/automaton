@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Federated SPARQL Query Testing</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 20px;
+      background: #0a0a0a;
+      color: #f0f0f0;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #4ECDC4;
+      border-bottom: 2px solid #4ECDC4;
+      padding-bottom: 10px;
+    }
+    .test-section {
+      margin: 20px 0;
+      padding: 20px;
+      border: 1px solid #333;
+      border-radius: 8px;
+      background: #1a1a1a;
+    }
+    .test-section h2 {
+      margin-top: 0;
+      color: #F7DC6F;
+    }
+    .test-result {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+    .success { 
+      background: #1a3a2a;
+      color: #4ECDC4;
+      border-left: 4px solid #4ECDC4;
+    }
+    .error { 
+      background: #3a1a1a;
+      color: #FF6B6B;
+      border-left: 4px solid #FF6B6B;
+    }
+    .info { 
+      background: #2a2a1a;
+      color: #F7DC6F;
+      border-left: 4px solid #F7DC6F;
+    }
+    .loading {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid #333;
+      border-top-color: #4ECDC4;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    pre {
+      background: #0a0a0a;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 11px;
+      margin: 10px 0;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+    .stat-card {
+      background: #1a1a1a;
+      padding: 15px;
+      border-radius: 4px;
+      border: 1px solid #333;
+    }
+    .stat-value {
+      font-size: 2em;
+      font-weight: bold;
+      color: #4ECDC4;
+    }
+    .stat-label {
+      color: #888;
+      font-size: 0.9em;
+    }
+    button {
+      background: #4ECDC4;
+      color: #0a0a0a;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      margin: 5px;
+    }
+    button:hover {
+      background: #5EDDD4;
+    }
+    button:disabled {
+      background: #333;
+      color: #666;
+      cursor: not-allowed;
+    }
+    .test-group {
+      margin: 15px 0;
+      padding: 15px;
+      background: #0f0f0f;
+      border-radius: 4px;
+    }
+    .test-group h3 {
+      margin-top: 0;
+      color: #F7DC6F;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🌐 Federated SPARQL Query Testing</h1>
+    
+    <div class="stats" id="stats">
+      <div class="stat-card">
+        <div class="stat-value" id="total-tests">0</div>
+        <div class="stat-label">Total Tests</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="passed-tests">0</div>
+        <div class="stat-label">Passed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="failed-tests">0</div>
+        <div class="stat-label">Failed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="test-duration">0ms</div>
+        <div class="stat-label">Duration</div>
+      </div>
+    </div>
+
+    <div style="margin: 20px 0;">
+      <button id="run-all-btn" onclick="runAllTests()">Run All Tests</button>
+      <button onclick="runUnitTests()">Unit Tests</button>
+      <button onclick="runIntegrationTests()">Integration Tests</button>
+      <button onclick="runE2ETests()">E2E Tests</button>
+    </div>
+
+    <!-- Unit Tests -->
+    <div class="test-section">
+      <h2>Unit Tests: Component Isolation</h2>
+      
+      <div class="test-group">
+        <h3>Test 1: Basic SERVICE Binding Flow</h3>
+        <div id="test-1-result" class="test-result info">Waiting...</div>
+      </div>
+
+      <div class="test-group">
+        <h3>Test 2: VALUES Interplay (SPARQL 1.1)</h3>
+        <div id="test-2-result" class="test-result info">Waiting...</div>
+      </div>
+
+      <div class="test-group">
+        <h3>Test 3: Agent Protection (ProLog Integration)</h3>
+        <div id="test-3-result" class="test-result info">Waiting...</div>
+      </div>
+
+      <div class="test-group">
+        <h3>Test 4: VALUES Constraint Optimization</h3>
+        <div id="test-4-result" class="test-result info">Waiting...</div>
+      </div>
+    </div>
+
+    <!-- Integration Tests -->
+    <div class="test-section">
+      <h2>Integration Tests: Real Endpoints + Federation</h2>
+      
+      <div class="test-group">
+        <h3>Test 5: Full Federation (DBpedia + Wikidata)</h3>
+        <div id="test-5-result" class="test-result info">Waiting...</div>
+      </div>
+
+      <div class="test-group">
+        <h3>Test 6: Private Federation with Consent</h3>
+        <div id="test-6-result" class="test-result info">Waiting...</div>
+      </div>
+
+      <div class="test-group">
+        <h3>Test 7: Error Recovery (Partial Failure)</h3>
+        <div id="test-7-result" class="test-result info">Waiting...</div>
+      </div>
+
+      <div class="test-group">
+        <h3>Test 8: Cross-Dataset Federation</h3>
+        <div id="test-8-result" class="test-result info">Waiting...</div>
+      </div>
+
+      <div class="test-group">
+        <h3>Test 9: Multiple SERVICE Blocks</h3>
+        <div id="test-9-result" class="test-result info">Waiting...</div>
+      </div>
+
+      <div class="test-group">
+        <h3>Test 10: Binding Flow Optimization</h3>
+        <div id="test-10-result" class="test-result info">Waiting...</div>
+      </div>
+    </div>
+
+    <!-- End-to-End Tests -->
+    <div class="test-section">
+      <h2>End-to-End Tests: Full CanvasL Workflow</h2>
+      
+      <div class="test-group">
+        <h3>Test 11: E2E Slide Federation</h3>
+        <div id="test-11-result" class="test-result info">Waiting...</div>
+      </div>
+
+      <div class="test-group">
+        <h3>Test 12: Agent Denial E2E</h3>
+        <div id="test-12-result" class="test-result info">Waiting...</div>
+      </div>
+
+      <div class="test-group">
+        <h3>Test 13: Federation with Macro Expansion</h3>
+        <div id="test-13-result" class="test-result info">Waiting...</div>
+      </div>
+
+      <div class="test-group">
+        <h3>Test 14: Offline Fallback</h3>
+        <div id="test-14-result" class="test-result info">Waiting...</div>
+      </div>
+
+      <div class="test-group">
+        <h3>Test 15: RDF* Provenance Annotations</h3>
+        <div id="test-15-result" class="test-result info">Waiting...</div>
+      </div>
+    </div>
+
+    <!-- Advanced Tests -->
+    <div class="test-section">
+      <h2>Advanced Federation Tests</h2>
+      
+      <div class="test-group">
+        <h3>Test 16: Query Rewriting Efficiency</h3>
+        <div id="test-16-result" class="test-result info">Waiting...</div>
+      </div>
+
+      <div class="test-group">
+        <h3>Test 17: Network Variability Handling</h3>
+        <div id="test-17-result" class="test-result info">Waiting...</div>
+      </div>
+
+      <div class="test-group">
+        <h3>Test 18: Rate Limit Recovery</h3>
+        <div id="test-18-result" class="test-result info">Waiting...</div>
+      </div>
+
+      <div class="test-group">
+        <h3>Test 19: Complex Join Patterns</h3>
+        <div id="test-19-result" class="test-result info">Waiting...</div>
+      </div>
+
+      <div class="test-group">
+        <h3>Test 20: Performance Measurement</h3>
+        <div id="test-20-result" class="test-result info">Waiting...</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { Projector } from '../src/projector/Projector.js';
+    import { SparqlFederation } from '../src/utils/SparqlFederation.js';
+    import { ErrorHandler } from '../src/utils/ErrorHandler.js';
+    import { AgentProtection } from '../src/utils/AgentProtection.js';
+    import { DBpediaPlugin } from '../src/plugin/dbpedia-plugin.js';
+
+    let projector;
+    let federation;
+    let errorHandler;
+    let testStats = { total: 0, passed: 0, failed: 0, startTime: null };
+
+    function updateStats() {
+      document.getElementById('total-tests').textContent = testStats.total;
+      document.getElementById('passed-tests').textContent = testStats.passed;
+      document.getElementById('failed-tests').textContent = testStats.failed;
+      
+      if (testStats.startTime) {
+        const duration = Date.now() - testStats.startTime;
+        document.getElementById('test-duration').textContent = `${duration}ms`;
+      }
+    }
+
+    function setResult(testId, success, message, details = null) {
+      const element = document.getElementById(`test-${testId}-result`);
+      const className = success ? 'success' : 'error';
+      element.className = `test-result ${className}`;
+      
+      let html = success ? '✅ ' : '❌ ';
+      html += message;
+      
+      if (details) {
+        html += '<pre>' + JSON.stringify(details, null, 2) + '</pre>';
+      }
+      
+      element.innerHTML = html;
+      
+      testStats.total++;
+      if (success) {
+        testStats.passed++;
+      } else {
+        testStats.failed++;
+      }
+      updateStats();
+    }
+
+    async function init() {
+      if (projector) return;
+
+      projector = new Projector();
+      await projector.onInit();
+      
+      errorHandler = projector.errorHandler;
+      federation = new SparqlFederation(projector.metaLog, errorHandler);
+      
+      // Initialize agent protection
+      agentProtection = new AgentProtection(projector.metaLog);
+      await agentProtection.init();
+      
+      // Register endpoints
+      federation.registerEndpoint('https://dbpedia.org/sparql', {
+        url: 'https://dbpedia.org/sparql',
+        requiresConsent: false
+      });
+      
+      federation.registerEndpoint('https://query.wikidata.org/sparql', {
+        url: 'https://query.wikidata.org/sparql',
+        requiresConsent: false
+      });
+      
+      federation.registerEndpoint('local://blackboard', {
+        url: 'local://blackboard',
+        requiresConsent: true
+      });
+    }
+
+    // Unit Tests
+    async function test1_ServiceBinding() {
+      await init();
+      
+      try {
+        // Mock DBpedia endpoint
+        federation.registerMockEndpoint('https://dbpedia.org/sparql', async (query, bindings) => {
+          if (bindings.name && bindings.name.includes('Los_Angeles')) {
+            return {
+              results: {
+                bindings: [{
+                  name: { value: 'Los_Angeles' },
+                  desc: { value: 'Mock abstract for Los Angeles' }
+                }]
+              }
+            };
+          }
+          return { results: { bindings: [] } };
+        });
+
+        const query = `
+          SELECT ?name ?desc WHERE {
+            VALUES ?name { "Los_Angeles" }
+            SERVICE <https://dbpedia.org/sparql> {
+              ?city dbo:name ?name ; dbo:abstract ?desc .
+              FILTER(LANG(?desc) = 'en')
+            }
+          }
+        `;
+
+        const result = await federation.executeFederatedQuery(query);
+        const success = result.results?.bindings?.length === 1 && 
+                       result.results.bindings[0].name?.value === 'Los_Angeles';
+        
+        setResult(1, success,
+          success ? 'SERVICE binding flow working correctly' : 'Binding flow failed',
+          { bindings: result.results?.bindings?.length || 0 }
+        );
+      } catch (error) {
+        setResult(1, false, `Failed: ${error.message}`, { stack: error.stack });
+      }
+    }
+
+    async function test2_ValuesInterplay() {
+      await init();
+      
+      try {
+        let queryCount = 0;
+        federation.registerMockEndpoint('https://dbpedia.org/sparql', async (query, bindings) => {
+          queryCount++;
+          return {
+            results: {
+              bindings: bindings.cat ? bindings.cat.map(cat => ({
+                cat: { value: cat },
+                org: { value: `Org_${cat}` }
+              })) : []
+            }
+          };
+        });
+
+        const query = `
+          VALUES ?cat { "Marble" "Fluffy" }
+          SERVICE <https://dbpedia.org/sparql> {
+            ?cat wdt:P463 ?org .
+          }
+        `;
+
+        const result = await federation.executeFederatedQuery(query);
+        const success = result.results?.bindings?.length <= 2 && queryCount === 1;
+        
+        setResult(2, success,
+          success ? 'VALUES limits remote queries correctly' : 'VALUES optimization failed',
+          { bindings: result.results?.bindings?.length, queryCount }
+        );
+      } catch (error) {
+        setResult(2, false, `Failed: ${error.message}`);
+      }
+    }
+
+    async function test3_AgentProtection() {
+      await init();
+      
+      try {
+        // Revoke consent for private endpoint
+        await agentProtection.revokeConsent('user', 'local://blackboard');
+        
+        federation.registerMockEndpoint('local://blackboard', async (query, bindings) => {
+          return {
+            results: {
+              bindings: [{ s: { value: 'private:note1' }, n: { value: 'Private note' } }]
+            }
+          };
+        });
+
+        const query = 'SERVICE <local://blackboard> { ?s ui:personalNote ?n . }';
+        const result = await federation.executeFederatedQuery(query);
+        
+        // Should be denied, so no bindings
+        const success = !result.results?.bindings || result.results.bindings.length === 0;
+        
+        setResult(3, success,
+          success ? 'Agent protection working - query denied' : 'Agent protection failed',
+          { bindings: result.results?.bindings?.length || 0 }
+        );
+      } catch (error) {
+        setResult(3, false, `Failed: ${error.message}`);
+      }
+    }
+
+    async function test4_ValuesConstraint() {
+      await init();
+      
+      try {
+        let receivedBindings = null;
+        federation.registerMockEndpoint('https://dbpedia.org/sparql', async (query, bindings) => {
+          receivedBindings = bindings;
+          return {
+            results: {
+              bindings: bindings.city ? bindings.city.map(city => ({
+                city: { value: city },
+                pop: { value: '1000000' }
+              })) : []
+            }
+          };
+        });
+
+        const query = `
+          VALUES ?city { "New_York" "Los_Angeles" }
+          SERVICE <https://dbpedia.org/sparql> {
+            ?city dbo:populationTotal ?pop .
+          }
+        `;
+
+        await federation.executeFederatedQuery(query);
+        const success = receivedBindings && receivedBindings.city && receivedBindings.city.length === 2;
+        
+        setResult(4, success,
+          success ? 'VALUES constraints passed to SERVICE correctly' : 'VALUES constraint failed',
+          { receivedBindings }
+        );
+      } catch (error) {
+        setResult(4, false, `Failed: ${error.message}`);
+      }
+    }
+
+    // Integration Tests
+    async function test5_HybridFederation() {
+      await init();
+      
+      try {
+        const query = `
+          PREFIX dbr: <http://dbpedia.org/resource/>
+          PREFIX dbo: <http://dbpedia.org/ontology/>
+          
+          SELECT ?city ?pop WHERE {
+            SERVICE <https://dbpedia.org/sparql> {
+              dbr:Los_Angeles dbo:populationTotal ?pop .
+            }
+          }
+        `;
+
+        const result = await federation.executeFederatedQuery(query, { recoverPartial: true });
+        const success = result.results?.bindings?.length > 0 && 
+                       result.results.bindings[0].pop?.value;
+        
+        setResult(5, success,
+          success ? `Federation working - Population: ${result.results.bindings[0].pop?.value}` : 'Federation failed',
+          { bindings: result.results?.bindings?.length || 0 }
+        );
+      } catch (error) {
+        setResult(5, false, `Failed: ${error.message}`);
+      }
+    }
+
+    async function test6_ProtectedFederation() {
+      await init();
+      
+      try {
+        // Grant consent
+        await agentProtection.grantConsent('user', 'local://blackboard');
+        
+        federation.registerMockEndpoint('local://blackboard', async (query, bindings) => {
+          return {
+            results: {
+              bindings: [{ priv: { value: 'Private note content' } }]
+            }
+          };
+        });
+
+        const query = `
+          SERVICE <https://dbpedia.org/sparql> {
+            dbr:Albert_Einstein dbo:abstract ?pub .
+          }
+          SERVICE <local://blackboard> {
+            ?s ui:personalNote ?priv .
+          }
+        `;
+
+        const result = await federation.executeFederatedQuery(query);
+        const success = result.results?.bindings?.some(b => b.priv);
+        
+        setResult(6, success,
+          success ? 'Protected federation working - private data included' : 'Protected federation failed',
+          { bindings: result.results?.bindings?.length || 0 }
+        );
+      } catch (error) {
+        setResult(6, false, `Failed: ${error.message}`);
+      }
+    }
+
+    async function test7_ErrorRecovery() {
+      await init();
+      
+      try {
+        let callCount = 0;
+        federation.registerMockEndpoint('mock-fail', async (query, bindings) => {
+          callCount++;
+          if (callCount < 2) {
+            throw new Error('Network timeout');
+          }
+          return {
+            results: {
+              bindings: [{ recovered: { value: 'true' } }]
+            }
+          };
+        });
+
+        const query = 'SERVICE <mock-fail> { ?s ?p ?o . }';
+        const result = await federation.executeFederatedQuery(query, { recoverPartial: true });
+        
+        const success = result.results?.bindings?.length > 0 || result.partial;
+        
+        setResult(7, success,
+          success ? 'Error recovery working - partial results returned' : 'Error recovery failed',
+          { recovered: result.results?.bindings?.length > 0, errors: result.errors?.length || 0 }
+        );
+      } catch (error) {
+        setResult(7, false, `Failed: ${error.message}`);
+      }
+    }
+
+    async function test8_CrossDataset() {
+      await init();
+      
+      try {
+        const query = `
+          PREFIX dbr: <http://dbpedia.org/resource/>
+          PREFIX dbo: <http://dbpedia.org/ontology/>
+          
+          SELECT ?city ?pop ?area WHERE {
+            SERVICE <https://dbpedia.org/sparql> {
+              dbr:Los_Angeles dbo:populationTotal ?pop ;
+                             dbo:areaTotal ?area .
+            }
+          }
+        `;
+
+        const result = await federation.executeFederatedQuery(query);
+        const success = result.results?.bindings?.length > 0;
+        
+        setResult(8, success,
+          success ? 'Cross-dataset federation working' : 'Cross-dataset federation failed',
+          { bindings: result.results?.bindings?.length || 0 }
+        );
+      } catch (error) {
+        setResult(8, false, `Failed: ${error.message}`);
+      }
+    }
+
+    async function test9_MultipleServices() {
+      await init();
+      
+      try {
+        const query = `
+          PREFIX dbr: <http://dbpedia.org/resource/>
+          PREFIX dbo: <http://dbpedia.org/ontology/>
+          
+          SELECT ?name ?abstract ?thumbnail WHERE {
+            SERVICE <https://dbpedia.org/sparql> {
+              dbr:Albert_Einstein dbo:abstract ?abstract .
+              FILTER(LANG(?abstract) = "en")
+            }
+            SERVICE <https://dbpedia.org/sparql> {
+              dbr:Albert_Einstein dbo:thumbnail ?thumbnail .
+            }
+          }
+        `;
+
+        const result = await federation.executeFederatedQuery(query);
+        const success = result.results?.bindings?.length > 0;
+        
+        setResult(9, success,
+          success ? 'Multiple SERVICE blocks working' : 'Multiple SERVICE blocks failed',
+          { bindings: result.results?.bindings?.length || 0 }
+        );
+      } catch (error) {
+        setResult(9, false, `Failed: ${error.message}`);
+      }
+    }
+
+    async function test10_BindingFlow() {
+      await init();
+      
+      try {
+        let queryReceived = null;
+        federation.registerMockEndpoint('https://dbpedia.org/sparql', async (query, bindings) => {
+          queryReceived = { query, bindings };
+          return {
+            results: {
+              bindings: bindings.name ? [{ name: { value: bindings.name[0] } }] : []
+            }
+          };
+        });
+
+        const query = `
+          VALUES ?name { "Einstein" }
+          SERVICE <https://dbpedia.org/sparql> {
+            ?person rdfs:label ?name .
+          }
+        `;
+
+        await federation.executeFederatedQuery(query);
+        const success = queryReceived && queryReceived.bindings.name && queryReceived.bindings.name.length === 1;
+        
+        setResult(10, success,
+          success ? 'Binding flow optimization working' : 'Binding flow optimization failed',
+          { receivedBindings: queryReceived?.bindings }
+        );
+      } catch (error) {
+        setResult(10, false, `Failed: ${error.message}`);
+      }
+    }
+
+    // E2E Tests
+    async function test11_E2ESlideFederation() {
+      await init();
+      
+      try {
+        const slidePath = 'templates/slides/einstein-slide.canvasl.jsonl';
+        const result = await projector.loadDeck(slidePath);
+        
+        const success = result.slides && result.slides.length > 0;
+        
+        setResult(11, success,
+          success ? `E2E slide federation working - ${result.slides.length} slide(s) loaded` : 'E2E slide federation failed',
+          { slides: result.slides?.length || 0 }
+        );
+      } catch (error) {
+        setResult(11, false, `Failed: ${error.message}`);
+      }
+    }
+
+    async function test12_AgentDenialE2E() {
+      await init();
+      
+      try {
+        // Deny consent
+        await agentProtection.revokeConsent('user', 'local://blackboard');
+        
+        federation.registerMockEndpoint('local://blackboard', async (query, bindings) => {
+          return {
+            results: {
+              bindings: [{ n: { value: 'Should not appear' } }]
+            }
+          };
+        });
+        
+        const query = 'SERVICE <local://blackboard> { ?s ui:personalNote ?n . }';
+        const result = await federation.executeFederatedQuery(query);
+        
+        const success = !result.results?.bindings || result.results.bindings.length === 0;
+        
+        setResult(12, success,
+          success ? 'Agent denial E2E working - private data blocked' : 'Agent denial E2E failed',
+          { bindings: result.results?.bindings?.length || 0 }
+        );
+      } catch (error) {
+        setResult(12, false, `Failed: ${error.message}`);
+      }
+    }
+
+    async function test13_MacroFederation() {
+      await init();
+      
+      try {
+        // Test macro expansion with federation
+        const macro = {
+          type: 'macro',
+          name: 'federated-query',
+          params: ['entity'],
+          expansion: [
+            {
+              type: 'sparql-construct',
+              query: {
+                template: 'SERVICE <https://dbpedia.org/sparql> { dbr:{entity} dbo:abstract ?abstract . }'
+              },
+              bindings: {
+                entity: { var: 'entity' }
+              }
+            }
+          ]
+        };
+        
+        projector.macroExpander.registerMacro('federated-query', macro);
+        const call = { type: 'macro', call: 'federated-query', args: ['Albert_Einstein'] };
+        const expanded = projector.macroExpander.expandMacroCall(call);
+        
+        const success = expanded && expanded.length > 0;
+        
+        setResult(13, success,
+          success ? 'Federation with macro expansion working' : 'Federation with macro expansion failed',
+          { expanded: expanded?.length || 0 }
+        );
+      } catch (error) {
+        setResult(13, false, `Failed: ${error.message}`);
+      }
+    }
+
+    async function test14_OfflineFallback() {
+      await init();
+      
+      try {
+        // Simulate offline
+        const originalOnline = navigator.onLine;
+        Object.defineProperty(navigator, 'onLine', { value: false, writable: true });
+        
+        // Try federation query
+        const query = 'SERVICE <https://dbpedia.org/sparql> { ?s ?p ?o . } LIMIT 1';
+        
+        try {
+          await federation.executeFederatedQuery(query);
+          setResult(14, false, 'Should have failed offline');
+        } catch (error) {
+          // Expected to fail
+          setResult(14, true, 'Offline detection working - query failed as expected');
+        } finally {
+          Object.defineProperty(navigator, 'onLine', { value: originalOnline, writable: true });
+        }
+      } catch (error) {
+        setResult(14, false, `Failed: ${error.message}`);
+      }
+    }
+
+    async function test15_RDFStarProvenance() {
+      await init();
+      
+      try {
+        // Test RDF* annotations for provenance
+        const query = `
+          PREFIX dbr: <http://dbpedia.org/resource/>
+          PREFIX dbo: <http://dbpedia.org/ontology/>
+          PREFIX prov: <http://www.w3.org/ns/prov#>
+          
+          CONSTRUCT {
+            ?s dbo:abstract ?abstract .
+            << ?s dbo:abstract ?abstract >> prov:wasRetrievedFrom <https://dbpedia.org/sparql> .
+          } WHERE {
+            SERVICE <https://dbpedia.org/sparql> {
+              dbr:Albert_Einstein dbo:abstract ?abstract .
+              FILTER(LANG(?abstract) = "en")
+            }
+          }
+        `;
+
+        const result = await federation.executeFederatedQuery(query);
+        const success = result.results?.bindings?.length > 0;
+        
+        setResult(15, success,
+          success ? 'RDF* provenance annotations working' : 'RDF* provenance failed',
+          { bindings: result.results?.bindings?.length || 0 }
+        );
+      } catch (error) {
+        setResult(15, false, `Failed: ${error.message}`);
+      }
+    }
+
+    // Advanced Tests
+    async function test16_QueryRewriting() {
+      await init();
+      
+      try {
+        const query = `
+          VALUES ?city { "Los_Angeles" "New_York" }
+          SERVICE <https://dbpedia.org/sparql> {
+            ?city dbo:populationTotal ?pop .
+          }
+        `;
+
+        const serviceBlocks = federation.parseServiceBlocks(query);
+        const valuesBindings = federation.extractValuesBindings(query);
+        
+        const success = serviceBlocks.length === 1 && 
+                       valuesBindings.city && 
+                       valuesBindings.city.length === 2;
+        
+        setResult(16, success,
+          success ? 'Query rewriting working correctly' : 'Query rewriting failed',
+          { serviceBlocks: serviceBlocks.length, valuesCount: valuesBindings.city?.length || 0 }
+        );
+      } catch (error) {
+        setResult(16, false, `Failed: ${error.message}`);
+      }
+    }
+
+    async function test17_NetworkVariability() {
+      await init();
+      
+      try {
+        let attempts = 0;
+        federation.registerMockEndpoint('unreliable', async (query, bindings) => {
+          attempts++;
+          if (attempts < 3) {
+            throw new Error('Network timeout');
+          }
+          return {
+            results: {
+              bindings: [{ recovered: { value: 'true' } }]
+            }
+          };
+        });
+
+        const query = 'SERVICE <unreliable> { ?s ?p ?o . }';
+        const result = await federation.executeFederatedQuery(query, { recoverPartial: true });
+        
+        const success = result.results?.bindings?.length > 0 || result.partial;
+        
+        setResult(17, success,
+          success ? 'Network variability handling working' : 'Network variability handling failed',
+          { attempts, recovered: result.results?.bindings?.length > 0 }
+        );
+      } catch (error) {
+        setResult(17, false, `Failed: ${error.message}`);
+      }
+    }
+
+    async function test18_RateLimitRecovery() {
+      await init();
+      
+      try {
+        let attempts = 0;
+        federation.registerMockEndpoint('ratelimited', async (query, bindings) => {
+          attempts++;
+          if (attempts === 1) {
+            const error = new Error('429 Rate limit exceeded');
+            error.status = 429;
+            throw error;
+          }
+          return {
+            results: {
+              bindings: [{ data: { value: 'Recovered' } }]
+            }
+          };
+        });
+
+        const query = 'SERVICE <ratelimited> { ?s ?p ?o . }';
+        const result = await federation.executeFederatedQuery(query, { recoverPartial: true });
+        
+        const success = result.results?.bindings?.length > 0 && attempts >= 2;
+        
+        setResult(18, success,
+          success ? 'Rate limit recovery working' : 'Rate limit recovery failed',
+          { attempts, recovered: result.results?.bindings?.length > 0 }
+        );
+      } catch (error) {
+        setResult(18, false, `Failed: ${error.message}`);
+      }
+    }
+
+    async function test19_ComplexJoins() {
+      await init();
+      
+      try {
+        federation.registerMockEndpoint('service1', async (query, bindings) => {
+          return {
+            results: {
+              bindings: [
+                { id: { value: '1' }, name: { value: 'Alice' } },
+                { id: { value: '2' }, name: { value: 'Bob' } }
+              ]
+            }
+          };
+        });
+
+        federation.registerMockEndpoint('service2', async (query, bindings) => {
+          return {
+            results: {
+              bindings: [
+                { id: { value: '1' }, age: { value: '30' } },
+                { id: { value: '2' }, age: { value: '25' } }
+              ]
+            }
+          };
+        });
+
+        const query = `
+          SELECT ?id ?name ?age WHERE {
+            SERVICE <service1> { ?id rdfs:label ?name . }
+            SERVICE <service2> { ?id schema:age ?age . }
+          }
+        `;
+
+        const result = await federation.executeFederatedQuery(query);
+        const success = result.results?.bindings?.length >= 2;
+        
+        setResult(19, success,
+          success ? 'Complex join patterns working' : 'Complex join patterns failed',
+          { bindings: result.results?.bindings?.length || 0 }
+        );
+      } catch (error) {
+        setResult(19, false, `Failed: ${error.message}`);
+      }
+    }
+
+    async function test20_Performance() {
+      await init();
+      
+      try {
+        const startTime = performance.now();
+        
+        const query = `
+          PREFIX dbr: <http://dbpedia.org/resource/>
+          PREFIX dbo: <http://dbpedia.org/ontology/>
+          
+          SELECT ?abstract WHERE {
+            SERVICE <https://dbpedia.org/sparql> {
+              dbr:Albert_Einstein dbo:abstract ?abstract .
+              FILTER(LANG(?abstract) = "en")
+            }
+          }
+          LIMIT 1
+        `;
+
+        const result = await federation.executeFederatedQuery(query);
+        const duration = performance.now() - startTime;
+        
+        const success = result.results?.bindings?.length > 0 && duration < 5000; // < 5 seconds
+        
+        setResult(20, success,
+          success ? `Performance acceptable - ${duration.toFixed(0)}ms` : 'Performance too slow',
+          { duration: duration.toFixed(0) + 'ms', bindings: result.results?.bindings?.length || 0 }
+        );
+      } catch (error) {
+        setResult(20, false, `Failed: ${error.message}`);
+      }
+    }
+
+    // Test runners
+    async function runUnitTests() {
+      testStats = { total: 0, passed: 0, failed: 0, startTime: Date.now() };
+      updateStats();
+      
+      await test1_ServiceBinding();
+      await test2_ValuesInterplay();
+      await test3_AgentProtection();
+      await test4_ValuesConstraint();
+    }
+
+    async function runIntegrationTests() {
+      testStats = { total: 0, passed: 0, failed: 0, startTime: Date.now() };
+      updateStats();
+      
+      await test5_HybridFederation();
+      await test6_ProtectedFederation();
+      await test7_ErrorRecovery();
+      await test8_CrossDataset();
+      await test9_MultipleServices();
+      await test10_BindingFlow();
+    }
+
+    async function runE2ETests() {
+      testStats = { total: 0, passed: 0, failed: 0, startTime: Date.now() };
+      updateStats();
+      
+      await test11_E2ESlideFederation();
+      await test12_AgentDenialE2E();
+      await test13_MacroFederation();
+      await test14_OfflineFallback();
+      await test15_RDFStarProvenance();
+    }
+
+    async function runAdvancedTests() {
+      testStats = { total: 0, passed: 0, failed: 0, startTime: Date.now() };
+      updateStats();
+      
+      await test16_QueryRewriting();
+      await test17_NetworkVariability();
+      await test18_RateLimitRecovery();
+      await test19_ComplexJoins();
+      await test20_Performance();
+    }
+
+    async function runAllTests() {
+      testStats = { total: 0, passed: 0, failed: 0, startTime: Date.now() };
+      updateStats();
+      
+      // Reset all results
+      for (let i = 1; i <= 20; i++) {
+        document.getElementById(`test-${i}-result`).className = 'test-result info';
+        document.getElementById(`test-${i}-result`).innerHTML = '<span class="loading"></span> Running...';
+      }
+
+      await runUnitTests();
+      await runIntegrationTests();
+      await runE2ETests();
+      await runAdvancedTests();
+    }
+
+    // Make functions available globally
+    window.runAllTests = runAllTests;
+    window.runUnitTests = runUnitTests;
+    window.runIntegrationTests = runIntegrationTests;
+    window.runE2ETests = runE2ETests;
+
+    // Auto-run on load
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(runAllTests, 500);
+    });
+  </script>
+</body>
+</html>
