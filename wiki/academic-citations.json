@@ -1,0 +1,162 @@
+{
+  "church-encoding": {
+    "wikipedia": "https://en.wikipedia.org/wiki/Church_encoding",
+    "arxiv": [
+      "https://arxiv.org/search/?query=church+encoding",
+      "https://arxiv.org/search/?query=lambda+calculus+church+numerals"
+    ],
+    "concepts": ["lambda calculus", "functional programming", "computability theory", "church numerals"]
+  },
+  "lambda-calculus": {
+    "wikipedia": "https://en.wikipedia.org/wiki/Lambda_calculus",
+    "arxiv": [
+      "https://arxiv.org/search/?query=lambda+calculus",
+      "https://arxiv.org/search/?query=typed+lambda+calculus"
+    ],
+    "concepts": ["formal system", "computation", "type theory", "functional programming"]
+  },
+  "multi-agent-system": {
+    "wikipedia": "https://en.wikipedia.org/wiki/Multi-agent_system",
+    "arxiv": [
+      "https://arxiv.org/search/?query=multi-agent+system",
+      "https://arxiv.org/search/?query=distributed+multi-agent+coordination"
+    ],
+    "concepts": ["distributed systems", "artificial intelligence", "coordination", "agent-based modeling"]
+  },
+  "prolog": {
+    "wikipedia": "https://en.wikipedia.org/wiki/Prolog",
+    "arxiv": [
+      "https://arxiv.org/search/?query=prolog",
+      "https://arxiv.org/search/?query=logic+programming+unification"
+    ],
+    "concepts": ["logic programming", "unification", "resolution", "declarative programming"]
+  },
+  "datalog": {
+    "wikipedia": "https://en.wikipedia.org/wiki/Datalog",
+    "arxiv": [
+      "https://arxiv.org/search/?query=datalog",
+      "https://arxiv.org/search/?query=datalog+query+language"
+    ],
+    "concepts": ["declarative programming", "database query language", "logic programming", "deductive database"]
+  },
+  "rdf": {
+    "wikipedia": "https://en.wikipedia.org/wiki/Resource_Description_Framework",
+    "arxiv": [
+      "https://arxiv.org/search/?query=RDF+semantic+web",
+      "https://arxiv.org/search/?query=resource+description+framework"
+    ],
+    "concepts": ["semantic web", "knowledge representation", "linked data", "ontology"]
+  },
+  "sparql": {
+    "wikipedia": "https://en.wikipedia.org/wiki/SPARQL",
+    "arxiv": [
+      "https://arxiv.org/search/?query=SPARQL",
+      "https://arxiv.org/search/?query=SPARQL+query+language"
+    ],
+    "concepts": ["query language", "semantic web", "RDF", "knowledge graph"]
+  },
+  "shacl": {
+    "wikipedia": "https://en.wikipedia.org/wiki/SHACL",
+    "arxiv": [
+      "https://arxiv.org/search/?query=SHACL",
+      "https://arxiv.org/search/?query=SHACL+validation+constraints"
+    ],
+    "concepts": ["data validation", "constraint language", "RDF validation", "semantic web"]
+  },
+  "y-combinator": {
+    "wikipedia": "https://en.wikipedia.org/wiki/Fixed-point_combinator",
+    "arxiv": [
+      "https://arxiv.org/search/?query=fixed-point+combinator",
+      "https://arxiv.org/search/?query=Y-combinator+recursion"
+    ],
+    "concepts": ["fixed-point combinator", "recursion", "lambda calculus", "functional programming"]
+  },
+  "blackboard-architecture": {
+    "wikipedia": "https://en.wikipedia.org/wiki/Blackboard_system",
+    "arxiv": [
+      "https://arxiv.org/search/?query=blackboard+architecture",
+      "https://arxiv.org/search/?query=blackboard+system+knowledge+sharing"
+    ],
+    "concepts": ["software architecture", "knowledge sharing", "coordination", "distributed problem solving"]
+  },
+  "computational-topology": {
+    "wikipedia": "https://en.wikipedia.org/wiki/Computational_topology",
+    "arxiv": [
+      "https://arxiv.org/search/?query=computational+topology",
+      "https://arxiv.org/search/?query=topological+data+analysis"
+    ],
+    "concepts": ["topology", "algebraic topology", "persistent homology", "manifold learning"]
+  },
+  "r5rs": {
+    "wikipedia": "https://en.wikipedia.org/wiki/Revised_Report_on_the_Algorithmic_Language_Scheme",
+    "arxiv": [
+      "https://arxiv.org/search/?query=R5RS+scheme",
+      "https://arxiv.org/search/?query=scheme+programming+language"
+    ],
+    "concepts": ["scheme", "functional programming", "Lisp", "programming language"]
+  },
+  "dimensional-progression": {
+    "wikipedia": "https://en.wikipedia.org/wiki/Dimension",
+    "arxiv": [
+      "https://arxiv.org/search/?query=dimensional+analysis",
+      "https://arxiv.org/search/?query=topological+dimension"
+    ],
+    "concepts": ["dimension", "topology", "manifold", "geometric structure"]
+  },
+  "automaton": {
+    "wikipedia": "https://en.wikipedia.org/wiki/Automata_theory",
+    "arxiv": [
+      "https://arxiv.org/search/?query=automaton",
+      "https://arxiv.org/search/?query=finite+state+automaton"
+    ],
+    "concepts": ["automata theory", "finite state machine", "computation", "formal language"]
+  },
+  "self-reference": {
+    "wikipedia": "https://en.wikipedia.org/wiki/Self-reference",
+    "arxiv": [
+      "https://arxiv.org/search/?query=self-reference",
+      "https://arxiv.org/search/?query=self-referential+system"
+    ],
+    "concepts": ["self-reference", "recursion", "metacircular evaluator", "fixed point"]
+  },
+  "metacircular-evaluator": {
+    "wikipedia": "https://en.wikipedia.org/wiki/Metacircular_evaluator",
+    "arxiv": [
+      "https://arxiv.org/search/?query=metacircular+evaluator",
+      "https://arxiv.org/search/?query=interpreter+implementation"
+    ],
+    "concepts": ["interpreter", "evaluator", "meta-programming", "self-hosting"]
+  },
+  "canvas-format": {
+    "wikipedia": "https://en.wikipedia.org/wiki/JSON",
+    "arxiv": [
+      "https://arxiv.org/search/?query=JSON+format",
+      "https://arxiv.org/search/?query=structured+data+format"
+    ],
+    "concepts": ["JSON", "data format", "serialization", "structured data"]
+  },
+  "knowledge-graph": {
+    "wikipedia": "https://en.wikipedia.org/wiki/Knowledge_graph",
+    "arxiv": [
+      "https://arxiv.org/search/?query=knowledge+graph",
+      "https://arxiv.org/search/?query=graph+knowledge+representation"
+    ],
+    "concepts": ["knowledge representation", "graph database", "semantic network", "ontology"]
+  },
+  "provenance": {
+    "wikipedia": "https://en.wikipedia.org/wiki/Provenance",
+    "arxiv": [
+      "https://arxiv.org/search/?query=data+provenance",
+      "https://arxiv.org/search/?query=provenance+tracking"
+    ],
+    "concepts": ["data provenance", "lineage", "metadata", "data quality"]
+  },
+  "ci-cd": {
+    "wikipedia": "https://en.wikipedia.org/wiki/CI/CD",
+    "arxiv": [
+      "https://arxiv.org/search/?query=continuous+integration",
+      "https://arxiv.org/search/?query=devops+automation"
+    ],
+    "concepts": ["continuous integration", "continuous deployment", "devops", "automation"]
+  }
+}
