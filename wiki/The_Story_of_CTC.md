@@ -87,14 +87,33 @@ In 1936, while the world was heading toward war, a mathematician named Alonzo Ch
 No numbers. No booleans. No data structures. Just functions accepting functions returning functions.
 
 ```scheme
+;; === CHURCH ENCODING: Numbers as Functions ===
+;; 
+;; In Church encoding, numbers aren't stored as integers—they're represented
+;; by HOW MANY TIMES you apply a function. The function 'f' is arbitrary;
+;; what matters is the COUNT of applications.
+
 ;; This is ZERO - not the number 0, but the CONCEPT of zero
+;; Read: "A function that takes 'f' and 'x', and returns 'x' unchanged"
+;; Meaning: Apply 'f' ZERO times = do nothing
 (lambda (f) (lambda (x) x))
 
 ;; This is ONE - the concept of "do something once"
+;; Read: "A function that takes 'f' and 'x', applies 'f' once to 'x'"
+;; Meaning: Apply 'f' ONCE = f(x)
 (lambda (f) (lambda (x) (f x)))
 
 ;; This is TWO - "do something twice"
+;; Read: "A function that takes 'f' and 'x', applies 'f' twice: f(f(x))"
+;; Meaning: Apply 'f' TWICE = f(f(x))
 (lambda (f) (lambda (x) (f (f x))))
+
+;; === HOW TO USE IT ===
+;; To get the actual number, you need to provide a "successor" function:
+;; (define (succ n) (+ n 1))
+;; Then: ((zero succ) 0) → 0
+;;       ((one succ) 0) → 1  
+;;       ((two succ) 0) → 2
 ```
 
 **Why does this matter?** Because Church encoding is like discovering that all music is vibrations, or that all colors are wavelengths. It's the **fundamental truth** beneath the surface.
@@ -347,13 +366,28 @@ Historically, programming paradigms lived in separate worlds:
 #### 2. ProLog: Logic as Conversation
 
 ```prolog
+% === FACTS: Simple statements about the world ===
+% "Alice is a parent of Bob" - a fact is always true
 parent(alice, bob).
+% "Bob is a parent of Charlie" - another fact
 parent(bob, charlie).
 
+% === RULES: Logical relationships ===
+% Rule 1: "X is an ancestor of Y if X is a parent of Y"
+% Read ":-" as "if" or "is true when"
+% X and Y are variables (capital letters) - they can match any value
 ancestor(X, Y) :- parent(X, Y).
+
+% Rule 2: "X is an ancestor of Z if X is a parent of Y AND Y is an ancestor of Z"
+% This is recursive - ancestor calls itself! This finds multi-generation ancestors
+% The comma (,) means "AND" - both conditions must be true
 ancestor(X, Z) :- parent(X, Y), ancestor(Y, Z).
 
-?- ancestor(alice, charlie).  % Yes!
+% === QUERY: Asking a question ===
+% "Is Alice an ancestor of Charlie?" 
+% ProLog will try to prove this by checking facts and rules
+% ?- means "query" or "can you prove this?"
+?- ancestor(alice, charlie).  % Yes! (ProLog finds: alice->bob->charlie)
 ```
 
 **Who uses this?** Anyone reasoning about relationships, rules, constraints.
@@ -364,11 +398,76 @@ ancestor(X, Z) :- parent(X, Y), ancestor(Y, Z).
 
 **Why integrate it?** Because sometimes you need to **ask questions** (ProLog), not just compute answers.
 
+##### How ProLog Works: Step-by-Step
+
+Let's trace through what happens when you ask `?- ancestor(alice, charlie)`:
+
+1. **ProLog starts with the query**: "Can I prove `ancestor(alice, charlie)`?"
+
+2. **It checks Rule 1**: `ancestor(X, Y) :- parent(X, Y)`
+   - Can `alice` be an ancestor of `charlie` by being a direct parent?
+   - It checks: `parent(alice, charlie)` → **No**, that fact doesn't exist
+   - Rule 1 fails
+
+3. **It tries Rule 2**: `ancestor(X, Z) :- parent(X, Y), ancestor(Y, Z)`
+   - Can `alice` be an ancestor of `charlie` through some intermediate person `Y`?
+   - It tries to match: `parent(alice, Y)` → finds `Y = bob` (from `parent(alice, bob)`)
+   - Now it needs to prove: `ancestor(bob, charlie)`
+   - **Recursion!** It goes back to Rule 1 with `ancestor(bob, charlie)`
+   - Rule 1 checks: `parent(bob, charlie)` → **Yes!** That fact exists
+   - So `ancestor(bob, charlie)` is true
+   - Therefore `ancestor(alice, charlie)` is true!
+
+4. **ProLog returns**: `Yes` (or `true`)
+
+This is called **backtracking**—ProLog tries different paths until it finds one that works, or exhausts all possibilities.
+
+##### More ProLog Examples
+
+You can ask more interesting questions:
+
+```prolog
+% "Who are all of Alice's ancestors?" (finds all values of X)
+?- ancestor(X, alice).  
+% Answer: No one (Alice has no ancestors in our database)
+
+% "Who are all of Charlie's ancestors?" (finds all values of X)
+?- ancestor(X, charlie).
+% Answer: X = alice, X = bob
+% (ProLog finds both: alice is ancestor via bob, bob is direct ancestor)
+
+% "Who are all descendants of Alice?" (finds all values of Y)
+?- ancestor(alice, Y).
+% Answer: Y = bob, Y = charlie
+% (bob is direct descendant, charlie is descendant via bob)
+```
+
+The power of ProLog is that you can ask questions **backwards**—instead of "who are Alice's ancestors?", you can ask "who has Alice as an ancestor?" and it works the same way!
+
 #### 3. DataLog: Queries That Build Knowledge
 
 ```datalog
+% === RULE 1: Direct connections ===
+% "X is reachable from Y if there is a direct edge from X to Y"
+% This finds all directly connected nodes
 reachable(X, Y) :- edge(X, Y).
+
+% === RULE 2: Transitive closure (finding all paths) ===
+% "X is reachable from Z if there's an edge from X to Y AND Y is reachable from Z"
+% This recursively finds ALL paths, not just one
+% DataLog computes ALL possible answers and stores them
 reachable(X, Z) :- edge(X, Y), reachable(Y, Z).
+
+% === HOW IT WORKS ===
+% If you have edges: edge(a,b), edge(b,c), edge(c,d)
+% DataLog will compute ALL reachable pairs:
+%   reachable(a,b) - direct
+%   reachable(b,c) - direct  
+%   reachable(c,d) - direct
+%   reachable(a,c) - via b
+%   reachable(b,d) - via c
+%   reachable(a,d) - via b and c
+% Unlike ProLog (which answers one query), DataLog builds ALL answers upfront!
 ```
 
 **What's the difference from ProLog?** DataLog is **bottom-up**. It computes **all** answers, building knowledge iteratively.
@@ -377,18 +476,113 @@ reachable(X, Z) :- edge(X, Y), reachable(Y, Z).
 
 **Why have both ProLog AND DataLog?** Because sometimes you want to **ask** (ProLog: "Is Alice an ancestor of Charlie?"), and sometimes you want to **know** (DataLog: "Compute all ancestor relationships").
 
+##### How DataLog Works: Step-by-Step
+
+Let's say you have this graph:
+```
+a → b → c → d
+```
+
+And these facts:
+```datalog
+edge(a, b).
+edge(b, c).
+edge(c, d).
+```
+
+DataLog computes **all** `reachable` relationships in rounds:
+
+**Round 1** (direct edges only):
+- `reachable(a, b)` ← from `edge(a, b)` via Rule 1
+- `reachable(b, c)` ← from `edge(b, c)` via Rule 1
+- `reachable(c, d)` ← from `edge(c, d)` via Rule 1
+- **New facts found**: 3
+
+**Round 2** (one-hop paths):
+- Rule 2 tries: `reachable(a, Z) :- edge(a, Y), reachable(Y, Z)`
+  - `edge(a, b)` exists, `reachable(b, c)` exists → `reachable(a, c)` ✓
+  - `edge(a, b)` exists, `reachable(b, d)` doesn't exist yet → skip
+- Rule 2 tries: `reachable(b, Z) :- edge(b, Y), reachable(Y, Z)`
+  - `edge(b, c)` exists, `reachable(c, d)` exists → `reachable(b, d)` ✓
+- **New facts found**: 2 (`reachable(a, c)`, `reachable(b, d)`)
+
+**Round 3** (two-hop paths):
+- Rule 2 tries: `reachable(a, Z) :- edge(a, Y), reachable(Y, Z)`
+  - `edge(a, b)` exists, `reachable(b, d)` now exists → `reachable(a, d)` ✓
+- **New facts found**: 1 (`reachable(a, d)`)
+
+**Round 4** (three-hop paths):
+- Rule 2 tries all combinations, finds no new facts
+- **New facts found**: 0
+
+**Fixed point reached!** DataLog stops. Final result:
+```
+reachable(a, b)  ← direct
+reachable(b, c)  ← direct
+reachable(c, d)  ← direct
+reachable(a, c)  ← via b
+reachable(b, d)  ← via c
+reachable(a, d)  ← via b and c
+```
+
+##### Why DataLog is Different
+
+**ProLog** (top-down, query-driven):
+- You ask: "Is `a` reachable from `d`?"
+- ProLog tries to prove it: checks rules, backtracks, finds one path
+- Returns: `Yes` or `No`
+- **Efficient for single queries**, but doesn't store all answers
+
+**DataLog** (bottom-up, materialization):
+- You don't ask a question—you just run the program
+- DataLog computes **everything** upfront: all reachable pairs
+- Stores all results in memory
+- **Efficient for many queries**, because answers are pre-computed
+
+Think of it like this:
+- **ProLog** = A GPS that calculates the route when you ask
+- **DataLog** = A map that shows all possible routes, pre-computed
+
+In CTC, you use **ProLog** when you want to ask "Does this relationship exist?" and **DataLog** when you want to build a complete knowledge graph of all relationships.
+
 #### 4. RDF and SPARQL: The Semantic Web
 
 ```jsonl
+% === RDF TRIPLES: Subject-Predicate-Object statements ===
+% 
+% RDF represents knowledge as "triples": (subject, predicate, object)
+% Think: "Alice knows Bob" = (Alice, knows, Bob)
+% 
+% Line 1: "Alice knows Bob"
+%   - subject: "ex:Alice" (a person named Alice)
+%   - predicate: "ex:knows" (the relationship: knows)
+%   - object: "ex:Bob" (another person named Bob)
 {"type":"rdf-triple","subject":"ex:Alice","predicate":"ex:knows","object":"ex:Bob"}
+
+% Line 2: "Bob is a Person"
+%   - subject: "ex:Bob"
+%   - predicate: "rdf:type" (special predicate meaning "is a")
+%   - object: "ex:Person" (the type/class)
 {"type":"rdf-triple","subject":"ex:Bob","predicate":"rdf:type","object":"ex:Person"}
 ```
 
 ```sparql
+% === SPARQL QUERY: Asking questions about RDF data ===
+%
+% SPARQL is like SQL, but for RDF graphs instead of tables
+% ?person is a variable (like a wildcard)
+% 
+% This query asks: "Find all people (?person) where:
+%   1. ?person is of type Person (rdf:type ex:Person)
+%   2. AND Alice knows ?person (ex:Alice ex:knows ?person)"
+%
+% Result: ?person = ex:Bob (because Bob is a Person AND Alice knows Bob)
 SELECT ?person WHERE {
-  ?person rdf:type ex:Person .
-  ex:Alice ex:knows ?person .
+  ?person rdf:type ex:Person .     % ?person must be a Person
+  ex:Alice ex:knows ?person .     % Alice must know ?person
 }
+% The period (.) ends each triple pattern
+% Multiple patterns are ANDed together
 ```
 
 **Who cares about RDF?** Anyone working with knowledge graphs, linked data, ontologies.
@@ -402,10 +596,32 @@ SELECT ?person WHERE {
 #### 5. SHACL: The Reality Checker
 
 ```jsonl
-{"type":"shacl-shape","targetClass":"ex:Person","property":[
-  {"path":"ex:name","minCount":1,"datatype":"xsd:string"},
-  {"path":"ex:age","datatype":"xsd:integer","minInclusive":0}
-]}
+% === SHACL SHAPE: Validation rules for data quality ===
+%
+% SHACL (Shapes Constraint Language) defines "shapes" that data must conform to
+% Think of it as a schema or contract: "If something is a Person, it MUST have..."
+%
+% This shape says: "For all things of type ex:Person, enforce these rules:"
+{
+  "type": "shacl-shape",
+  "targetClass": "ex:Person",  % Apply these rules to all Person instances
+  "property": [
+    {
+      "path": "ex:name",           % Property: name
+      "minCount": 1,                % MUST have at least 1 name (required)
+      "datatype": "xsd:string"      % MUST be a string (not a number)
+    },
+    {
+      "path": "ex:age",            % Property: age
+      "datatype": "xsd:integer",   % MUST be an integer
+      "minInclusive": 0            % MUST be >= 0 (no negative ages!)
+    }
+  ]
+}
+% 
+% If someone tries to create a Person without a name, SHACL rejects it
+% If someone tries to set age to -5, SHACL rejects it
+% This keeps your knowledge base consistent and correct!
 ```
 
 **What is SHACL?** Validation. The system that says **"That's not allowed."**
@@ -419,9 +635,33 @@ SELECT ?person WHERE {
 **What is JSONL?** JSON Lines—one JSON object per line:
 
 ```jsonl
+% === JSONL: One JSON object per line, multiple paradigms ===
+%
+% JSONL (JSON Lines) format allows mixing different paradigm representations
+% Each line is independent—you can process them one at a time
+
+% Line 1: ProLog fact representation
+%   - type: tells us this is a ProLog fact
+%   - predicate: the relationship name ("parent")
+%   - args: the arguments ["alice", "bob"] means parent(alice, bob)
 {"type":"prolog-fact","predicate":"parent","args":["alice","bob"]}
+
+% Line 2: DataLog rule representation  
+%   - type: tells us this is a DataLog rule
+%   - head: the conclusion "ancestor(X,Y)" (what we're computing)
+%   - body: the conditions ["parent(X,Z)", "ancestor(Z,Y)"] (what must be true)
+%   Meaning: "X is ancestor of Y if X is parent of Z AND Z is ancestor of Y"
 {"type":"datalog-rule","head":"ancestor(X,Y)","body":["parent(X,Z)","ancestor(Z,Y)"]}
+
+% Line 3: RDF triple representation
+%   - Same information as ProLog fact, but in RDF format
+%   - subject: "ex:Alice", predicate: "ex:knows", object: "ex:Bob"
+%   Meaning: "Alice knows Bob"
 {"type":"rdf-triple","subject":"ex:Alice","predicate":"ex:knows","object":"ex:Bob"}
+
+% === THE MAGIC ===
+% All three lines represent KNOWLEDGE, just in different formats!
+% CTC can convert between them seamlessly.
 ```
 
 **Who decided on JSONL?** The CTC designers, looking for something:
@@ -467,14 +707,33 @@ SELECT ?person WHERE {
 
 2. **Agents subscribe to patterns**:
    ```scheme
+   ; === BLACKBOARD SUBSCRIPTION: "Notify me when..." ===
+   ;
+   ; Agents can "subscribe" to patterns—they get notified automatically
+   ; when matching entries appear on the blackboard
+   ;
+   ; This subscription says: "Call my function whenever an RDF triple is written"
    (blackboard-subscribe
-     '(type "rdf-triple")
-     (lambda (entry) (process-triple entry)))
+     '(type "rdf-triple")                    ; Pattern to match: entries with type="rdf-triple"
+     (lambda (entry)                         ; Callback function: what to do when match found
+       (process-triple entry)))              ; Process the triple (e.g., add to knowledge graph)
+   ;
+   ; Now whenever ANY agent writes an RDF triple, this agent's function runs!
+   ; This enables reactive, event-driven coordination.
    ```
 
 3. **Agents query**:
    ```scheme
-   (blackboard-read '(predicate "parent"))  ; Get all parent facts
+   ; === BLACKBOARD QUERY: "Give me all entries where..." ===
+   ;
+   ; Agents can query the blackboard to find existing entries
+   ; This is like searching a database, but simpler
+   ;
+   ; This query says: "Find all entries where predicate equals 'parent'"
+   (blackboard-read '(predicate "parent"))  ; Returns list of all parent facts
+   ;
+   ; Result might be: [{"type":"prolog-fact","predicate":"parent","args":["alice","bob"]}, ...]
+   ; This lets agents discover what other agents have written!
    ```
 
 **Who coordinates?** No one and everyone. It's **emergent coordination**. Agents don't send messages to each other—they **write** and **read** from the shared blackboard.
@@ -550,9 +809,26 @@ Here's where it gets wild. Watch what happens:
 
 2. **Fitness Evaluation**:
    ```scheme
+   ; === FITNESS FUNCTION: How "good" is this automaton? ===
+   ;
+   ; Evolution needs a way to measure improvement
+   ; Higher fitness = better automaton
+   ;
+   ; This function calculates: fitness = correctness / (memory × runtime)
+   ; - correctness: How many tests pass? (higher is better)
+   ; - memory-usage: How much RAM does it use? (lower is better)
+   ; - runtime: How long does it take? (lower is better)
+   ;
+   ; Dividing by (memory × runtime) means: use LESS memory AND time = higher fitness
+   ; Multiplying correctness means: pass MORE tests = higher fitness
    (define (fitness automaton)
-     (/ correctness
-        (* memory-usage runtime)))
+     (/ correctness                    ; Numerator: correctness (want this HIGH)
+        (* memory-usage runtime)))    ; Denominator: memory × time (want this LOW)
+   ;
+   ; Example scores:
+   ;   Old version: correctness=10, memory=100MB, runtime=5s → fitness = 10/(100×5) = 0.02
+   ;   New version: correctness=10, memory=50MB, runtime=2s → fitness = 10/(50×2) = 0.10
+   ;   New version is 5x better! Evolution keeps it, discards old version.
    ```
    The system **knows** if it got better or worse.
 
@@ -580,30 +856,72 @@ Imagine an automaton (let's call her **Ada**) whose job is to compute Fibonacci 
 
 **Generation 1**: Ada is naive, uses recursion:
 ```scheme
+; === NAIVE FIBONACCI: Simple but SLOW ===
+;
+; This is the classic recursive definition:
+;   fib(0) = 0, fib(1) = 1
+;   fib(n) = fib(n-1) + fib(n-2)
+;
+; Problem: Calculates the SAME values over and over!
+;   fib(5) calls fib(4) and fib(3)
+;   fib(4) calls fib(3) and fib(2)  ← fib(3) calculated TWICE!
+;   fib(3) calls fib(2) and fib(1)  ← fib(2) calculated MANY times!
+;
+; Time complexity: O(2^n) - exponential! fib(40) takes forever.
+; Space complexity: O(n) - call stack depth
 (define (fib n)
-  (if (<= n 1) n
-      (+ (fib (- n 1)) (fib (- n 2)))))
+  (if (<= n 1) n                                    ; Base case: fib(0)=0, fib(1)=1
+      (+ (fib (- n 1))                              ; Recursive: fib(n-1)
+         (fib (- n 2)))))                           ; Recursive: fib(n-2)
 ```
 **Fitness**: Poor. Exponential time. Memory usage explodes.
 
 **Generation 2**: Ada mutates, adds memoization:
 ```scheme
-(define memo (make-hash-table))
+; === MEMOIZED FIBONACCI: Remember what you calculated ===
+;
+; Ada learns to CACHE results! Once fib(3) is calculated, store it.
+; Next time fib(3) is needed, just look it up instead of recalculating.
+;
+; This is "memoization" - trading memory for speed
+;
+; Time complexity: O(n) - each fib(i) calculated exactly once
+; Space complexity: O(n) - hash table stores n results
+(define memo (make-hash-table))                     ; Cache: stores fib(i) → result
 (define (fib n)
-  (if (<= n 1) n
-      (or (hash-ref memo n)
-          (let ((result (+ (fib (- n 1)) (fib (- n 2)))))
-            (hash-set! memo n result)
-            result))))
+  (if (<= n 1) n                                    ; Base case
+      (or (hash-ref memo n)                         ; Check cache: already calculated?
+          (let ((result (+ (fib (- n 1))            ; Not in cache: calculate it
+                          (fib (- n 2)))))
+            (hash-set! memo n result)               ; Store in cache for next time
+            result))))                              ; Return the result
 ```
 **Fitness**: Much better! Linear time. Fitness score: **15x improvement**.
 
 **Generation 3**: Ada discovers iterative approach:
 ```scheme
+; === ITERATIVE FIBONACCI: The optimal solution ===
+;
+; Ada realizes: you don't need recursion OR memoization!
+; Just iterate from 0 to n, keeping track of the last two values.
+;
+; This is the "bottom-up" approach: build fib(0), then fib(1), then fib(2)...
+; Instead of "top-down": calculate fib(n) by calculating fib(n-1) and fib(n-2)
+;
+; Time complexity: O(n) - single loop from 0 to n
+; Space complexity: O(1) - only stores two variables (a and b)!
 (define (fib n)
-  (let loop ((a 0) (b 1) (count n))
-    (if (= count 0) a
-        (loop b (+ a b) (- count 1)))))
+  (let loop ((a 0)                                  ; fib(0) = 0
+             (b 1)                                  ; fib(1) = 1
+             (count n))                              ; How many more iterations?
+    (if (= count 0) a                                ; Done! Return fib(n)
+        (loop b                                      ; Next iteration: a becomes b
+              (+ a b)                                ; Next iteration: b becomes a+b
+              (- count 1)))))                        ; Decrement counter
+;
+; How it works for fib(5):
+;   loop(0, 1, 5) → loop(1, 1, 4) → loop(1, 2, 3) → loop(2, 3, 2) → loop(3, 5, 1) → loop(5, 8, 0) → return 5
+;   Each step: (a, b) = (fib(i), fib(i+1)), then advance to (fib(i+1), fib(i+2))
 ```
 **Fitness**: Best yet! Constant memory. Fitness score: **50x improvement** over original.
 
@@ -619,28 +937,70 @@ Here's the mind-bending part. An automaton can:
 
 1. **Read its own code**:
    ```scheme
+   ; === SELF-REFERENCE: Reading your own source code ===
+   ;
+   ; The automaton can read the JSONL file that contains ITS OWN definition!
+   ; This is like a person reading their own DNA sequence.
+   ;
+   ; The file "automaton.jsonl" contains the automaton's code/data
+   ; Reading it gives the automaton access to its own structure
    (define (read-self)
-     (read-jsonl-file "automaton.jsonl"))
+     (read-jsonl-file "automaton.jsonl"))    ; Returns list of JSON objects (the automaton's code)
    ```
 
 2. **Analyze itself**:
    ```scheme
+   ; === SELF-ANALYSIS: Understanding your own complexity ===
+   ;
+   ; Once the automaton has its own code, it can ANALYZE it
+   ; This is like introspection: "How complex am I?"
+   ;
+   ; 'self' is the result of (read-self) - the automaton's own code
+   ; This function counts how many lines/entries it has
    (define (complexity self)
-     (count-lines self))
+     (count-lines self))                      ; Returns: number of entries in automaton
+   ;
+   ; The automaton can use this to decide: "Am I too complex? Should I simplify?"
    ```
 
 3. **Modify itself**:
    ```scheme
+   ; === SELF-MODIFICATION: Changing your own code ===
+   ;
+   ; This is the dangerous part: the automaton can CHANGE its own code!
+   ; It takes its current code ('self') and transforms it
+   ;
+   ; 'remove-redundant-code' might:
+   ;   - Remove duplicate entries
+   ;   - Simplify complex expressions
+   ;   - Optimize inefficient patterns
    (define (simplify self)
-     (remove-redundant-code self))
+     (remove-redundant-code self))            ; Returns: modified version of self
+   ;
+   ; This is like evolution: the automaton mutates itself
    ```
 
 4. **Execute the modified version**:
    ```scheme
+   ; === SELF-EVOLUTION: The complete cycle ===
+   ;
+   ; This function puts it all together:
+   ;   1. Read current self
+   ;   2. Modify it (simplify, optimize, mutate)
+   ;   3. Write the new version to a new file
+   ;
+   ; The new file becomes the "next generation" of the automaton
    (define (evolve)
-     (let ((self (read-self)))
-       (write-jsonl-file "automaton-next.jsonl"
-                        (simplify self))))
+     (let ((self (read-self)))                ; Step 1: Read current code
+       (write-jsonl-file "automaton-next.jsonl"  ; Step 3: Write new version
+                        (simplify self))))     ; Step 2: Modify it
+   ;
+   ; After this runs:
+   ;   - "automaton.jsonl" = old version (preserved as snapshot)
+   ;   - "automaton-next.jsonl" = new evolved version
+   ;   - Next run can load "automaton-next.jsonl" and evolve further!
+   ;
+   ; This is metacircular evaluation: code that modifies and executes itself
    ```
 
 **This is Gödel's incompleteness theorem**, but for code. The system can **talk about itself**. It's **self-aware**, in a computational sense.
