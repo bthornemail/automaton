@@ -1,3 +1,22 @@
+---
+id: vertical-progression-guides-4d-to-5d
+title: "Transition Guide: 4D → 5D"
+level: intermediate
+type: guide
+tags: [4d-topology, 5d-topology, multi-agent-system, blackboard-architecture]
+keywords: [transition, guide:, home, main, automaton, vertical, progression-guides]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "4D-Network-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Transition Guide: 4D → 5D
 
 **From Network to Consensus**

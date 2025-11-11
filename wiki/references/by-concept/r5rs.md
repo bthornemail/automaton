@@ -1,3 +1,22 @@
+---
+id: references-by-concept-r5rs
+title: "R5rs: Academic References"
+level: advanced
+type: reference
+tags: [references, concepts]
+keywords: [r5rs:, academic, references, home, main, automaton, by-concept]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # R5rs: Academic References
 
 **Academic resources for understanding r5rs in the Computational Topology Canvas**

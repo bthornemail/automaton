@@ -1,3 +1,22 @@
+---
+id: references-by-dimension-5d-references
+title: "5D References: Academic Resources"
+level: intermediate
+type: reference
+tags: [references, dimensional-progression, 5d-topology, blackboard-architecture]
+keywords: [references:, academic, resources, home, main, automaton, references, by-dimension]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "4D-Network-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # 5D References: Academic Resources
 
 **Academic references for 5D dimension concepts**

@@ -1,3 +1,22 @@
+---
+id: horizontal-canvasl-format
+title: "CanvasL Format"
+level: intermediate
+type: guide
+tags: [church-encoding]
+keywords: [canvasl, format, home, main, automaton, horizontal]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # CanvasL Format
 
 == Overview ==

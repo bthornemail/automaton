@@ -1,3 +1,22 @@
+---
+id: references-by-concept-shacl
+title: "Shacl: Academic References"
+level: advanced
+type: reference
+tags: [references, concepts, semantic-web, shacl]
+keywords: [shacl:, academic, references, home, main, automaton, by-concept]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Shacl: Academic References
 
 **Academic resources for understanding shacl in the Computational Topology Canvas**

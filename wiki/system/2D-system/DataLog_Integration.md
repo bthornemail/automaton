@@ -1,3 +1,22 @@
+---
+id: system-2d-system-datalog-integration
+title: "DataLog Integration: Queries That Build Knowledge"
+level: intermediate
+type: guide
+tags: [system, 2d-topology, church-encoding, lambda-calculus, prolog, datalog, semantic-web, multi-agent-system, blackboard-architecture]
+keywords: [datalog, integration:, queries, that, build, knowledge, home, main, automaton, system]
+prerequisites: []
+enables: []
+related: []
+readingTime: 10
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # DataLog Integration: Queries That Build Knowledge
 
 **How Bottom-Up Evaluation Materializes Answers**

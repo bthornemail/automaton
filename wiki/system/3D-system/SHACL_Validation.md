@@ -1,3 +1,22 @@
+---
+id: system-3d-system-shacl-validation
+title: "SHACL Validation: The Reality Checker"
+level: intermediate
+type: guide
+tags: [system, 3d-topology, lambda-calculus, prolog, datalog, semantic-web, shacl, multi-agent-system, blackboard-architecture]
+keywords: [shacl, validation:, reality, checker, home, main, automaton, system, 3d-system]
+prerequisites: []
+enables: []
+related: []
+readingTime: 9
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # SHACL Validation: The Reality Checker
 
 **How Constraints Keep Knowledge Sane**

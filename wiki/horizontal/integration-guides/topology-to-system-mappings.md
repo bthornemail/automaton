@@ -1,3 +1,22 @@
+---
+id: horizontal-integration-guides-topology-to-system-mappings
+title: "Topology-to-System Mappings: The Horizontal Bridge"
+level: intermediate
+type: guide
+tags: [church-encoding, prolog, datalog, semantic-web, shacl, multi-agent-system, blackboard-architecture, automaton]
+keywords: [topology, system, mappings:, horizontal, bridge, home, main, automaton, integration-guides]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Topology-to-System Mappings: The Horizontal Bridge
 
 **How Mathematical Foundations Map to Computational Implementations**

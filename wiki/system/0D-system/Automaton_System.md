@@ -1,3 +1,22 @@
+---
+id: system-0d-system-automaton-system
+title: "Automaton System: Code That Evolves Itself"
+level: foundational
+type: guide
+tags: [system, 0d-topology, prolog, datalog, multi-agent-system, blackboard-architecture, automaton]
+keywords: [automaton, system:, code, that, evolves, itself, home, main, system, 0d-system]
+prerequisites: []
+enables: []
+related: []
+readingTime: 11
+difficulty: 1
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Automaton System: Code That Evolves Itself
 
 **How Self-Referential Code Becomes Living Software**

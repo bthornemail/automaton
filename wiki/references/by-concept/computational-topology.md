@@ -1,3 +1,22 @@
+---
+id: references-by-concept-computational-topology
+title: "Computational Topology: Academic References"
+level: advanced
+type: reference
+tags: [references, concepts]
+keywords: [computational, topology:, academic, references, home, main, automaton, by-concept]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Computational Topology: Academic References
 
 **Academic resources for understanding computational-topology in the Computational Topology Canvas**

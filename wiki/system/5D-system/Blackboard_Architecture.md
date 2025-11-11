@@ -1,3 +1,22 @@
+---
+id: system-5d-system-blackboard-architecture
+title: "Blackboard Architecture: The Meeting Room of Minds"
+level: advanced
+type: guide
+tags: [system, 5d-topology, church-encoding, lambda-calculus, prolog, datalog, semantic-web, shacl, multi-agent-system, blackboard-architecture]
+keywords: [blackboard, architecture:, meeting, room, minds, home, main, automaton, system, 5d-system]
+prerequisites: []
+enables: []
+related: []
+readingTime: 11
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Blackboard Architecture: The Meeting Room of Minds
 
 **Where Agents Share Knowledge and Coordinate Without Talking**

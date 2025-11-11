@@ -1,3 +1,22 @@
+---
+id: vertical-progression-guides-2d-to-3d
+title: "Transition Guide: 2D → 3D"
+level: intermediate
+type: guide
+tags: [2d-topology, 3d-topology, church-encoding, lambda-calculus, prolog, datalog, semantic-web, shacl, multi-agent-system]
+keywords: [transition, guide:, home, main, automaton, vertical, progression-guides]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "2D-Structural-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Transition Guide: 2D → 3D
 
 **From Structural to Algebraic**

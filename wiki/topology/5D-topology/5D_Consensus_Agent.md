@@ -1,3 +1,22 @@
+---
+id: topology-5d-topology-5d-consensus-agent
+title: "5D Consensus Agent: The Diplomat"
+level: intermediate
+type: guide
+tags: [topology, 5d-topology, multi-agent-system, blackboard-architecture]
+keywords: [consensus, agent:, diplomat, home, main, automaton, topology, 5d-topology]
+prerequisites: []
+enables: []
+related: []
+readingTime: 13
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # 5D Consensus Agent: The Diplomat
 
 **The Peacemaker Who Helps Many Become One**

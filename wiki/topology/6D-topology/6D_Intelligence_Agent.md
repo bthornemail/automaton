@@ -1,3 +1,22 @@
+---
+id: topology-6d-topology-6d-intelligence-agent
+title: "6D Intelligence Agent: The Scholar"
+level: intermediate
+type: guide
+tags: [topology, 6d-topology, multi-agent-system, blackboard-architecture]
+keywords: [intelligence, agent:, scholar, home, main, automaton, topology, 6d-topology]
+prerequisites: []
+enables: []
+related: []
+readingTime: 13
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # 6D Intelligence Agent: The Scholar
 
 **The Learner Who Improves Through Experience**

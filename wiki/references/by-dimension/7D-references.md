@@ -1,3 +1,22 @@
+---
+id: references-by-dimension-7d-references
+title: "7D References: Academic Resources"
+level: advanced
+type: reference
+tags: [references, dimensional-progression, 7d-topology]
+keywords: [references:, academic, resources, home, main, automaton, references, by-dimension]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 5
+blackboard:
+  status: active
+  assignedAgent: "6D-Intelligence-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # 7D References: Academic Resources
 
 **Academic references for 7D dimension concepts**

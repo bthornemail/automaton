@@ -1,3 +1,22 @@
+---
+id: navigation-navigation
+title: "Navigation Guide"
+level: advanced
+type: navigation
+tags: [church-encoding, lambda-calculus, multi-agent-system, blackboard-architecture]
+keywords: [navigation, guide, home, main, automaton]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Navigation Guide
 
 This guide helps you navigate the Computational Topology Canvas documentation.

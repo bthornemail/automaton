@@ -1,3 +1,22 @@
+---
+id: vertical-progression-guides-1d-to-2d
+title: "Transition Guide: 1D → 2D"
+level: intermediate
+type: guide
+tags: [1d-topology, 2d-topology, church-encoding, lambda-calculus, prolog, datalog, multi-agent-system]
+keywords: [transition, guide:, home, main, automaton, vertical, progression-guides]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "1D-Temporal-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Transition Guide: 1D → 2D
 
 **From Temporal to Structural**

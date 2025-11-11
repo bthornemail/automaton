@@ -1,3 +1,22 @@
+---
+id: references-by-concept-lambda-calculus
+title: "Lambda Calculus: Academic References"
+level: advanced
+type: reference
+tags: [references, concepts, lambda-calculus]
+keywords: [lambda, calculus:, academic, references, home, main, automaton, by-concept]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Lambda Calculus: Academic References
 
 **Academic resources for understanding lambda-calculus in the Computational Topology Canvas**

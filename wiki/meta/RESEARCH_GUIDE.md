@@ -1,3 +1,22 @@
+---
+id: meta-research-guide
+title: "Research Guide for the Computational Topology Canvas"
+level: advanced
+type: meta
+tags: [church-encoding, lambda-calculus, prolog, datalog, semantic-web, shacl, multi-agent-system, blackboard-architecture, automaton]
+keywords: [research, guide, computational, topology, canvas, home, main, automaton, meta]
+prerequisites: []
+enables: []
+related: []
+readingTime: 13
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Research Guide for the Computational Topology Canvas
 
 **A Comprehensive Guide for Researchers and Thesis Writers**

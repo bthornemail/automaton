@@ -1,3 +1,22 @@
+---
+id: references-by-concept-y-combinator
+title: "Y Combinator: Academic References"
+level: advanced
+type: reference
+tags: [references, concepts, lambda-calculus]
+keywords: [combinator:, academic, references, home, main, automaton, by-concept]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Y Combinator: Academic References
 
 **Academic resources for understanding y-combinator in the Computational Topology Canvas**

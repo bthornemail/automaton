@@ -1,3 +1,22 @@
+---
+id: references-index
+title: "Academic References: Complete Guide to CTC Concepts"
+level: intermediate
+type: reference
+tags: [references, academic-resources, concepts, dimensions, paradigms]
+keywords: [academic, references, complete, guide, ctc, concepts, wikipedia, arxiv]
+prerequisites: []
+enables: []
+related: []
+readingTime: 15
+difficulty: 2
+blackboard:
+  status: active
+  assignedAgent: "6D-Intelligence-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: ["2D-Structural-Agent", "4D-Network-Agent"]
+---
 # Academic References: Complete Guide to CTC Concepts
 
 **Academic resources organized by concept, dimension, and paradigm**

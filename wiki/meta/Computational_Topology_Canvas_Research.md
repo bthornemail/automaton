@@ -1,3 +1,22 @@
+---
+id: meta-computational-topology-canvas-research
+title: "Computational Topology Canvas: A Research Framework"
+level: intermediate
+type: meta
+tags: [church-encoding, lambda-calculus, prolog, datalog, semantic-web, shacl, multi-agent-system, blackboard-architecture, automaton]
+keywords: [computational, topology, canvas:, research, framework, home, main, automaton, meta]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Computational Topology Canvas: A Research Framework
 
 **A Self-Referential Multi-Paradigm Computing System**

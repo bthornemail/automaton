@@ -1,3 +1,22 @@
+---
+id: references-by-dimension-4d-references
+title: "4D References: Academic Resources"
+level: intermediate
+type: reference
+tags: [references, dimensional-progression, 4d-topology, multi-agent-system]
+keywords: [references:, academic, resources, home, main, automaton, references, by-dimension]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "3D-Algebraic-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # 4D References: Academic Resources
 
 **Academic references for 4D dimension concepts**

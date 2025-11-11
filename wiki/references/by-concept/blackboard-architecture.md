@@ -1,3 +1,22 @@
+---
+id: references-by-concept-blackboard-architecture
+title: "Blackboard Architecture: Academic References"
+level: advanced
+type: reference
+tags: [references, concepts, multi-agent-system, blackboard-architecture]
+keywords: [blackboard, architecture:, academic, references, home, main, automaton, by-concept]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Blackboard Architecture: Academic References
 
 **Academic resources for understanding blackboard-architecture in the Computational Topology Canvas**

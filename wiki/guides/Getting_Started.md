@@ -1,3 +1,22 @@
+---
+id: guides-getting-started
+title: "Getting Started: Your Journey Begins Here"
+level: advanced
+type: guide
+tags: [church-encoding, lambda-calculus, prolog, datalog, semantic-web, shacl, multi-agent-system, blackboard-architecture, automaton]
+keywords: [getting, started:, your, journey, begins, here, home, main, automaton, guides]
+prerequisites: []
+enables: []
+related: []
+readingTime: 22
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Getting Started: Your Journey Begins Here
 
 **From Zero to Your First Query in 15 Minutes**

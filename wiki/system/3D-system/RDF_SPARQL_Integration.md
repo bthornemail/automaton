@@ -1,3 +1,22 @@
+---
+id: system-3d-system-rdf-sparql-integration
+title: "RDF and SPARQL Integration: The Semantic Web Vision"
+level: intermediate
+type: guide
+tags: [system, 3d-topology, church-encoding, lambda-calculus, prolog, datalog, semantic-web, shacl, multi-agent-system, blackboard-architecture]
+keywords: [sparql, integration:, semantic, vision, home, main, automaton, system, 3d-system]
+prerequisites: []
+enables: []
+related: []
+readingTime: 10
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # RDF and SPARQL Integration: The Semantic Web Vision
 
 **How Knowledge Graphs Enable Linked Data**

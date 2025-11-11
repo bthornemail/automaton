@@ -1,3 +1,22 @@
+---
+id: vertical-progression-guides-6d-to-7d
+title: "Transition Guide: 6D → 7D"
+level: advanced
+type: guide
+tags: [6d-topology, 7d-topology, multi-agent-system]
+keywords: [transition, guide:, home, main, automaton, vertical, progression-guides]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 5
+blackboard:
+  status: active
+  assignedAgent: "6D-Intelligence-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Transition Guide: 6D → 7D
 
 **From Intelligence to Quantum**

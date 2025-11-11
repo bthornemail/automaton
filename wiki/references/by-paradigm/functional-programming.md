@@ -1,3 +1,21 @@
+---
+id: references-by-paradigm-functional-programming
+title: "Functional Programming: Academic References"
+level: intermediate
+type: reference
+tags: [references, paradigms, church-encoding, lambda-calculus]
+keywords: [functional, programming:, academic, references, home, main, automaton, by-paradigm]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 3
+blackboard:
+  status: active
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Functional Programming: Academic References
 
 **Academic resources for functional-programming paradigm in CTC**

@@ -1,3 +1,22 @@
+---
+id: vertical-progression-guides-5d-to-6d
+title: "Transition Guide: 5D → 6D"
+level: intermediate
+type: guide
+tags: [5d-topology, 6d-topology, prolog, datalog, multi-agent-system, blackboard-architecture]
+keywords: [transition, guide:, home, main, automaton, vertical, progression-guides]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "5D-Consensus-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Transition Guide: 5D → 6D
 
 **From Consensus to Intelligence**

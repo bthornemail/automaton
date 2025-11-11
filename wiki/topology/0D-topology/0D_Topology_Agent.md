@@ -1,3 +1,22 @@
+---
+id: topology-0d-topology-0d-topology-agent
+title: "0D Topology Agent: The Sage"
+level: foundational
+type: guide
+tags: [topology, 0d-topology, church-encoding, multi-agent-system, blackboard-architecture]
+keywords: [topology, agent:, sage, home, main, automaton, 0d-topology]
+prerequisites: []
+enables: []
+related: []
+readingTime: 12
+difficulty: 1
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # 0D Topology Agent: The Sage
 
 **The Foundation That Makes Everything Else Possible**

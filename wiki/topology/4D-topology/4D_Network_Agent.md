@@ -1,3 +1,22 @@
+---
+id: topology-4d-topology-4d-network-agent
+title: "4D Network Agent: The Messenger"
+level: intermediate
+type: guide
+tags: [topology, 4d-topology, church-encoding, multi-agent-system, blackboard-architecture]
+keywords: [network, agent:, messenger, home, main, automaton, topology, 4d-topology]
+prerequisites: []
+enables: []
+related: []
+readingTime: 13
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # 4D Network Agent: The Messenger
 
 **The Connector Who Makes Distant Things Near**

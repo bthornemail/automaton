@@ -1,3 +1,22 @@
+---
+id: guides-api-reference
+title: "API Reference"
+level: advanced
+type: guide
+tags: [church-encoding, lambda-calculus, prolog, datalog, semantic-web, shacl, multi-agent-system, blackboard-architecture]
+keywords: [reference, home, main, automaton, guides]
+prerequisites: []
+enables: []
+related: []
+readingTime: 7
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # API Reference
 
 ## Overview

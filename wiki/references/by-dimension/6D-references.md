@@ -1,3 +1,22 @@
+---
+id: references-by-dimension-6d-references
+title: "6D References: Academic Resources"
+level: intermediate
+type: reference
+tags: [references, dimensional-progression, 6d-topology]
+keywords: [references:, academic, resources, home, main, automaton, references, by-dimension]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "5D-Consensus-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # 6D References: Academic Resources
 
 **Academic references for 6D dimension concepts**

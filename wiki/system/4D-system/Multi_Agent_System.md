@@ -1,3 +1,22 @@
+---
+id: system-4d-system-multi-agent-system
+title: "Multi-Agent System: An Orchestra of Specialists"
+level: advanced
+type: guide
+tags: [system, 4d-topology, church-encoding, prolog, datalog, semantic-web, multi-agent-system, blackboard-architecture]
+keywords: [multi, agent, system:, orchestra, specialists, home, main, automaton, system, 4d-system]
+prerequisites: []
+enables: []
+related: []
+readingTime: 14
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Multi-Agent System: An Orchestra of Specialists
 
 **How 15 Specialized Agents Coordinate to Create Something Greater**

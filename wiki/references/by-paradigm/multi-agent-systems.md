@@ -1,3 +1,22 @@
+---
+id: references-by-paradigm-multi-agent-systems
+title: "Multi Agent Systems: Academic References"
+level: intermediate
+type: reference
+tags: [references, paradigms, multi-agent-system, blackboard-architecture]
+keywords: [multi, agent, systems:, academic, references, home, main, automaton, by-paradigm]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "5D-Consensus-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Multi Agent Systems: Academic References
 
 **Academic resources for multi-agent-systems paradigm in CTC**

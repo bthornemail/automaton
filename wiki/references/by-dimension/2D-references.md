@@ -1,3 +1,22 @@
+---
+id: references-by-dimension-2d-references
+title: "2D References: Academic Resources"
+level: intermediate
+type: reference
+tags: [references, dimensional-progression, 2d-topology, prolog, datalog]
+keywords: [references:, academic, resources, home, main, automaton, references, by-dimension]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "1D-Temporal-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # 2D References: Academic Resources
 
 **Academic references for 2D dimension concepts**

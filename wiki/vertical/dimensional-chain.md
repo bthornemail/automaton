@@ -1,3 +1,22 @@
+---
+id: vertical-dimensional-chain
+title: "Dimensional Chain: The Complete Progression from 0D to 7D"
+level: intermediate
+type: guide
+tags: [church-encoding, prolog, datalog, semantic-web, shacl, multi-agent-system, blackboard-architecture, automaton]
+keywords: [dimensional, chain:, complete, progression, from, home, main, automaton, vertical]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Dimensional Chain: The Complete Progression from 0D to 7D
 
 **The Vertical Spine of Computational Topology**

@@ -1,3 +1,22 @@
+---
+id: navigation-welcome-old
+title: "Welcome to Computational Topology Canvas"
+level: advanced
+type: navigation
+tags: [church-encoding, lambda-calculus, prolog, datalog, semantic-web, shacl, multi-agent-system, blackboard-architecture, automaton]
+keywords: [welcome, computational, topology, canvas, home, main, automaton, navigation]
+prerequisites: []
+enables: []
+related: []
+readingTime: 6
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Welcome to Computational Topology Canvas
 
 **A self-referential multi-agent system integrating Church encoding, ProLog, DataLog, R5RS, RDF/SPARQL, and SHACL**

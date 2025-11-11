@@ -1,3 +1,22 @@
+---
+id: references-by-design-topological-foundations
+title: "Topological Foundations: General Topology and Computational Topology"
+level: foundational
+type: reference
+tags: [references, mathematical-foundations, multi-agent-system, automaton]
+keywords: [topological, foundations:, general, topology, computational, home, main, automaton, references, by-design]
+prerequisites: []
+enables: []
+related: []
+readingTime: 6
+difficulty: 2
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Topological Foundations: General Topology and Computational Topology
 
 **From General Topology to Computational Applications**

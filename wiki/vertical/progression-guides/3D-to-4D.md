@@ -1,3 +1,22 @@
+---
+id: vertical-progression-guides-3d-to-4d
+title: "Transition Guide: 3D → 4D"
+level: intermediate
+type: guide
+tags: [3d-topology, 4d-topology, church-encoding, semantic-web, shacl, multi-agent-system]
+keywords: [transition, guide:, home, main, automaton, vertical, progression-guides]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "3D-Algebraic-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Transition Guide: 3D → 4D
 
 **From Algebraic to Network**

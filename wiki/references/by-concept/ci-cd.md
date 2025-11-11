@@ -1,3 +1,22 @@
+---
+id: references-by-concept-ci-cd
+title: "Ci Cd: Academic References"
+level: advanced
+type: reference
+tags: [references, concepts, multi-agent-system]
+keywords: [academic, references, home, main, automaton, by-concept]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Ci Cd: Academic References
 
 **Academic resources for understanding ci-cd in the Computational Topology Canvas**

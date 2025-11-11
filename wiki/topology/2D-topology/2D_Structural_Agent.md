@@ -1,3 +1,22 @@
+---
+id: topology-2d-topology-2d-structural-agent
+title: "2D Structural Agent: The Architect"
+level: intermediate
+type: guide
+tags: [topology, 2d-topology, church-encoding, multi-agent-system, blackboard-architecture]
+keywords: [structural, agent:, architect, home, main, automaton, topology, 2d-topology]
+prerequisites: []
+enables: []
+related: []
+readingTime: 13
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # 2D Structural Agent: The Architect
 
 **The Pattern-Seeker Who Sees How Things Fit Together**

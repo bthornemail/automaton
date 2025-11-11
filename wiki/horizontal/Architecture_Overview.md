@@ -1,3 +1,22 @@
+---
+id: horizontal-architecture-overview
+title: "Architecture Overview: How CTC Thinks"
+level: advanced
+type: guide
+tags: [church-encoding, lambda-calculus, prolog, datalog, semantic-web, shacl, multi-agent-system, blackboard-architecture, automaton]
+keywords: [architecture, overview:, thinks, home, main, automaton, horizontal]
+prerequisites: []
+enables: []
+related: []
+readingTime: 23
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Architecture Overview: How CTC Thinks
 
 **The Design Decisions That Make Paradigm Integration Possible**

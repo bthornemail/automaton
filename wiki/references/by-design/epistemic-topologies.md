@@ -1,3 +1,22 @@
+---
+id: references-by-design-epistemic-topologies
+title: "Epistemic Topologies: Knowledge Spaces and Multi-Agent Belief"
+level: intermediate
+type: reference
+tags: [references, mathematical-foundations, multi-agent-system, blackboard-architecture, automaton]
+keywords: [epistemic, topologies:, knowledge, spaces, multi, agent, belief, home, main, automaton]
+prerequisites: []
+enables: []
+related: []
+readingTime: 6
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "4D-Network-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Epistemic Topologies: Knowledge Spaces and Multi-Agent Belief
 
 **From Epistemic Logic to Knowledge Topologies**

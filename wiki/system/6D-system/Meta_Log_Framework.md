@@ -1,3 +1,22 @@
+---
+id: system-6d-system-meta-log-framework
+title: "Meta Log Framework"
+level: intermediate
+type: guide
+tags: [system, 6d-topology, church-encoding, prolog, datalog, semantic-web, shacl]
+keywords: [meta, framework, home, main, automaton, system, 6d-system]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "6D-Intelligence-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Meta Log Framework
 
 == Overview ==

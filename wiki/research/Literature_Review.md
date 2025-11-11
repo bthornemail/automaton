@@ -1,3 +1,22 @@
+---
+id: research-literature-review
+title: "Literature Review: How We Got Here"
+level: intermediate
+type: research
+tags: [church-encoding, lambda-calculus, prolog, datalog, semantic-web, shacl, multi-agent-system, blackboard-architecture, automaton]
+keywords: [literature, review:, here, home, main, automaton, research]
+prerequisites: []
+enables: []
+related: []
+readingTime: 32
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Literature Review: How We Got Here
 
 **The Academic Journey That Led to CTC**

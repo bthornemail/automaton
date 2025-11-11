@@ -1,3 +1,22 @@
+---
+id: guides-humanization-guide
+title: "Documentation Humanization Guide"
+level: advanced
+type: guide
+tags: [church-encoding, lambda-calculus, prolog, datalog, semantic-web, shacl, multi-agent-system, blackboard-architecture, automaton]
+keywords: [documentation, humanization, guide, home, main, automaton, guides]
+prerequisites: []
+enables: []
+related: []
+readingTime: 20
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Documentation Humanization Guide
 
 **Transforming Technical Specs into Engaging Stories**

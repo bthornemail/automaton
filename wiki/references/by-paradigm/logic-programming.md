@@ -1,3 +1,22 @@
+---
+id: references-by-paradigm-logic-programming
+title: "Logic Programming: Academic References"
+level: intermediate
+type: reference
+tags: [references, paradigms, prolog, datalog]
+keywords: [logic, programming:, academic, references, home, main, automaton, by-paradigm]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "2D-Structural-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Logic Programming: Academic References
 
 **Academic resources for logic-programming paradigm in CTC**

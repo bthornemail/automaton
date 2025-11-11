@@ -1,3 +1,22 @@
+---
+id: references-by-design-relational-theories
+title: "Relational Theories: Database Foundations and Knowledge Representation"
+level: intermediate
+type: reference
+tags: [references, mathematical-foundations, datalog, semantic-web, multi-agent-system, blackboard-architecture, automaton]
+keywords: [relational, theories:, database, foundations, knowledge, representation, home, main, automaton, references]
+prerequisites: []
+enables: []
+related: []
+readingTime: 6
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "2D-Structural-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Relational Theories: Database Foundations and Knowledge Representation
 
 **From Codd's Relational Algebra to Semantic Web Knowledge Graphs**

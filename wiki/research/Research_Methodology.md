@@ -1,3 +1,22 @@
+---
+id: research-research-methodology
+title: "Research Methodology: How We Know It Works"
+level: intermediate
+type: research
+tags: [church-encoding, prolog, datalog, semantic-web, multi-agent-system, blackboard-architecture, automaton]
+keywords: [research, methodology:, know, works, home, main, automaton]
+prerequisites: []
+enables: []
+related: []
+readingTime: 24
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "5D-Consensus-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Research Methodology: How We Know It Works
 
 **Rigorous Validation for a Novel System**

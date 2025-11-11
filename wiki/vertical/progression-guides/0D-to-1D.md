@@ -1,3 +1,22 @@
+---
+id: vertical-progression-guides-0d-to-1d
+title: "Transition Guide: 0D → 1D"
+level: foundational
+type: guide
+tags: [0d-topology, 1d-topology, church-encoding, lambda-calculus, multi-agent-system]
+keywords: [transition, guide:, home, main, automaton, vertical, progression-guides]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 1
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Transition Guide: 0D → 1D
 
 **From Foundation to Temporal Progression**

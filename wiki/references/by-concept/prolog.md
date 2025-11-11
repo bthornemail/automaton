@@ -1,3 +1,22 @@
+---
+id: references-by-concept-prolog
+title: "Prolog: Academic References"
+level: advanced
+type: reference
+tags: [references, concepts, prolog]
+keywords: [prolog:, academic, references, home, main, automaton, by-concept]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Prolog: Academic References
 
 **Academic resources for understanding prolog in the Computational Topology Canvas**

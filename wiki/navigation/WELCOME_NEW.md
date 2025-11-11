@@ -1,3 +1,22 @@
+---
+id: navigation-welcome-new
+title: "Welcome to the Computational Topology Canvas"
+level: intermediate
+type: navigation
+tags: [church-encoding, lambda-calculus, prolog, datalog, semantic-web, shacl, multi-agent-system, blackboard-architecture, automaton]
+keywords: [welcome, computational, topology, canvas, home, main, automaton, navigation]
+prerequisites: []
+enables: []
+related: []
+readingTime: 11
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Welcome to the Computational Topology Canvas
 
 **Where Programming Paradigms Unite, Agents Coordinate, and Software Evolves**

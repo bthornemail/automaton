@@ -1,3 +1,22 @@
+---
+id: vertical-dimensional-progression
+title: "Dimensional Progression: The Climb from 0D to 7D"
+level: intermediate
+type: guide
+tags: [church-encoding, multi-agent-system, blackboard-architecture]
+keywords: [dimensional, progression:, climb, from, home, main, automaton, vertical]
+prerequisites: []
+enables: []
+related: []
+readingTime: 11
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Dimensional Progression: The Climb from 0D to 7D
 
 **How Complexity Emerges from Simple Foundations**

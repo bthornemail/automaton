@@ -1,3 +1,22 @@
+---
+id: references-by-dimension-0d-references
+title: "0D References: Academic Resources"
+level: foundational
+type: reference
+tags: [references, dimensional-progression, 0d-topology, church-encoding, lambda-calculus, automaton]
+keywords: [references:, academic, resources, home, main, automaton, references, by-dimension]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 1
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # 0D References: Academic Resources
 
 **Academic references for 0D dimension concepts**

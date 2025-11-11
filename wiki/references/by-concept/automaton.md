@@ -1,3 +1,22 @@
+---
+id: references-by-concept-automaton
+title: "Automaton: Academic References"
+level: advanced
+type: reference
+tags: [references, concepts, automaton]
+keywords: [automaton:, academic, references, home, main, automaton, by-concept]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Automaton: Academic References
 
 **Academic resources for understanding automaton in the Computational Topology Canvas**

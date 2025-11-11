@@ -1,3 +1,22 @@
+---
+id: references-by-concept-church-encoding
+title: "Church Encoding: Academic References"
+level: advanced
+type: reference
+tags: [references, concepts, church-encoding, lambda-calculus]
+keywords: [church, encoding:, academic, references, home, main, automaton, by-concept]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Church Encoding: Academic References
 
 **Academic resources for understanding church-encoding in the Computational Topology Canvas**

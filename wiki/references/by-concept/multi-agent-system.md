@@ -1,3 +1,22 @@
+---
+id: references-by-concept-multi-agent-system
+title: "Multi Agent System: Academic References"
+level: advanced
+type: reference
+tags: [references, concepts, multi-agent-system]
+keywords: [multi, agent, system:, academic, references, home, main, automaton, by-concept]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Multi Agent System: Academic References
 
 **Academic resources for understanding multi-agent-system in the Computational Topology Canvas**

@@ -1,3 +1,22 @@
+---
+id: navigation-table-of-contents
+title: "Table of Contents"
+level: advanced
+type: navigation
+tags: [church-encoding, lambda-calculus, prolog, datalog, semantic-web, shacl, multi-agent-system, blackboard-architecture, automaton]
+keywords: [table, contents, home, main, automaton, navigation]
+prerequisites: []
+enables: []
+related: []
+readingTime: 7
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Table of Contents
 
 Complete table of contents for the Computational Topology Canvas wiki documentation.

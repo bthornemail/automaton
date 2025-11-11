@@ -1,3 +1,22 @@
+---
+id: references-by-concept-knowledge-graph
+title: "Knowledge Graph: Academic References"
+level: advanced
+type: reference
+tags: [references, concepts]
+keywords: [knowledge, graph:, academic, references, home, main, automaton, by-concept]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Knowledge Graph: Academic References
 
 **Academic resources for understanding knowledge-graph in the Computational Topology Canvas**

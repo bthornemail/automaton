@@ -1,3 +1,22 @@
+---
+id: references-by-design-computational-theory
+title: "Computational Theory: Lambda Calculus, Computability, and Complexity"
+level: intermediate
+type: reference
+tags: [references, mathematical-foundations, church-encoding, lambda-calculus, multi-agent-system, automaton]
+keywords: [computational, theory:, lambda, calculus,, computability,, complexity, home, main, automaton, references]
+prerequisites: []
+enables: []
+related: []
+readingTime: 6
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Computational Theory: Lambda Calculus, Computability, and Complexity
 
 **From Church-Turing to Computational Foundations**

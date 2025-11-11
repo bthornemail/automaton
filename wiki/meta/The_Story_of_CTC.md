@@ -1,3 +1,22 @@
+---
+id: meta-the-story-of-ctc
+title: "The Story of the Computational Topology Canvas"
+level: advanced
+type: meta
+tags: [church-encoding, lambda-calculus, prolog, datalog, semantic-web, shacl, multi-agent-system, blackboard-architecture, automaton]
+keywords: [story, computational, topology, canvas, home, main, automaton, meta]
+prerequisites: []
+enables: []
+related: []
+readingTime: 38
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # The Story of the Computational Topology Canvas
 
 **A Journey from Lambda Calculus to Living, Breathing Software**

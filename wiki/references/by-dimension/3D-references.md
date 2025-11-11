@@ -1,3 +1,22 @@
+---
+id: references-by-dimension-3d-references
+title: "3D References: Academic Resources"
+level: intermediate
+type: reference
+tags: [references, dimensional-progression, 3d-topology, semantic-web, shacl]
+keywords: [references:, academic, resources, home, main, automaton, references, by-dimension]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "2D-Structural-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # 3D References: Academic Resources
 
 **Academic references for 3D dimension concepts**

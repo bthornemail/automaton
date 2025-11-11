@@ -1,3 +1,22 @@
+---
+id: references-by-design-point-space-theories
+title: "Point-Space Theories: Topology, Manifolds, and Computational Spaces"
+level: intermediate
+type: reference
+tags: [references, mathematical-foundations, multi-agent-system, automaton]
+keywords: [point, space, theories:, topology,, manifolds,, computational, spaces, home, main, automaton]
+prerequisites: []
+enables: []
+related: []
+readingTime: 6
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "0D-Topology-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Point-Space Theories: Topology, Manifolds, and Computational Spaces
 
 **From Point-Set Topology to Computational Manifolds**

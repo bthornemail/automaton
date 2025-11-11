@@ -1,3 +1,22 @@
+---
+id: references-by-paradigm-semantic-web
+title: "Semantic Web: Academic References"
+level: intermediate
+type: reference
+tags: [references, paradigms, semantic-web, shacl]
+keywords: [semantic, web:, academic, references, home, main, automaton, by-paradigm]
+prerequisites: []
+enables: []
+related: []
+readingTime: 5
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "3D-Algebraic-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: []
+  watchers: []
+---
 # Semantic Web: Academic References
 
 **Academic resources for semantic-web paradigm in CTC**
