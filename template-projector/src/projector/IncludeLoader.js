@@ -10,6 +10,7 @@ export class IncludeLoader {
     this.loadedFiles = new Map();
     this.loadingFiles = new Set();
     this.basePath = '';
+    this.loadErrors = []; // Track failed loads
   }
 
   /**
@@ -97,6 +98,9 @@ export class IncludeLoader {
     } catch (error) {
       this.loadingFiles.delete(url);
       console.error(`Failed to load include file ${url}:`, error);
+      // Store error for debugging
+      if (!this.loadErrors) this.loadErrors = [];
+      this.loadErrors.push({ url, error: error.message });
       // Don't throw - return empty array so other includes can still work
       return [];
     }
@@ -210,12 +214,19 @@ export class IncludeLoader {
           // Load included file
           const includedObjects = await this.loadFile(resolvedPath);
           
-          console.log(`Loaded ${includedObjects.length} objects from ${resolvedPath}`);
+          if (includedObjects.length === 0) {
+            console.warn(`No objects loaded from ${resolvedPath} - file may be empty or failed to parse`);
+          } else {
+            console.log(`Loaded ${includedObjects.length} objects from ${resolvedPath}`);
+          }
           
           // Add included objects
           expanded.push(...includedObjects);
         } catch (error) {
           console.error(`Failed to include ${includePath} from ${currentUrl}:`, error);
+          // Store error for debugging
+          if (!this.loadErrors) this.loadErrors = [];
+          this.loadErrors.push({ url: resolvedPath, error: error.message, from: currentUrl });
           // Continue with other objects
         }
       } else {

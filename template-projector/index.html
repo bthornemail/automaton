@@ -102,10 +102,16 @@
     
     // Render function
     function render() {
-      projector.renderToCanvas(canvas);
-      const current = projector.getCurrentSlideIndex();
-      const total = projector.slides.length;
-      slideCounter.textContent = `${current} / ${total}`;
+      try {
+        console.log('Render called, current slide:', projector.currentSlide?.id);
+        projector.renderToCanvas(canvas);
+        const current = projector.getCurrentSlideIndex();
+        const total = projector.slides.length;
+        slideCounter.textContent = `${current} / ${total}`;
+      } catch (error) {
+        console.error('Render error:', error);
+        statusBar.textContent = `Render error: ${error.message}`;
+      }
     }
     
     // Navigation handlers
@@ -119,44 +125,19 @@
       render();
     });
     
-    // Re-render button handler (with worker-based population)
+    // Re-render button handler (background population, no suggestions unless requested)
     reRenderBtn.addEventListener('click', async () => {
       if (projector.currentSlide) {
-        statusBar.textContent = 'Re-rendering slide with agent suggestions...';
+        statusBar.textContent = 'Re-rendering slide...';
         try {
           const slide = projector.currentSlide;
           const dimension = slide.dimension || '0D';
           
-          // Get content data
-          let contentData = [];
-          if (projector.agentCoordinator && projector.agentCoordinator.contentLoader) {
-            await projector.agentCoordinator.contentLoader.loadAll();
-            contentData = projector.agentCoordinator.contentLoader.getAllEntries();
-          }
-          
-          // Populate using worker
-          const { slide: populatedSlide, suggestions } = await agentWorkerCoordinator.populateSlide(
-            slide,
-            contentData,
-            dimension
-          );
-          
-          // Update slide
-          projector.currentSlide = populatedSlide;
-          const slideIndex = projector.slides.findIndex(s => s.id === populatedSlide.id);
-          if (slideIndex >= 0) {
-            projector.slides[slideIndex] = populatedSlide;
-          }
-          
-          // Show suggestions
-          if (suggestions && suggestions.length > 0) {
-            currentSuggestions = suggestions;
-            displaySuggestions(suggestions, 'populate');
-            suggestionsPanel.style.display = 'block';
-          }
+          // Populate in background (non-blocking)
+          populateSlideInBackground(slide, dimension);
           
           render();
-          statusBar.textContent = 'Slide re-rendered with suggestions';
+          statusBar.textContent = 'Slide re-rendered';
         } catch (error) {
           console.error('Failed to re-render slide:', error);
           statusBar.textContent = `Error: ${error.message}`;
@@ -165,6 +146,120 @@
         statusBar.textContent = 'No slide selected';
       }
     });
+    
+    // Background population (non-blocking, no suggestions)
+    async function populateSlideInBackground(slide, dimension) {
+      // Don't use requestIdleCallback - render immediately after population
+      try {
+        let contentData = [];
+        if (projector.agentCoordinator && projector.agentCoordinator.contentLoader) {
+          await projector.agentCoordinator.contentLoader.loadAll();
+          contentData = projector.agentCoordinator.contentLoader.getAllEntries();
+        }
+        
+        console.log(`Populating slide ${slide.id} in background...`);
+        
+        // Populate without generating suggestions
+        const { slide: populatedSlide } = await agentWorkerCoordinator.populateSlide(
+          slide,
+          contentData,
+          dimension
+        );
+        
+        console.log(`Slide ${populatedSlide.id} populated, updating...`);
+        
+        // Update slide in slides array
+        const slideIndex = projector.slides.findIndex(s => s.id === populatedSlide.id);
+        if (slideIndex >= 0) {
+          projector.slides[slideIndex] = populatedSlide;
+          console.log(`Updated slide at index ${slideIndex}`);
+        }
+        
+        // Update current slide if it's the one being populated
+        if (projector.currentSlide && (projector.currentSlide.id === populatedSlide.id || projector.currentSlide === slide)) {
+          projector.currentSlide = populatedSlide;
+          console.log(`Updated current slide, re-rendering...`);
+          render();
+        }
+      } catch (error) {
+        console.error('Background population failed:', error);
+      }
+    }
+    
+    // Query/search handler - generates suggestions on query
+    function handleQuery(query) {
+      if (!query || !query.trim()) return;
+      
+      statusBar.textContent = `Querying: ${query}...`;
+      
+      // Generate suggestions based on query
+      const slide = projector.currentSlide;
+      if (!slide) {
+        statusBar.textContent = 'No slide selected';
+        return;
+      }
+      
+      const dimension = slide.dimension || '0D';
+      
+      // Get content data
+      let contentData = [];
+      if (projector.agentCoordinator && projector.agentCoordinator.contentLoader) {
+        contentData = projector.agentCoordinator.contentLoader.getAllEntries();
+      }
+      
+      // Generate suggestions for query
+      agentWorkerCoordinator.generateSuggestions(slide, { type: 'query', text: query }, 'query')
+        .then(suggestions => {
+          if (suggestions && suggestions.length > 0) {
+            currentSuggestions = suggestions;
+            displaySuggestions(suggestions, 'query');
+            suggestionsPanel.style.display = 'block';
+            statusBar.textContent = `Found ${suggestions.length} suggestions for "${query}"`;
+          } else {
+            statusBar.textContent = `No suggestions for "${query}"`;
+          }
+        })
+        .catch(error => {
+          console.error('Query failed:', error);
+          statusBar.textContent = `Query error: ${error.message}`;
+        });
+    }
+    
+    // Keyword click handler - generates suggestions on keyword click
+    function handleKeywordClick(keyword) {
+      if (!keyword) return;
+      
+      statusBar.textContent = `Analyzing keyword: ${keyword}...`;
+      
+      const slide = projector.currentSlide;
+      if (!slide) {
+        statusBar.textContent = 'No slide selected';
+        return;
+      }
+      
+      const dimension = slide.dimension || '0D';
+      let contentData = [];
+      if (projector.agentCoordinator && projector.agentCoordinator.contentLoader) {
+        contentData = projector.agentCoordinator.contentLoader.getAllEntries();
+      }
+      
+      // Generate suggestions for keyword
+      agentWorkerCoordinator.generateSuggestions(slide, { type: 'keyword', text: keyword }, 'keyword_click')
+        .then(suggestions => {
+          if (suggestions && suggestions.length > 0) {
+            currentSuggestions = suggestions;
+            displaySuggestions(suggestions, 'keyword');
+            suggestionsPanel.style.display = 'block';
+            statusBar.textContent = `Generated ${suggestions.length} suggestions for "${keyword}"`;
+          } else {
+            statusBar.textContent = `No suggestions for "${keyword}"`;
+          }
+        })
+        .catch(error => {
+          console.error('Keyword analysis failed:', error);
+          statusBar.textContent = `Error: ${error.message}`;
+        });
+    }
     
     // Close suggestions panel
     closeSuggestions.addEventListener('click', () => {
@@ -255,24 +350,8 @@
       }
     };
     
-    // Listen for worker events
-    window.addEventListener('agentWorker:slidePopulated', (e) => {
-      const { slide, suggestions } = e.detail;
-      if (suggestions && suggestions.length > 0) {
-        currentSuggestions = suggestions;
-        displaySuggestions(suggestions, 'populate');
-        suggestionsPanel.style.display = 'block';
-      }
-    });
-    
-    window.addEventListener('agentWorker:suggestionsGenerated', (e) => {
-      const { suggestions } = e.detail;
-      if (suggestions && suggestions.length > 0) {
-        currentSuggestions = suggestions;
-        displaySuggestions(suggestions, 'component');
-        suggestionsPanel.style.display = 'block';
-      }
-    });
+    // Worker events disabled - suggestions only on query/keyword click
+    // No automatic suggestion generation
     
     // Load file for editing
     async function loadBlackboardFile(filename) {
@@ -380,7 +459,7 @@
       render();
     });
     
-    // Handle canvas clicks for component interaction
+    // Handle canvas clicks for component/keyword interaction
     canvas.addEventListener('click', async (e) => {
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
@@ -392,40 +471,53 @@
         for (const area of slide._componentAreas) {
           if (x >= area.x && x <= area.x + area.width &&
               y >= area.y && y <= area.y + area.height) {
-            // Component clicked - generate suggestions
-            statusBar.textContent = `Analyzing ${area.type} component...`;
-            
-            try {
-              const dimension = slide.dimension || '0D';
-              let contentData = [];
-              if (projector.agentCoordinator && projector.agentCoordinator.contentLoader) {
-                contentData = projector.agentCoordinator.contentLoader.getAllEntries();
-              }
-              
-              const suggestions = await agentWorkerCoordinator.generateSuggestions(
-                slide,
-                area.component,
-                'component_click'
-              );
-              
-              if (suggestions && suggestions.length > 0) {
-                currentSuggestions = suggestions;
-                displaySuggestions(suggestions, 'component');
-                suggestionsPanel.style.display = 'block';
-                statusBar.textContent = `Generated ${suggestions.length} suggestions for ${area.type}`;
-              } else {
-                statusBar.textContent = `No suggestions for ${area.type} component`;
-              }
-            } catch (error) {
-              console.error('Failed to generate suggestions:', error);
-              statusBar.textContent = `Error: ${error.message}`;
-            }
-            
+            // Component clicked - treat as keyword click
+            const keyword = area.component.alt || area.component.text || area.type;
+            handleKeywordClick(keyword);
             return;
           }
         }
       }
+      
+      // Check if click is on a keyword in text content
+      // Extract word at click position
+      const ctx = canvas.getContext('2d');
+      const content = slide.content || slide.text || '';
+      if (content) {
+        // Simple keyword extraction - find word near click
+        const lines = content.split('\n');
+        let currentY = 80; // Start after title
+        for (const line of lines) {
+          if (y >= currentY && y <= currentY + 30) {
+            // Click is on this line - extract word
+            const words = line.split(/\s+/);
+            const charWidth = 10; // Approximate
+            const charIndex = Math.floor((x - 60) / charWidth);
+            let charCount = 0;
+            for (const word of words) {
+              if (charCount + word.length >= charIndex) {
+                // Found the word
+                if (word.length > 3) { // Only treat longer words as keywords
+                  handleKeywordClick(word.replace(/[^\w]/g, ''));
+                }
+                return;
+              }
+              charCount += word.length + 1; // +1 for space
+            }
+          }
+          currentY += 30;
+        }
+      }
     });
+    
+    // Add search/query input (optional - can be added to UI later)
+    window.querySlide = function(query) {
+      handleQuery(query);
+    };
+    
+    window.clickKeyword = function(keyword) {
+      handleKeywordClick(keyword);
+    };
     
     // Preload content sources on empty page (before deck loads)
     async function preloadContentSources() {
@@ -460,27 +552,40 @@
         const deck = await projector.loadDeck('templates/documents/demo-deck.canvasl.jsonl');
         
         console.log('Deck loaded:', deck);
-        statusBar.textContent = `Loaded ${deck.slides.length} slides`;
+        console.log('Slides found:', projector.slides.length);
+        console.log('Slide IDs:', projector.slides.map(s => s.id || 'unnamed'));
         
-        // Render first slide
-        if (deck.slides && deck.slides.length > 0) {
-          projector.currentSlide = deck.slides[0];
-          render();
+        // Check for missing slides
+        const expectedSlides = ["slide-1", "1d-temporal-slide", "2d-structural-slide", "einstein-slide", "la-slide", "5d-consensus-slide", "6d-intelligence-slide", "7d-quantum-slide", "meta-log-slide", "canvasl-slide", "agents-slide", "semantic-slides-slide"];
+        const loadedSlideIds = projector.slides.map(s => s.id).filter(Boolean);
+        const missingSlides = expectedSlides.filter(id => !loadedSlideIds.includes(id));
+        
+        // Check for include errors
+        if (projector.includeLoader && projector.includeLoader.loadErrors && projector.includeLoader.loadErrors.length > 0) {
+          console.error('Include file errors:', projector.includeLoader.loadErrors);
+          statusBar.textContent = `Error: ${projector.includeLoader.loadErrors.length} include files failed to load`;
         }
         
-        // Start infinite resolving - continuously evolve slides
-        projector.startInfiniteResolving(5000); // Resolve every 5 seconds
+        if (missingSlides.length > 0) {
+          console.warn('Missing slides:', missingSlides);
+          console.warn('Loaded slide IDs:', loadedSlideIds);
+          statusBar.textContent = `Loaded ${projector.slides.length}/${expectedSlides.length} slides (missing: ${missingSlides.join(', ')})`;
+        } else {
+          statusBar.textContent = `Loaded ${projector.slides.length} slides`;
+        }
         
-        // Start auto-revolving slides - automatically advance slides
-        projector.startAutoRevolving(10000); // Revolve every 10 seconds
+        // Render first slide
+        if (projector.slides && projector.slides.length > 0) {
+          projector.currentSlide = projector.slides[0];
+          render();
+        } else {
+          console.error('No slides loaded!');
+          statusBar.textContent = 'Error: No slides loaded';
+        }
         
-        // Update status when slides resolve
-        const originalPopulate = projector.populateSlides.bind(projector);
-        projector.populateSlides = async function(...args) {
-          const result = await originalPopulate(...args);
-          statusBar.textContent = `Resolved ${result.length} slides (${new Date().toLocaleTimeString()})`;
-          return result;
-        };
+        // Auto-revolving disabled - slides only change on user request
+        // Agents work in background - no automatic population
+        // Suggestions only generated on query or keyword click
         
         // Update status when slides revolve
         const originalNextSlide = projector.nextSlide.bind(projector);
@@ -499,33 +604,6 @@
       }
     });
     
-    // Infinite scrolling - loop back to top when reaching bottom
-    let lastScrollTop = 0;
-    let scrollDirection = 0;
-    window.addEventListener('scroll', () => {
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      const scrollHeight = document.documentElement.scrollHeight;
-      const clientHeight = document.documentElement.clientHeight;
-      
-      // Detect scroll direction
-      scrollDirection = scrollTop > lastScrollTop ? 1 : -1;
-      lastScrollTop = scrollTop;
-      
-      // Infinite scroll: loop to top when near bottom
-      if (scrollTop + clientHeight >= scrollHeight - 100 && scrollDirection > 0) {
-        // Smoothly scroll back to top
-        setTimeout(() => {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }, 500);
-      }
-      
-      // Infinite scroll: loop to bottom when at top and scrolling up
-      if (scrollTop <= 10 && scrollDirection < 0) {
-        setTimeout(() => {
-          window.scrollTo({ top: scrollHeight - clientHeight, behavior: 'smooth' });
-        }, 500);
-      }
-    });
     
     // Export for debugging
     window.projector = projector;

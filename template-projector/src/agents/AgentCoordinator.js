@@ -71,7 +71,7 @@ export class AgentCoordinator {
 
   /**
    * Get agent for a dimension
-   * @param {string} dimension - Dimension string (e.g., "0D")
+   * @param {string} dimension - Dimension string (e.g., "0D", "0d", "0")
    * @returns {DimensionalAgent|null} Agent instance or null
    */
   getAgent(dimension) {
@@ -79,9 +79,29 @@ export class AgentCoordinator {
       throw new Error('AgentCoordinator not initialized. Call init() first.');
     }
 
-    // Normalize dimension
-    const dim = dimension.replace(/D$/, '') + 'D';
-    return this.agents.get(dim) || null;
+    if (!dimension) {
+      console.warn('getAgent called with empty dimension, defaulting to 0D');
+      dimension = '0D';
+    }
+
+    // Normalize dimension - handle various formats
+    let dim = String(dimension).trim().toUpperCase();
+    
+    // Remove trailing 'D' if present, then add uppercase 'D'
+    dim = dim.replace(/D+$/i, '') + 'D';
+    
+    // Ensure it's a valid dimension format (0D-7D)
+    if (!/^[0-7]D$/.test(dim)) {
+      console.warn(`Invalid dimension format: ${dimension}, defaulting to 0D`);
+      dim = '0D';
+    }
+    
+    const agent = this.agents.get(dim);
+    if (!agent) {
+      console.warn(`No agent found for dimension ${dim}, available agents:`, Array.from(this.agents.keys()));
+    }
+    
+    return agent || null;
   }
 
   /**
@@ -95,21 +115,38 @@ export class AgentCoordinator {
     }
 
     // Get slide dimension (default to "0D" if not specified)
-    const dimension = slide.dimension || '0D';
+    let dimension = slide.dimension || '0D';
+    
+    // Normalize dimension
+    dimension = String(dimension).trim().toUpperCase().replace(/D+$/i, '') + 'D';
+    
+    console.log(`[AgentCoordinator] Populating slide ${slide.id || 'unnamed'} with dimension ${dimension}`);
     
     // Get appropriate agent
     const agent = this.getAgent(dimension);
     if (!agent) {
-      console.warn(`No agent found for dimension ${dimension}, using 0D agent`);
+      console.error(`No agent found for dimension ${dimension}, slide: ${slide.id}`);
+      console.error(`Available agents:`, Array.from(this.agents.keys()));
+      console.error(`Slide dimension value:`, slide.dimension);
+      
+      // Try to use 0D agent as fallback
       const defaultAgent = this.getAgent('0D');
       if (!defaultAgent) {
+        console.error('No default 0D agent available, returning unmodified slide');
         return slide; // Return unmodified if no agents available
       }
+      console.warn(`Using 0D agent as fallback for slide ${slide.id}`);
       return await defaultAgent.populateSlide(slide, this.contentData);
     }
 
+    console.log(`[AgentCoordinator] Using agent: ${agent.name} for slide ${slide.id}`);
+    
     // Populate slide using agent
-    return await agent.populateSlide(slide, this.contentData);
+    const populatedSlide = await agent.populateSlide(slide, this.contentData);
+    
+    console.log(`[AgentCoordinator] Slide ${slide.id} populated by ${agent.name}, has content: ${!!populatedSlide.content}`);
+    
+    return populatedSlide;
   }
 
   /**
