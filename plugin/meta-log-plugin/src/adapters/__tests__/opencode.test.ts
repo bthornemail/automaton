@@ -68,6 +68,24 @@ describe('OpenCodeMetaLogPlugin', () => {
       // This is expected behavior
       expect(tools).toBeDefined();
     });
+
+    test('should check OpenCode availability', async () => {
+      const isAvailable = await plugin.checkOpenCodeAvailability();
+      expect(typeof isAvailable).toBe('boolean');
+    });
+
+    test('should report OpenCode availability status', async () => {
+      await plugin.onLoad();
+      const isAvailable = plugin.isOpenCodeAvailable();
+      expect(typeof isAvailable).toBe('boolean');
+    });
+
+    test('should get tool count', async () => {
+      await plugin.onLoad();
+      const count = plugin.getToolCount();
+      expect(typeof count).toBe('number');
+      expect(count).toBeGreaterThanOrEqual(0);
+    });
   });
 
   describe('Canvas Loading', () => {
