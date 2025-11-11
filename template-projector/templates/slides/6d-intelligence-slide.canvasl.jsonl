@@ -1,0 +1,13 @@
+{"@include": "src/macros/RDF_SPARQL.canvasl.jsonl"}
+{"type": "macro", "call": "rdf-prefix"}
+
+{"id": "6d-intelligence-slide", "type": "slide", "title": "6D Intelligence Topology", "dimension": "6D"}
+
+{"type": "macro", "call": "ui-container", "args": [
+  "#main", "column", ["#header", "#content"]
+]}
+
+{"type": "macro", "call": "ui-component", "args": ["#header", "ui:Text", "6D: Emergent Intelligence"]}
+
+{"type": "macro", "call": "ui-component", "args": ["#content", "ui:Text", "Intelligence topology handles emergent AI and neural network operations."]}
+

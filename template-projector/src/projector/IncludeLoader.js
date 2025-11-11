@@ -142,15 +142,39 @@ export class IncludeLoader {
         continue;
       }
 
-      // Parse JSONL lines
+      // Parse JSONL lines (handle multi-line JSON objects)
       if (line && line.startsWith('{')) {
         try {
+          // Try parsing the line as-is first
           const obj = JSON.parse(line);
           obj._sourceLine = i + 1;
           obj._sourceUrl = sourceUrl;
           objects.push(obj);
         } catch (error) {
-          console.warn(`Failed to parse line ${i + 1} in ${sourceUrl}: ${error.message}`);
+          // If parsing fails, try accumulating lines until we have valid JSON
+          // This handles multi-line JSON objects
+          let jsonStr = line;
+          let braceCount = (jsonStr.match(/{/g) || []).length - (jsonStr.match(/}/g) || []).length;
+          let j = i + 1;
+          
+          // Accumulate lines until braces are balanced
+          while (braceCount > 0 && j < lines.length) {
+            jsonStr += '\n' + lines[j];
+            braceCount += (lines[j].match(/{/g) || []).length - (lines[j].match(/}/g) || []).length;
+            j++;
+          }
+          
+          try {
+            const obj = JSON.parse(jsonStr);
+            obj._sourceLine = i + 1;
+            obj._sourceUrl = sourceUrl;
+            objects.push(obj);
+            // Skip the lines we already processed
+            i = j - 1;
+          } catch (nestedError) {
+            // If still fails, log warning and continue
+            console.warn(`Failed to parse line ${i + 1} in ${sourceUrl}: ${error.message}`);
+          }
         }
       }
     }

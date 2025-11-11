@@ -12,13 +12,49 @@
       <button id="prev">←</button>
       <span id="slide-counter">1 / 1</span>
       <button id="next">→</button>
-      <button id="populate" title="Populate current slide with agent content">⚡</button>
+      <button id="re-render" title="Re-render and re-populate current slide">⚡</button>
+      <button id="blackboard" title="Open blackboard editor">📝</button>
       <button id="fullscreen">⛶</button>
     </nav>
+    
+    <!-- Blackboard Editor Modal -->
+    <div id="blackboard-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; overflow: auto;">
+      <div style="max-width: 1200px; margin: 2rem auto; background: #1a1a1a; padding: 2rem; border-radius: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h2 style="color: #00ffff; margin: 0;">Blackboard Editor</h2>
+          <button id="close-blackboard" style="background: #ff4444; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer;">Close</button>
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label style="color: #f0f0f0; display: block; margin-bottom: 0.5rem;">Select File to Edit:</label>
+          <select id="blackboard-file-select" style="width: 100%; padding: 0.5rem; background: #1a1a1a; color: #f0f0f0; border: 1px solid #333; border-radius: 0.5rem; margin-bottom: 1rem;">
+            <option value="content-index.jsonl">Content Index (content-index.jsonl)</option>
+            <option value="automaton-kernel.jsonl">Automaton Kernel (automaton-kernel.jsonl)</option>
+          </select>
+          <label style="color: #f0f0f0; display: block; margin-bottom: 0.5rem;">Edit File Content:</label>
+          <textarea id="blackboard-content" style="width: 100%; height: 400px; background: #0a0a0a; color: #00ff00; font-family: monospace; padding: 1rem; border: 1px solid #333; border-radius: 0.5rem; font-size: 12px;"></textarea>
+        </div>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+          <button id="save-blackboard" style="background: #00ff00; color: #000; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; font-weight: bold;">Save Changes</button>
+          <button id="reload-blackboard" style="background: #00aaff; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer;">Reload from Server</button>
+          <button id="rebuild-blackboard" style="background: #ffaa00; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer;">Rebuild Index</button>
+          <button id="apply-blackboard" style="background: #aa00ff; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer;">Apply & Reload</button>
+        </div>
+        <div id="blackboard-status" style="margin-top: 1rem; color: #888; font-size: 0.875rem;"></div>
+      </div>
+    </div>
     
     <canvas id="render-canvas"></canvas>
     
     <div id="interaction-layer"></div>
+    
+    <!-- Suggestions Panel -->
+    <div id="suggestions-panel" style="display: none; position: fixed; right: 0; top: 0; width: 400px; height: 100vh; background: rgba(26, 26, 26, 0.95); border-left: 2px solid #00ffff; z-index: 999; overflow-y: auto; padding: 1rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3 style="color: #00ffff; margin: 0;">Agent Suggestions</h3>
+        <button id="close-suggestions" style="background: #ff4444; color: white; border: none; padding: 0.5rem; border-radius: 0.25rem; cursor: pointer;">×</button>
+      </div>
+      <div id="suggestions-content"></div>
+    </div>
     
     <div id="status-bar">
       <span id="status">Ready</span>
@@ -27,15 +63,42 @@
 
   <script type="module">
     import { Projector } from './src/projector/Projector.js';
+    import { AgentWorkerCoordinator } from './src/workers/AgentWorkerCoordinator.js';
     
     // Initialize projector
     const projector = new Projector();
     const canvas = document.getElementById('render-canvas');
+    
+    // Initialize agent worker coordinator
+    const agentWorkerCoordinator = new AgentWorkerCoordinator();
     const prevBtn = document.getElementById('prev');
     const nextBtn = document.getElementById('next');
-    const populateBtn = document.getElementById('populate');
+    const reRenderBtn = document.getElementById('re-render');
+    const blackboardBtn = document.getElementById('blackboard');
     const slideCounter = document.getElementById('slide-counter');
     const statusBar = document.getElementById('status');
+    
+    // Blackboard editor elements
+    const blackboardModal = document.getElementById('blackboard-modal');
+    const blackboardFileSelect = document.getElementById('blackboard-file-select');
+    const blackboardContent = document.getElementById('blackboard-content');
+    const closeBlackboard = document.getElementById('close-blackboard');
+    const saveBlackboard = document.getElementById('save-blackboard');
+    const reloadBlackboard = document.getElementById('reload-blackboard');
+    const rebuildBlackboard = document.getElementById('rebuild-blackboard');
+    const applyBlackboard = document.getElementById('apply-blackboard');
+    const blackboardStatus = document.getElementById('blackboard-status');
+    
+    // Suggestions panel elements
+    const suggestionsPanel = document.getElementById('suggestions-panel');
+    const suggestionsContent = document.getElementById('suggestions-content');
+    const closeSuggestions = document.getElementById('close-suggestions');
+    
+    // Current file being edited
+    let currentBlackboardFile = 'content-index.jsonl';
+    
+    // Current suggestions
+    let currentSuggestions = [];
     
     // Render function
     function render() {
@@ -56,20 +119,250 @@
       render();
     });
     
-    // Populate handler (on-demand)
-    populateBtn.addEventListener('click', async () => {
+    // Re-render button handler (with worker-based population)
+    reRenderBtn.addEventListener('click', async () => {
       if (projector.currentSlide) {
-        statusBar.textContent = 'Populating slide...';
+        statusBar.textContent = 'Re-rendering slide with agent suggestions...';
         try {
-          await projector.populateSlide(projector.currentSlide);
+          const slide = projector.currentSlide;
+          const dimension = slide.dimension || '0D';
+          
+          // Get content data
+          let contentData = [];
+          if (projector.agentCoordinator && projector.agentCoordinator.contentLoader) {
+            await projector.agentCoordinator.contentLoader.loadAll();
+            contentData = projector.agentCoordinator.contentLoader.getAllEntries();
+          }
+          
+          // Populate using worker
+          const { slide: populatedSlide, suggestions } = await agentWorkerCoordinator.populateSlide(
+            slide,
+            contentData,
+            dimension
+          );
+          
+          // Update slide
+          projector.currentSlide = populatedSlide;
+          const slideIndex = projector.slides.findIndex(s => s.id === populatedSlide.id);
+          if (slideIndex >= 0) {
+            projector.slides[slideIndex] = populatedSlide;
+          }
+          
+          // Show suggestions
+          if (suggestions && suggestions.length > 0) {
+            currentSuggestions = suggestions;
+            displaySuggestions(suggestions, 'populate');
+            suggestionsPanel.style.display = 'block';
+          }
+          
           render();
-          statusBar.textContent = 'Slide populated';
+          statusBar.textContent = 'Slide re-rendered with suggestions';
         } catch (error) {
-          console.error('Failed to populate slide:', error);
+          console.error('Failed to re-render slide:', error);
           statusBar.textContent = `Error: ${error.message}`;
         }
       } else {
         statusBar.textContent = 'No slide selected';
+      }
+    });
+    
+    // Close suggestions panel
+    closeSuggestions.addEventListener('click', () => {
+      suggestionsPanel.style.display = 'none';
+    });
+    
+    // Display suggestions
+    function displaySuggestions(suggestions, action) {
+      if (!suggestions || suggestions.length === 0) {
+        suggestionsContent.innerHTML = '<p style="color: #888;">No suggestions available</p>';
+        return;
+      }
+      
+      const html = suggestions.map((suggestion, index) => {
+        const priorityColor = {
+          high: '#ff4444',
+          medium: '#ffaa00',
+          low: '#00aaff'
+        }[suggestion.priority] || '#888';
+        
+        return `
+          <div style="background: #1a1a1a; border-left: 4px solid ${priorityColor}; padding: 1rem; margin-bottom: 1rem; border-radius: 0.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+              <span style="color: ${priorityColor}; font-size: 0.75rem; font-weight: bold; text-transform: uppercase;">${suggestion.priority}</span>
+              <span style="color: #888; font-size: 0.75rem;">${suggestion.type}</span>
+            </div>
+            <p style="color: #f0f0f0; margin: 0.5rem 0;">${suggestion.message}</p>
+            <button onclick="applySuggestion(${index})" style="background: #00ffff; color: #000; border: none; padding: 0.5rem 1rem; border-radius: 0.25rem; cursor: pointer; font-size: 0.875rem; margin-top: 0.5rem;">Apply</button>
+          </div>
+        `;
+      }).join('');
+      
+      suggestionsContent.innerHTML = html;
+    }
+    
+    // Apply suggestion
+    window.applySuggestion = async function(index) {
+      const suggestion = currentSuggestions[index];
+      if (!suggestion) return;
+      
+      statusBar.textContent = `Applying suggestion: ${suggestion.type}...`;
+      
+      try {
+        // Handle different suggestion types
+        switch (suggestion.action) {
+          case 'enhance_title':
+            // Enhance title logic
+            if (projector.currentSlide) {
+              projector.currentSlide.title = projector.currentSlide.title + ' (Enhanced)';
+              render();
+            }
+            break;
+          
+          case 'add_content':
+            // Add content logic
+            if (projector.currentSlide) {
+              projector.currentSlide.content = (projector.currentSlide.content || '') + '\n\n[Additional content added by agent]';
+              render();
+            }
+            break;
+          
+          case 'add_components':
+            // Add components logic
+            if (projector.currentSlide) {
+              if (!projector.currentSlide.uiComponents) {
+                projector.currentSlide.uiComponents = [];
+              }
+              projector.currentSlide.uiComponents.push({
+                type: 'quote',
+                text: 'Consider adding visual components to enhance this slide.'
+              });
+              render();
+            }
+            break;
+          
+          default:
+            console.log('Suggestion action not implemented:', suggestion.action);
+        }
+        
+        statusBar.textContent = 'Suggestion applied';
+        
+        // Remove suggestion from list
+        currentSuggestions.splice(index, 1);
+        displaySuggestions(currentSuggestions, 'populate');
+      } catch (error) {
+        console.error('Failed to apply suggestion:', error);
+        statusBar.textContent = `Error: ${error.message}`;
+      }
+    };
+    
+    // Listen for worker events
+    window.addEventListener('agentWorker:slidePopulated', (e) => {
+      const { slide, suggestions } = e.detail;
+      if (suggestions && suggestions.length > 0) {
+        currentSuggestions = suggestions;
+        displaySuggestions(suggestions, 'populate');
+        suggestionsPanel.style.display = 'block';
+      }
+    });
+    
+    window.addEventListener('agentWorker:suggestionsGenerated', (e) => {
+      const { suggestions } = e.detail;
+      if (suggestions && suggestions.length > 0) {
+        currentSuggestions = suggestions;
+        displaySuggestions(suggestions, 'component');
+        suggestionsPanel.style.display = 'block';
+      }
+    });
+    
+    // Load file for editing
+    async function loadBlackboardFile(filename) {
+      try {
+        const response = await fetch(`/${filename}`);
+        if (response.ok) {
+          const content = await response.text();
+          blackboardContent.value = content;
+          currentBlackboardFile = filename;
+          blackboardStatus.textContent = `${filename} loaded`;
+          return true;
+        } else {
+          blackboardContent.value = `// ${filename} not found. Click "Rebuild Index" to generate it.`;
+          blackboardStatus.textContent = `${filename} not found`;
+          return false;
+        }
+      } catch (error) {
+        blackboardContent.value = `// Error loading ${filename}: ${error.message}`;
+        blackboardStatus.textContent = `Error: ${error.message}`;
+        return false;
+      }
+    }
+    
+    // Blackboard editor handlers
+    blackboardBtn.addEventListener('click', async () => {
+      await loadBlackboardFile(blackboardFileSelect.value);
+      blackboardModal.style.display = 'block';
+    });
+    
+    // File selector change handler
+    blackboardFileSelect.addEventListener('change', async (e) => {
+      await loadBlackboardFile(e.target.value);
+    });
+    
+    closeBlackboard.addEventListener('click', () => {
+      blackboardModal.style.display = 'none';
+    });
+    
+    saveBlackboard.addEventListener('click', async () => {
+      try {
+        const content = blackboardContent.value;
+        // In a real implementation, this would save to server
+        // For now, we'll reload the content loader
+        blackboardStatus.textContent = 'Saving...';
+        
+        // Reload content loader with new content
+        if (projector.agentCoordinator && projector.agentCoordinator.contentLoader) {
+          await projector.agentCoordinator.contentLoader.reload();
+          await projector.populateSlides(true);
+          render();
+        }
+        
+        blackboardStatus.textContent = 'Saved! (Note: Browser-only - changes not persisted to server)';
+        setTimeout(() => {
+          blackboardModal.style.display = 'none';
+        }, 1000);
+      } catch (error) {
+        blackboardStatus.textContent = `Error saving: ${error.message}`;
+      }
+    });
+    
+    reloadBlackboard.addEventListener('click', async () => {
+      await loadBlackboardFile(currentBlackboardFile);
+    });
+    
+    applyBlackboard.addEventListener('click', async () => {
+      try {
+        blackboardStatus.textContent = 'Applying changes...';
+        
+        // Reload content loader with new content
+        if (projector.agentCoordinator && projector.agentCoordinator.contentLoader) {
+          await projector.agentCoordinator.contentLoader.reload();
+          await projector.populateSlides(true);
+          render();
+          blackboardStatus.textContent = 'Changes applied! Slides reloaded.';
+        } else {
+          blackboardStatus.textContent = 'ContentLoader not available';
+        }
+      } catch (error) {
+        blackboardStatus.textContent = `Error applying: ${error.message}`;
+      }
+    });
+    
+    rebuildBlackboard.addEventListener('click', async () => {
+      try {
+        blackboardStatus.textContent = 'Rebuilding content index...';
+        // Trigger rebuild via API (if available) or show instructions
+        blackboardStatus.textContent = 'Run "npm run build:content-index" to rebuild. Reload page after rebuilding.';
+      } catch (error) {
+        blackboardStatus.textContent = `Error: ${error.message}`;
       }
     });
     
@@ -87,10 +380,81 @@
       render();
     });
     
+    // Handle canvas clicks for component interaction
+    canvas.addEventListener('click', async (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      // Check if click is on a component
+      const slide = projector.currentSlide;
+      if (slide && slide._componentAreas) {
+        for (const area of slide._componentAreas) {
+          if (x >= area.x && x <= area.x + area.width &&
+              y >= area.y && y <= area.y + area.height) {
+            // Component clicked - generate suggestions
+            statusBar.textContent = `Analyzing ${area.type} component...`;
+            
+            try {
+              const dimension = slide.dimension || '0D';
+              let contentData = [];
+              if (projector.agentCoordinator && projector.agentCoordinator.contentLoader) {
+                contentData = projector.agentCoordinator.contentLoader.getAllEntries();
+              }
+              
+              const suggestions = await agentWorkerCoordinator.generateSuggestions(
+                slide,
+                area.component,
+                'component_click'
+              );
+              
+              if (suggestions && suggestions.length > 0) {
+                currentSuggestions = suggestions;
+                displaySuggestions(suggestions, 'component');
+                suggestionsPanel.style.display = 'block';
+                statusBar.textContent = `Generated ${suggestions.length} suggestions for ${area.type}`;
+              } else {
+                statusBar.textContent = `No suggestions for ${area.type} component`;
+              }
+            } catch (error) {
+              console.error('Failed to generate suggestions:', error);
+              statusBar.textContent = `Error: ${error.message}`;
+            }
+            
+            return;
+          }
+        }
+      }
+    });
+    
+    // Preload content sources on empty page (before deck loads)
+    async function preloadContentSources() {
+      try {
+        statusBar.textContent = 'Preloading content sources...';
+        
+        // Initialize projector
+        await projector.init(projector.metaLog);
+        
+        // Preload content sources (kernel + frontmatter)
+        if (projector.agentCoordinator && projector.agentCoordinator.contentLoader) {
+          await projector.agentCoordinator.contentLoader.loadAll();
+          statusBar.textContent = 'Content sources preloaded - ready for blackboard editing';
+          console.log('Content sources preloaded:', {
+            kernel: projector.agentCoordinator.contentLoader.kernelLoader.getAllEntries().length,
+            frontmatter: projector.agentCoordinator.contentLoader.frontmatterLoader.getAllDocuments().length
+          });
+        }
+      } catch (error) {
+        console.warn('Preload failed (will retry on deck load):', error);
+        statusBar.textContent = 'Preload skipped - will load with deck';
+      }
+    }
+    
     // Initialize on load
     document.addEventListener('DOMContentLoaded', async () => {
       try {
-        await projector.init(projector.metaLog);
+        // Preload content sources first (enables blackboard editing)
+        await preloadContentSources();
         
         // Load demo deck
         const deck = await projector.loadDeck('templates/documents/demo-deck.canvasl.jsonl');
@@ -103,11 +467,63 @@
           projector.currentSlide = deck.slides[0];
           render();
         }
+        
+        // Start infinite resolving - continuously evolve slides
+        projector.startInfiniteResolving(5000); // Resolve every 5 seconds
+        
+        // Start auto-revolving slides - automatically advance slides
+        projector.startAutoRevolving(10000); // Revolve every 10 seconds
+        
+        // Update status when slides resolve
+        const originalPopulate = projector.populateSlides.bind(projector);
+        projector.populateSlides = async function(...args) {
+          const result = await originalPopulate(...args);
+          statusBar.textContent = `Resolved ${result.length} slides (${new Date().toLocaleTimeString()})`;
+          return result;
+        };
+        
+        // Update status when slides revolve
+        const originalNextSlide = projector.nextSlide.bind(projector);
+        projector.nextSlide = function() {
+          const result = originalNextSlide();
+          const current = projector.getCurrentSlideIndex();
+          const total = projector.slides.length;
+          slideCounter.textContent = `${current} / ${total}`;
+          return result;
+        };
       } catch (error) {
         console.error('Failed to initialize:', error);
         statusBar.textContent = `Error: ${error.message}`;
         // Render error message
         projector.renderToCanvas(canvas);
+      }
+    });
+    
+    // Infinite scrolling - loop back to top when reaching bottom
+    let lastScrollTop = 0;
+    let scrollDirection = 0;
+    window.addEventListener('scroll', () => {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const scrollHeight = document.documentElement.scrollHeight;
+      const clientHeight = document.documentElement.clientHeight;
+      
+      // Detect scroll direction
+      scrollDirection = scrollTop > lastScrollTop ? 1 : -1;
+      lastScrollTop = scrollTop;
+      
+      // Infinite scroll: loop to top when near bottom
+      if (scrollTop + clientHeight >= scrollHeight - 100 && scrollDirection > 0) {
+        // Smoothly scroll back to top
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 500);
+      }
+      
+      // Infinite scroll: loop to bottom when at top and scrolling up
+      if (scrollTop <= 10 && scrollDirection < 0) {
+        setTimeout(() => {
+          window.scrollTo({ top: scrollHeight - clientHeight, behavior: 'smooth' });
+        }, 500);
       }
     });
     

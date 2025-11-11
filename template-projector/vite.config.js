@@ -67,8 +67,8 @@ export default defineConfig({
     }
   },
   resolve: {
-    // Remove stub alias - use real meta-log-db package
-    // The package is now linked via npm link
+    // Let npm resolve meta-log-db from node_modules symlink
+    // Vite will automatically transform CommonJS to ESM
   },
   define: {
     // Polyfill Node.js globals for browser

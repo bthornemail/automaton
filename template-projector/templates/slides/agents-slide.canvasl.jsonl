@@ -1,0 +1,13 @@
+{"@include": "src/macros/RDF_SPARQL.canvasl.jsonl"}
+{"type": "macro", "call": "rdf-prefix"}
+
+{"id": "agents-slide", "type": "slide", "title": "Multi-Agent System", "dimension": "4D"}
+
+{"type": "macro", "call": "ui-container", "args": [
+  "#main", "column", ["#header", "#content"]
+]}
+
+{"type": "macro", "call": "ui-component", "args": ["#header", "ui:Text", "Multi-Agent Architecture"]}
+
+{"type": "macro", "call": "ui-component", "args": ["#content", "ui:Text", "The multi-agent system spans dimensions 0D-7D, coordinating operations across topology and system layers."]}
+

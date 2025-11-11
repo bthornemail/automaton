@@ -1,7 +1,16 @@
 {"@version": "1.0", "type": "deck", "title": "Demo Deck", "description": "Example deck demonstrating CanvasL Semantic Slides"}
 
 {"@include": "templates/slides/basic-slide.canvasl.jsonl"}
+{"@include": "templates/slides/1d-temporal-slide.canvasl.jsonl"}
+{"@include": "templates/slides/2d-structural-slide.canvasl.jsonl"}
 {"@include": "templates/slides/einstein-slide.canvasl.jsonl"}
 {"@include": "templates/slides/la-city-slide.canvasl.jsonl"}
+{"@include": "templates/slides/5d-consensus-slide.canvasl.jsonl"}
+{"@include": "templates/slides/6d-intelligence-slide.canvasl.jsonl"}
+{"@include": "templates/slides/7d-quantum-slide.canvasl.jsonl"}
+{"@include": "templates/slides/meta-log-slide.canvasl.jsonl"}
+{"@include": "templates/slides/canvasl-slide.canvasl.jsonl"}
+{"@include": "templates/slides/agents-slide.canvasl.jsonl"}
+{"@include": "templates/slides/semantic-slides-slide.canvasl.jsonl"}
 
-{"id": "deck-1", "type": "deck", "slides": ["slide-1", "einstein-slide", "la-slide"]}
+{"id": "deck-1", "type": "deck", "slides": ["slide-1", "1d-temporal-slide", "2d-structural-slide", "einstein-slide", "la-slide", "5d-consensus-slide", "6d-intelligence-slide", "7d-quantum-slide", "meta-log-slide", "canvasl-slide", "agents-slide", "semantic-slides-slide"]}

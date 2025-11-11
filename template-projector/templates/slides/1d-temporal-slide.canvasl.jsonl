@@ -1,0 +1,13 @@
+{"@include": "src/macros/RDF_SPARQL.canvasl.jsonl"}
+{"type": "macro", "call": "rdf-prefix"}
+
+{"id": "1d-temporal-slide", "type": "slide", "title": "1D Temporal Topology", "dimension": "1D"}
+
+{"type": "macro", "call": "ui-container", "args": [
+  "#main", "column", ["#header", "#content"]
+]}
+
+{"type": "macro", "call": "ui-component", "args": ["#header", "ui:Text", "1D: Temporal Evolution"]}
+
+{"type": "macro", "call": "ui-component", "args": ["#content", "ui:Text", "Temporal topology handles Church successor operations and temporal evolution."]}
+

@@ -1,0 +1,13 @@
+{"@include": "src/macros/RDF_SPARQL.canvasl.jsonl"}
+{"type": "macro", "call": "rdf-prefix"}
+
+{"id": "meta-log-slide", "type": "slide", "title": "Meta-Log Integration", "dimension": "3D"}
+
+{"type": "macro", "call": "ui-container", "args": [
+  "#main", "column", ["#header", "#content"]
+]}
+
+{"type": "macro", "call": "ui-component", "args": ["#header", "ui:Text", "Meta-Log: ProLog, DataLog, R5RS"]}
+
+{"type": "macro", "call": "ui-component", "args": ["#content", "ui:Text", "Meta-Log provides logic programming capabilities with ProLog, DataLog, and R5RS Scheme integration."]}
+

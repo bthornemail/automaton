@@ -1,0 +1,13 @@
+{"@include": "src/macros/RDF_SPARQL.canvasl.jsonl"}
+{"type": "macro", "call": "rdf-prefix"}
+
+{"id": "canvasl-slide", "type": "slide", "title": "CanvasL Language", "dimension": "2D"}
+
+{"type": "macro", "call": "ui-container", "args": [
+  "#main", "column", ["#header", "#content"]
+]}
+
+{"type": "macro", "call": "ui-component", "args": ["#header", "ui:Text", "CanvasL: Extended JSONL"]}
+
+{"type": "macro", "call": "ui-component", "args": ["#content", "ui:Text", "CanvasL extends JSONL with directives, R5RS function calls, and dimension references."]}
+

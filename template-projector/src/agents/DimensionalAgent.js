@@ -93,7 +93,15 @@ export class DimensionalAgent {
       if (!populatedSlide.uiComponents) {
         populatedSlide.uiComponents = [];
       }
-      populatedSlide.uiComponents.push(...uiComponents);
+      // Merge UI components (avoid duplicates)
+      const existingUrls = new Set((populatedSlide.uiComponents || []).map(c => c.url || c.content).filter(Boolean));
+      for (const component of uiComponents) {
+        const key = component.url || component.content || JSON.stringify(component);
+        if (!existingUrls.has(key)) {
+          populatedSlide.uiComponents.push(component);
+          existingUrls.add(key);
+        }
+      }
     }
 
     // Mark as populated
@@ -117,30 +125,68 @@ export class DimensionalAgent {
     const dimensionEntries = this.contentLoader.findByDimension(this.dimension);
     matches.push(...dimensionEntries);
 
-    // Find entries by tag (e.g., "0D-topology")
-    const tagMatches = this.contentLoader.findByTag(`${this.dimension}-topology`);
-    matches.push(...tagMatches);
+    // Find entries by tag (e.g., "0D-topology", "0d-topology", "0D-topology-agent")
+    const dimLower = this.dimension.toLowerCase();
+    const tagVariations = [
+      `${this.dimension}-topology`,
+      `${dimLower}-topology`,
+      `${this.dimension}-topology-agent`,
+      `${dimLower}-topology-agent`,
+      `${this.dimension}-agent`,
+      `${dimLower}-agent`
+    ];
+    for (const tag of tagVariations) {
+      const tagMatches = this.contentLoader.findByTag(tag);
+      matches.push(...tagMatches);
+    }
 
     // Find entries by keyword (dimension-related keywords)
     const keywordMatches = this.contentLoader.findByKeyword(this.dimension.toLowerCase());
     matches.push(...keywordMatches);
+    
+    // Also search for dimension number (e.g., "0" for "0D")
+    const dimNumber = this.dimension.replace(/D$/i, '');
+    const numberKeywordMatches = this.contentLoader.findByKeyword(dimNumber);
+    matches.push(...numberKeywordMatches);
 
-    // Find topology entries for this dimension
-    const topologyEntries = dimensionEntries.filter(e => 
-      e.id && (e.id.includes('topology') || e.tags?.includes('topology'))
-    );
+    // Find topology entries for this dimension (from all entries, not just dimension-matched)
+    const allEntries = this.contentLoader.getAllEntries();
+    const topologyEntries = allEntries.filter(e => {
+      const id = String(e.id || '');
+      const tags = Array.isArray(e.tags) ? e.tags : [];
+      const keywords = Array.isArray(e.keywords) ? e.keywords : [];
+      const hasTopology = id.includes('topology') || tags.includes('topology') || keywords.includes('topology');
+      const hasDimension = id.includes(this.dimension) || id.includes(dimLower) || 
+                          tags.some(t => String(t).includes(this.dimension) || String(t).includes(dimLower)) ||
+                          keywords.some(k => String(k).includes(this.dimension) || String(k).includes(dimLower));
+      return hasTopology && hasDimension;
+    });
     matches.push(...topologyEntries);
 
     // Find system entries for this dimension
-    const systemEntries = dimensionEntries.filter(e => 
-      e.id && (e.id.includes('system') || e.tags?.includes('system'))
-    );
+    const systemEntries = allEntries.filter(e => {
+      const id = String(e.id || '');
+      const tags = Array.isArray(e.tags) ? e.tags : [];
+      const keywords = Array.isArray(e.keywords) ? e.keywords : [];
+      const hasSystem = id.includes('system') || tags.includes('system');
+      const hasDimension = id.includes(this.dimension) || id.includes(dimLower) || 
+                          tags.some(t => String(t).includes(this.dimension) || String(t).includes(dimLower)) ||
+                          keywords.some(k => String(k).includes(this.dimension) || String(k).includes(dimLower));
+      return hasSystem && hasDimension;
+    });
     matches.push(...systemEntries);
 
     // Find automaton entries for this dimension
-    const automatonEntries = dimensionEntries.filter(e => 
-      e.type === 'automaton' || (e.id && e.id.includes('automaton')) || e.tags?.includes('automaton')
-    );
+    const automatonEntries = allEntries.filter(e => {
+      const id = String(e.id || '');
+      const tags = Array.isArray(e.tags) ? e.tags : [];
+      const keywords = Array.isArray(e.keywords) ? e.keywords : [];
+      const hasAutomaton = e.type === 'automaton' || id.includes('automaton') || tags.includes('automaton');
+      const hasDimension = id.includes(this.dimension) || id.includes(dimLower) || 
+                          tags.some(t => String(t).includes(this.dimension) || String(t).includes(dimLower)) ||
+                          keywords.some(k => String(k).includes(this.dimension) || String(k).includes(dimLower));
+      return hasAutomaton && hasDimension;
+    });
     matches.push(...automatonEntries);
 
     // Remove duplicates
@@ -169,86 +215,102 @@ export class DimensionalAgent {
       description: null
     };
 
-    // Process frontmatter documents first (they have structured metadata)
+    // Process frontmatter documents first (they have structured metadata and body content)
     const frontmatterDocs = entries.filter(e => e.type === 'document' && e.frontmatter);
+    
+    // Accumulate content from ALL matching documents (not just first)
+    const contentParts = [];
+    const titles = [];
+    const descriptions = [];
+    
     for (const doc of frontmatterDocs) {
-      // Use title from frontmatter
-      if (doc.title && !result.title) {
-        result.title = doc.title;
+      // Collect titles
+      if (doc.title) {
+        titles.push(doc.title);
       }
       
-      // Use description from frontmatter
-      if (doc.description && !result.description) {
-        result.description = doc.description;
+      // Collect descriptions
+      if (doc.description) {
+        descriptions.push(doc.description);
       }
       
-      // Build content from frontmatter metadata
-      if (doc.frontmatter) {
-        const contentParts = [];
-        if (doc.title) contentParts.push(`# ${doc.title}`);
-        if (doc.description) contentParts.push(doc.description);
+      // Prioritize body content (actual markdown content) - accumulate ALL bodies
+      if (doc.body && doc.body.trim()) {
+        const bodyContent = doc.body.trim();
+        // Add document header if we have title
+        if (doc.title) {
+          contentParts.push(`# ${doc.title}\n\n${bodyContent}`);
+        } else {
+          contentParts.push(bodyContent);
+        }
+      } else if (doc.frontmatter) {
+        // Fallback: Build content from frontmatter metadata if no body
+        const docParts = [];
+        if (doc.title) docParts.push(`# ${doc.title}`);
+        if (doc.description) docParts.push(doc.description);
         if (doc.tags && doc.tags.length > 0) {
-          contentParts.push(`\n**Tags:** ${doc.tags.join(', ')}`);
+          docParts.push(`**Tags:** ${doc.tags.join(', ')}`);
         }
         if (doc.keywords && doc.keywords.length > 0) {
-          contentParts.push(`\n**Keywords:** ${doc.keywords.join(', ')}`);
+          docParts.push(`**Keywords:** ${doc.keywords.join(', ')}`);
         }
-        if (doc.level) contentParts.push(`\n**Level:** ${doc.level}`);
-        if (doc.docType) contentParts.push(`\n**Type:** ${doc.docType}`);
+        if (doc.level) docParts.push(`**Level:** ${doc.level}`);
+        if (doc.docType) docParts.push(`**Type:** ${doc.docType}`);
         
-        const docContent = contentParts.join('\n\n');
-        if (docContent) {
-          if (!result.content) {
-            result.content = docContent;
-          } else {
-            result.content += '\n\n---\n\n' + docContent;
+        if (docParts.length > 0) {
+          contentParts.push(docParts.join('\n\n'));
+        }
+      }
+    }
+    
+    // Set title from first document
+    if (titles.length > 0 && !result.title) {
+      result.title = titles[0];
+    }
+    
+    // Set description from first document
+    if (descriptions.length > 0 && !result.description) {
+      result.description = descriptions[0];
+    }
+    
+    // Combine ALL content parts
+    if (contentParts.length > 0) {
+      result.content = contentParts.join('\n\n---\n\n');
+    }
+
+    // Process kernel entries (they have `text` property, not `body`)
+    const kernelEntries = entries.filter(e => e.text && !e.type);
+    for (const kernelEntry of kernelEntries) {
+      if (kernelEntry.text && kernelEntry.text.trim()) {
+        const kernelText = kernelEntry.text.trim();
+        
+        // Extract title from markdown (first # heading)
+        const titleMatch = kernelText.match(/^#\s+(.+)$/m);
+        if (titleMatch && !result.title) {
+          result.title = titleMatch[1].trim();
+        }
+        
+        // Add kernel text to content
+        if (kernelEntry.id && kernelEntry.id.includes('topology')) {
+          // Topology entries get priority header
+          contentParts.unshift(kernelText); // Add to beginning
+        } else {
+          contentParts.push(kernelText);
+        }
+        
+        // Extract description (first paragraph after title)
+        if (!result.description) {
+          const descMatch = kernelText.match(/^\*\*(.+?)\*\*\s*\n\n(.+?)(?:\n\n|\*|$)/s);
+          if (descMatch) {
+            result.description = descMatch[2].trim();
           }
         }
       }
     }
-
-    // Find topology entry for title (kernel entries)
-    const topologyEntry = entries.find(e => e.id && e.id.includes('topology') && e.text);
-    if (topologyEntry && topologyEntry.text) {
-      // Extract title from markdown (first # heading)
-      const titleMatch = topologyEntry.text.match(/^#\s+(.+)$/m);
-      if (titleMatch && !result.title) {
-        result.title = titleMatch[1].trim();
-      }
-      
-      // Use full text as content
-      if (!result.content) {
-        result.content = topologyEntry.text;
-      } else {
-        result.content += '\n\n---\n\n' + topologyEntry.text;
-      }
-    }
-
-    // Find system entry for additional content (kernel entries)
-    const systemEntry = entries.find(e => e.id && e.id.includes('system') && e.text);
-    if (systemEntry && systemEntry.text) {
-      if (!result.content) {
-        result.content = systemEntry.text;
-      } else {
-        result.content += '\n\n---\n\n' + systemEntry.text;
-      }
-      
-      // Extract description (first paragraph after title)
-      if (!result.description) {
-        const descMatch = systemEntry.text.match(/^\*\*(.+?)\*\*\s*\n\n(.+?)(?:\n\n|\*|$)/s);
-        if (descMatch) {
-          result.description = descMatch[2].trim();
-        }
-      }
-    }
-
-    // Fallback: use first entry's text (kernel entries)
-    if (!result.content && entries.length > 0 && entries[0].text) {
-      result.content = entries[0].text;
-      const titleMatch = entries[0].text.match(/^#\s+(.+)$/m);
-      if (titleMatch && !result.title) {
-        result.title = titleMatch[1].trim();
-      }
+    
+    // Recombine all content parts (frontmatter + kernel)
+    if (contentParts.length > 0) {
+      result.content = contentParts.join('\n\n---\n\n');
     }
 
     return result;
@@ -340,7 +402,7 @@ export class DimensionalAgent {
   }
 
   /**
-   * Extract UI components from kernel entries
+   * Extract UI components from kernel entries (including images, diagrams, quotes)
    * @param {Array} entries - Kernel entries
    * @returns {Array} UI component objects
    */
@@ -348,55 +410,144 @@ export class DimensionalAgent {
     const components = [];
 
     for (const entry of entries) {
-      if (entry.text) {
-        // Parse markdown to extract structured content
-        const lines = entry.text.split('\n');
-        let currentSection = null;
+      const content = entry.text || entry.body || '';
+      if (!content) continue;
+      
+      // Parse markdown to extract structured content
+      const lines = content.split('\n');
+      let currentSection = null;
+      let inCodeBlock = false;
+      let codeBlockLang = '';
+      let codeBlockContent = [];
+      
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
         
-        for (const line of lines) {
-          // Headings become section headers
-          if (line.match(/^#+\s+(.+)$/)) {
-            const title = line.replace(/^#+\s+/, '').trim();
-            currentSection = {
-              type: 'section',
-              title: title,
-              content: []
-            };
-            components.push(currentSection);
-          }
-          // Bold text becomes emphasis
-          else if (line.match(/^\*\*(.+?)\*\*/)) {
-            const emphasis = line.replace(/\*\*(.+?)\*\*/g, '$1').trim();
-            if (currentSection) {
-              currentSection.content.push({ type: 'emphasis', text: emphasis });
+        // Code blocks (fenced)
+        if (line.match(/^```(\w+)?$/)) {
+          if (inCodeBlock) {
+            // End of code block
+            const codeContent = codeBlockContent.join('\n');
+            const isDiagram = codeBlockLang && ['mermaid', 'graphviz', 'dot', 'plantuml', 'diagram'].includes(codeBlockLang.toLowerCase());
+            
+            if (isDiagram) {
+              components.push({
+                type: 'diagram',
+                format: codeBlockLang.toLowerCase(),
+                content: codeContent,
+                language: codeBlockLang
+              });
             } else {
-              components.push({ type: 'emphasis', text: emphasis });
+              components.push({
+                type: 'code-block',
+                language: codeBlockLang || 'text',
+                content: codeContent
+              });
             }
+            
+            codeBlockContent = [];
+            codeBlockLang = '';
+            inCodeBlock = false;
+          } else {
+            // Start of code block
+            inCodeBlock = true;
+            codeBlockLang = line.match(/^```(\w+)?$/)[1] || '';
           }
-          // List items
-          else if (line.match(/^-\s+(.+)$/)) {
-            const item = line.replace(/^-\s+/, '').trim();
-            if (currentSection) {
-              currentSection.content.push({ type: 'list-item', text: item });
-            } else {
-              components.push({ type: 'list-item', text: item });
-            }
+          continue;
+        }
+        
+        if (inCodeBlock) {
+          codeBlockContent.push(line);
+          continue;
+        }
+        
+        // Images: ![alt](url) or ![alt](url "title")
+        const imageMatch = line.match(/!\[([^\]]*)\]\(([^)]+)(?:\s+"([^"]+)")?\)/);
+        if (imageMatch) {
+          components.push({
+            type: 'image',
+            alt: imageMatch[1] || '',
+            url: imageMatch[2],
+            title: imageMatch[3] || imageMatch[1] || ''
+          });
+          continue;
+        }
+        
+        // Blockquotes: > quote text
+        if (line.match(/^>\s+(.+)$/)) {
+          const quoteText = line.replace(/^>\s+/, '').trim();
+          components.push({
+            type: 'quote',
+            text: quoteText,
+            author: null // Could extract from next line or metadata
+          });
+          continue;
+        }
+        
+        // Headings become section headers
+        if (line.match(/^#+\s+(.+)$/)) {
+          const title = line.replace(/^#+\s+/, '').trim();
+          currentSection = {
+            type: 'section',
+            title: title,
+            content: []
+          };
+          components.push(currentSection);
+          continue;
+        }
+        
+        // Bold text becomes emphasis
+        if (line.match(/^\*\*(.+?)\*\*/)) {
+          const emphasis = line.replace(/\*\*(.+?)\*\*/g, '$1').trim();
+          if (currentSection) {
+            currentSection.content.push({ type: 'emphasis', text: emphasis });
+          } else {
+            components.push({ type: 'emphasis', text: emphasis });
           }
-          // Code blocks
-          else if (line.match(/^`(.+?)`$/)) {
-            const code = line.replace(/^`(.+?)`$/, '$1');
-            if (currentSection) {
-              currentSection.content.push({ type: 'code', text: code });
-            } else {
-              components.push({ type: 'code', text: code });
-            }
+          continue;
+        }
+        
+        // List items
+        if (line.match(/^-\s+(.+)$/)) {
+          const item = line.replace(/^-\s+/, '').trim();
+          if (currentSection) {
+            currentSection.content.push({ type: 'list-item', text: item });
+          } else {
+            components.push({ type: 'list-item', text: item });
           }
-          // Regular text
-          else if (line.trim() && !line.match(/^[*#-]/)) {
-            if (currentSection) {
-              currentSection.content.push({ type: 'text', text: line.trim() });
-            }
+          continue;
+        }
+        
+        // Inline code
+        if (line.match(/^`(.+?)`$/)) {
+          const code = line.replace(/^`(.+?)`$/, '$1');
+          if (currentSection) {
+            currentSection.content.push({ type: 'code', text: code });
+          } else {
+            components.push({ type: 'code', text: code });
           }
+          continue;
+        }
+        
+        // Regular text
+        if (line.trim() && !line.match(/^[*#->]/)) {
+          if (currentSection) {
+            currentSection.content.push({ type: 'text', text: line.trim() });
+          }
+        }
+      }
+      
+      // Also check for images in body content (frontmatter documents)
+      if (entry.body) {
+        const imageRegex = /!\[([^\]]*)\]\(([^)]+)(?:\s+"([^"]+)")?\)/g;
+        let match;
+        while ((match = imageRegex.exec(entry.body)) !== null) {
+          components.push({
+            type: 'image',
+            alt: match[1] || '',
+            url: match[2],
+            title: match[3] || match[1] || ''
+          });
         }
       }
 

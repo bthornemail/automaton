@@ -1,0 +1,13 @@
+{"@include": "src/macros/RDF_SPARQL.canvasl.jsonl"}
+{"type": "macro", "call": "rdf-prefix"}
+
+{"id": "semantic-slides-slide", "type": "slide", "title": "Semantic Slides System", "dimension": "6D"}
+
+{"type": "macro", "call": "ui-container", "args": [
+  "#main", "column", ["#header", "#content"]
+]}
+
+{"type": "macro", "call": "ui-component", "args": ["#header", "ui:Text", "Semantic Slides Project"]}
+
+{"type": "macro", "call": "ui-component", "args": ["#content", "ui:Text", "Browser-native semantic slides with CanvasL, Meta-Log, and DBpedia integration for living knowledge graphs."]}
+

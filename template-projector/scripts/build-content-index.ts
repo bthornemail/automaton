@@ -27,6 +27,7 @@ interface DocumentEntry {
   tags?: string[];
   keywords?: string[];
   frontmatter?: any;
+  body?: string; // Markdown content body
   relationships?: {
     prerequisites?: string[];
     enables?: string[];
@@ -124,24 +125,45 @@ function generateDocId(filePath: string, source: string): string {
 }
 
 /**
- * Extract dimension from frontmatter or tags/keywords
+ * Extract dimension from frontmatter, tags/keywords, or file path
  */
-function extractDimension(frontmatter: any): string | undefined {
+function extractDimension(frontmatter: any, filePath?: string): string | undefined {
   // Check direct dimension field
   if (frontmatter.dimension) {
     return frontmatter.dimension;
   }
   
-  // Check tags
+  // Check tags (exact match: "0D", "1D", etc. or prefix: "0d-topology")
   if (frontmatter.tags && Array.isArray(frontmatter.tags)) {
-    const dimTag = frontmatter.tags.find((t: string) => /^\d+D$/.test(t));
-    if (dimTag) return dimTag;
+    const exactDim = frontmatter.tags.find((t: string) => /^\d+D$/i.test(t));
+    if (exactDim) return exactDim.toUpperCase();
+    
+    // Check for dimension prefix in tags (e.g., "0d-topology" -> "0D")
+    const prefixDim = frontmatter.tags.find((t: string) => /^(\d+)d-/i.test(t));
+    if (prefixDim) {
+      const match = prefixDim.match(/^(\d+)d-/i);
+      if (match) return `${match[1]}D`;
+    }
   }
   
-  // Check keywords
+  // Check keywords (same logic as tags)
   if (frontmatter.keywords && Array.isArray(frontmatter.keywords)) {
-    const dimKeyword = frontmatter.keywords.find((k: string) => /^\d+D$/.test(k));
-    if (dimKeyword) return dimKeyword;
+    const exactDim = frontmatter.keywords.find((k: string) => /^\d+D$/i.test(k));
+    if (exactDim) return exactDim.toUpperCase();
+    
+    const prefixDim = frontmatter.keywords.find((k: string) => /^(\d+)d-/i.test(k));
+    if (prefixDim) {
+      const match = prefixDim.match(/^(\d+)d-/i);
+      if (match) return `${match[1]}D`;
+    }
+  }
+  
+  // Extract from file path (e.g., "docs/03-Metaverse-Canvas/" -> "3D" if pattern matches)
+  if (filePath) {
+    const pathDim = filePath.match(/(\d+)[dD]-/i);
+    if (pathDim) {
+      return `${pathDim[1]}D`;
+    }
   }
   
   return undefined;
@@ -172,7 +194,7 @@ function processFile(filePath: string, source: string, workspaceRoot: string): C
   const relativePath = path.relative(workspaceRoot, filePath);
   
   // Extract dimension
-  const dimension = extractDimension(frontmatter);
+  const dimension = extractDimension(frontmatter, relativePath);
   
   // Create document entry
   const docEntry: DocumentEntry = {
@@ -188,6 +210,7 @@ function processFile(filePath: string, source: string, workspaceRoot: string): C
     tags: frontmatter.tags,
     keywords: frontmatter.keywords,
     frontmatter,
+    body: body || '', // Include markdown body content
     relationships: {
       prerequisites: frontmatter.prerequisites || [],
       enables: frontmatter.enables || [],

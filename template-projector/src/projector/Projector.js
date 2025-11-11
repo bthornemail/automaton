@@ -273,7 +273,7 @@ export class Projector extends BasePlugin {
   }
 
   /**
-   * Render current slide to canvas
+   * Render current slide to canvas (with scrolling support)
    * @param {HTMLCanvasElement} canvas - Canvas element
    */
   renderToCanvas(canvas) {
@@ -288,9 +288,23 @@ export class Projector extends BasePlugin {
       return;
     }
 
-    // Set canvas size
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
+    // Set canvas width to viewport width
+    const viewportWidth = window.innerWidth;
+    canvas.width = viewportWidth;
+    
+    // Set initial canvas height (will be adjusted after rendering)
+    const padding = 60;
+    const maxWidth = viewportWidth - padding * 2;
+    
+    // Calculate content height first
+    let contentHeight = window.innerHeight;
+    if (this.currentSlide) {
+      const calculatedHeight = this.calculateSlideHeight(this.currentSlide, maxWidth, padding);
+      contentHeight = Math.max(window.innerHeight, calculatedHeight);
+    }
+    
+    // Set canvas height to content height
+    canvas.height = contentHeight;
 
     // Clear canvas
     ctx.fillStyle = '#0a0a0a';
@@ -311,8 +325,6 @@ export class Projector extends BasePlugin {
 
     // Render slide content
     const slide = this.currentSlide;
-    const padding = 60;
-    const maxWidth = canvas.width - padding * 2;
     const startY = padding + 80;
     let y = startY;
 
@@ -343,6 +355,175 @@ export class Projector extends BasePlugin {
     ctx.fillText(title, padding, y);
     y += 80;
 
+    // Render UI components (images, diagrams, quotes) first
+    if (slide.uiComponents && Array.isArray(slide.uiComponents)) {
+      for (let i = 0; i < slide.uiComponents.length; i++) {
+        const component = slide.uiComponents[i];
+        if (component.type === 'image') {
+          // Render image placeholder (images will be loaded asynchronously)
+          const imgHeight = 200;
+          const imgWidth = Math.min(maxWidth, 400);
+          
+          // Draw clickable image area
+          const imageX = padding;
+          const imageY = y;
+          
+          // Draw image placeholder
+          ctx.fillStyle = '#333';
+          ctx.fillRect(imageX, imageY, imgWidth, imgHeight);
+          
+          // Draw image border
+          ctx.strokeStyle = '#00aaff';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(imageX, imageY, imgWidth, imgHeight);
+          
+          // Draw image label
+          ctx.fillStyle = '#00aaff';
+          ctx.font = '14px Inter, sans-serif';
+          ctx.fillText(component.alt || component.title || 'Image', imageX + 10, imageY + 20);
+          
+          // Store component click area for interaction layer
+          if (!slide._componentAreas) slide._componentAreas = [];
+          slide._componentAreas.push({
+            type: 'image',
+            component: component,
+            index: i,
+            x: imageX,
+            y: imageY,
+            width: imgWidth,
+            height: imgHeight
+          });
+          
+          // Load and draw actual image
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => {
+            // Redraw canvas with image
+            const ctx2 = canvas.getContext('2d');
+            const aspectRatio = img.width / img.height;
+            const displayWidth = Math.min(imgWidth, maxWidth);
+            const displayHeight = displayWidth / aspectRatio;
+            ctx2.drawImage(img, imageX, imageY, displayWidth, displayHeight);
+          };
+          img.onerror = () => {
+            // Draw error message
+            const ctx2 = canvas.getContext('2d');
+            ctx2.fillStyle = '#ff4444';
+            ctx2.font = '14px Inter, sans-serif';
+            ctx2.fillText('Failed to load image', imageX + 10, imageY + imgHeight / 2);
+          };
+          img.src = component.url;
+          
+          y += imgHeight + 20;
+        } else if (component.type === 'diagram') {
+          // Render diagram placeholder
+          const diagramHeight = 250;
+          const diagramWidth = maxWidth;
+          const diagramX = padding;
+          const diagramY = y;
+          
+          ctx.fillStyle = '#1a1a2e';
+          ctx.fillRect(diagramX, diagramY, diagramWidth, diagramHeight);
+          
+          ctx.strokeStyle = '#00ffaa';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(diagramX, diagramY, diagramWidth, diagramHeight);
+          
+          ctx.fillStyle = '#00ffaa';
+          ctx.font = '16px Inter, sans-serif';
+          ctx.fillText(`Diagram (${component.format.toUpperCase()})`, diagramX + 10, diagramY + 25);
+          
+          // Render diagram content as text (could be enhanced with actual diagram rendering)
+          ctx.fillStyle = '#aaffaa';
+          ctx.font = '12px monospace';
+          const diagramLines = component.content.split('\n').slice(0, 10);
+          let diagramTextY = diagramY + 50;
+          for (const line of diagramLines) {
+            if (diagramTextY > diagramY + diagramHeight - 20) break;
+            ctx.fillText(line.substring(0, 80), diagramX + 10, diagramTextY);
+            diagramTextY += 18;
+          }
+          
+          // Store component click area
+          if (!slide._componentAreas) slide._componentAreas = [];
+          slide._componentAreas.push({
+            type: 'diagram',
+            component: component,
+            index: i,
+            x: diagramX,
+            y: diagramY,
+            width: diagramWidth,
+            height: diagramHeight
+          });
+          
+          y += diagramHeight + 20;
+        } else if (component.type === 'quote') {
+          // Render quote with special styling
+          const quotePadding = 20;
+          const quoteWidth = maxWidth - quotePadding * 2;
+          const quoteX = padding + quotePadding;
+          const quoteY = y;
+          const quoteHeight = 100;
+          
+          // Quote background
+          ctx.fillStyle = '#1a1a2e';
+          ctx.fillRect(quoteX, quoteY, quoteWidth, quoteHeight);
+          
+          // Quote border (left side)
+          ctx.fillStyle = '#00ffff';
+          ctx.fillRect(quoteX, quoteY, 4, quoteHeight);
+          
+          // Store component click area
+          if (!slide._componentAreas) slide._componentAreas = [];
+          slide._componentAreas.push({
+            type: 'quote',
+            component: component,
+            index: i,
+            x: quoteX,
+            y: quoteY,
+            width: quoteWidth,
+            height: quoteHeight
+          });
+          
+          // Quote text
+          ctx.fillStyle = '#ffffaa';
+          ctx.font = 'italic 22px Inter, sans-serif';
+          ctx.textAlign = 'left';
+          
+          const quoteText = `"${component.text}"`;
+          const words = quoteText.split(' ');
+          let quoteLine = '';
+          let quoteY = y + 35;
+          
+          for (const word of words) {
+            const testLine = quoteLine + (quoteLine ? ' ' : '') + word;
+            const metrics = ctx.measureText(testLine);
+            if (metrics.width > quoteWidth - 20 && quoteLine) {
+              ctx.fillText(quoteLine, padding + quotePadding + 15, quoteY);
+              quoteY += 28;
+              quoteLine = word;
+            } else {
+              quoteLine = testLine;
+            }
+          }
+          if (quoteLine) {
+            ctx.fillText(quoteLine, padding + quotePadding + 15, quoteY);
+          }
+          
+          // Quote author if available
+          let authorY = quoteY + 35;
+          if (component.author) {
+            authorY += 15;
+            ctx.fillStyle = '#888';
+            ctx.font = '16px Inter, sans-serif';
+            ctx.fillText(`— ${component.author}`, quoteX + 15, authorY);
+          }
+          
+          y += 120;
+        }
+      }
+    }
+    
     // Content (check multiple possible properties)
     const content = slide.content || slide.text || slide.description || '';
     if (content) {
@@ -353,6 +534,11 @@ export class Projector extends BasePlugin {
       const lines = String(content).split('\n');
       for (const line of lines) {
         if (line.trim()) {
+          // Skip markdown images and blockquotes (already rendered as components)
+          if (line.match(/^!\[.*\]\(.*\)/) || line.match(/^>\s+/)) {
+            continue;
+          }
+          
           // Word wrap
           const words = line.split(' ');
           let currentLine = '';
@@ -390,6 +576,68 @@ export class Projector extends BasePlugin {
   }
 
   /**
+   * Calculate slide height for scrolling support
+   * @param {Object} slide - Slide object
+   * @param {number} maxWidth - Maximum content width
+   * @param {number} padding - Padding value
+   * @returns {number} Calculated height
+   */
+  calculateSlideHeight(slide, maxWidth, padding) {
+    let height = padding + 80; // Start Y
+    
+    // Title height
+    height += 80;
+    if (slide.subtitle) height += 50;
+    
+    // UI components height
+    if (slide.uiComponents && Array.isArray(slide.uiComponents)) {
+      for (const component of slide.uiComponents) {
+        if (component.type === 'image') {
+          height += 200 + 20; // Image height + spacing
+        } else if (component.type === 'diagram') {
+          height += 250 + 20; // Diagram height + spacing
+        } else if (component.type === 'quote') {
+          height += 120; // Quote height
+        }
+      }
+    }
+    
+    // Content height (estimate)
+    const content = slide.content || slide.text || slide.description || '';
+    if (content) {
+      const lines = String(content).split('\n');
+      for (const line of lines) {
+        if (line.trim() && !line.match(/^!\[.*\]\(.*\)/) && !line.match(/^>\s+/)) {
+          // Estimate line height based on word wrapping
+          const words = line.split(' ');
+          let lineCount = 1;
+          let currentWidth = 0;
+          const ctx = document.createElement('canvas').getContext('2d');
+          ctx.font = '20px Inter, sans-serif';
+          
+          for (const word of words) {
+            const wordWidth = ctx.measureText(word + ' ').width;
+            if (currentWidth + wordWidth > maxWidth && currentWidth > 0) {
+              lineCount++;
+              currentWidth = wordWidth;
+            } else {
+              currentWidth += wordWidth;
+            }
+          }
+          height += lineCount * 30;
+        } else {
+          height += 20; // Empty line or skipped line
+        }
+      }
+    }
+    
+    // Footer height
+    height += 40;
+    
+    return height;
+  }
+
+  /**
    * Go to next slide
    */
   nextSlide() {
@@ -420,9 +668,10 @@ export class Projector extends BasePlugin {
 
   /**
    * Populate all slides with agent content (automatic)
+   * @param {boolean} force - Force re-population even if already populated
    * @returns {Promise<Array>} Populated slides
    */
-  async populateSlides() {
+  async populateSlides(force = false) {
     if (!this.agentCoordinator) {
       console.warn('AgentCoordinator not initialized');
       return this.slides;
@@ -434,20 +683,24 @@ export class Projector extends BasePlugin {
         await this.agentCoordinator.init();
       }
 
-      // Populate all slides
-      this.slides = await this.agentCoordinator.populateAll(this.slides);
-      
-      // Update current slide if it exists
-      if (this.currentSlide) {
-        const currentIndex = this.slides.findIndex(s => 
-          s.id === this.currentSlide.id || s === this.currentSlide
-        );
-        if (currentIndex >= 0) {
-          this.currentSlide = this.slides[currentIndex];
+      // Populate all slides (re-populate if force is true or if slides aren't populated)
+      const needsPopulation = force || this.slides.some(s => !s._populated);
+      if (needsPopulation) {
+        this.slides = await this.agentCoordinator.populateAll(this.slides);
+        
+        // Update current slide if it exists
+        if (this.currentSlide) {
+          const currentIndex = this.slides.findIndex(s => 
+            s.id === this.currentSlide.id || s === this.currentSlide
+          );
+          if (currentIndex >= 0) {
+            this.currentSlide = this.slides[currentIndex];
+          }
         }
-      }
 
-      console.log(`Populated ${this.slides.length} slides with agent content`);
+        console.log(`Populated ${this.slides.length} slides with agent content`);
+      }
+      
       return this.slides;
     } catch (error) {
       console.error('Failed to populate slides:', error);
@@ -456,11 +709,93 @@ export class Projector extends BasePlugin {
   }
 
   /**
+   * Start infinite resolving - continuously evolve slides as content becomes available
+   * @param {number} intervalMs - Resolve interval in milliseconds (default: 5000)
+   */
+  startInfiniteResolving(intervalMs = 5000) {
+    if (this.resolveInterval) {
+      clearInterval(this.resolveInterval);
+    }
+    
+    console.log(`Starting infinite resolving (every ${intervalMs}ms)`);
+    
+    this.resolveInterval = setInterval(async () => {
+      try {
+        // Reload content sources to get latest content
+        if (this.agentCoordinator && this.agentCoordinator.contentLoader) {
+          await this.agentCoordinator.contentLoader.reload();
+        }
+        
+        // Re-populate slides with latest content
+        await this.populateSlides(true);
+        
+        // Re-render if canvas is available
+        const canvas = document.getElementById('render-canvas');
+        if (canvas) {
+          this.renderToCanvas(canvas);
+        }
+        
+        console.log('Slides resolved and updated');
+      } catch (error) {
+        console.error('Error during infinite resolving:', error);
+      }
+    }, intervalMs);
+  }
+
+  /**
+   * Start auto-revolving slides (automatically advance to next slide)
+   * @param {number} intervalMs - Revolve interval in milliseconds (default: 10000)
+   */
+  startAutoRevolving(intervalMs = 10000) {
+    if (this.revolveInterval) {
+      clearInterval(this.revolveInterval);
+    }
+    
+    console.log(`Starting auto-revolving slides (every ${intervalMs}ms)`);
+    
+    this.revolveInterval = setInterval(() => {
+      if (this.slides.length > 0) {
+        this.nextSlide();
+        const canvas = document.getElementById('render-canvas');
+        if (canvas) {
+          this.renderToCanvas(canvas);
+          // Scroll to top when slide changes
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        console.log(`Revolved to slide: ${this.currentSlide?.id || 'unknown'}`);
+      }
+    }, intervalMs);
+  }
+
+  /**
+   * Stop auto-revolving slides
+   */
+  stopAutoRevolving() {
+    if (this.revolveInterval) {
+      clearInterval(this.revolveInterval);
+      this.revolveInterval = null;
+      console.log('Stopped auto-revolving slides');
+    }
+  }
+
+  /**
+   * Stop infinite resolving
+   */
+  stopInfiniteResolving() {
+    if (this.resolveInterval) {
+      clearInterval(this.resolveInterval);
+      this.resolveInterval = null;
+      console.log('Stopped infinite resolving');
+    }
+  }
+
+  /**
    * Populate a single slide on-demand
    * @param {string|Object} slideIdOrSlide - Slide ID or slide object
+   * @param {boolean} force - Force re-population even if already populated
    * @returns {Promise<Object|null>} Populated slide or null if not found
    */
-  async populateSlide(slideIdOrSlide) {
+  async populateSlide(slideIdOrSlide, force = false) {
     if (!this.agentCoordinator) {
       console.warn('AgentCoordinator not initialized');
       return null;
@@ -471,39 +806,42 @@ export class Projector extends BasePlugin {
       if (!this.agentCoordinator.initialized) {
         await this.agentCoordinator.init();
       }
-
-      // Find slide
+      
+      // Find slide if ID provided
       let slide = null;
       if (typeof slideIdOrSlide === 'string') {
         slide = this.slides.find(s => s.id === slideIdOrSlide);
       } else {
         slide = slideIdOrSlide;
       }
-
+      
       if (!slide) {
-        console.warn(`Slide not found: ${slideIdOrSlide}`);
+        console.warn('Slide not found:', slideIdOrSlide);
         return null;
       }
-
-      // Populate slide
-      const populated = await this.agentCoordinator.populateSlide(slide);
       
-      // Update in slides array
-      const index = this.slides.findIndex(s => 
-        s.id === slide.id || s === slide
-      );
-      if (index >= 0) {
-        this.slides[index] = populated;
-        
-        // Update current slide if it's the one being populated
-        if (this.currentSlide === slide || this.currentSlide?.id === slide.id) {
-          this.currentSlide = populated;
-        }
+      // Check if already populated (unless force)
+      if (!force && slide._populated) {
+        return slide;
       }
-
-      return populated;
+      
+      // Populate slide via agent coordinator
+      const populatedSlide = await this.agentCoordinator.populateSlide(slide);
+      
+      // Update slide in slides array
+      const slideIndex = this.slides.findIndex(s => s.id === populatedSlide.id);
+      if (slideIndex >= 0) {
+        this.slides[slideIndex] = populatedSlide;
+      }
+      
+      // Update current slide if it's the one being populated
+      if (this.currentSlide && (this.currentSlide.id === populatedSlide.id || this.currentSlide === slide)) {
+        this.currentSlide = populatedSlide;
+      }
+      
+      return populatedSlide;
     } catch (error) {
-      console.error(`Failed to populate slide ${slideIdOrSlide}:`, error);
+      console.error('Failed to populate slide:', error);
       return null;
     }
   }

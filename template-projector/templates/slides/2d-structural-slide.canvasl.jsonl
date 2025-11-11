@@ -1,0 +1,13 @@
+{"@include": "src/macros/RDF_SPARQL.canvasl.jsonl"}
+{"type": "macro", "call": "rdf-prefix"}
+
+{"id": "2d-structural-slide", "type": "slide", "title": "2D Structural Topology", "dimension": "2D"}
+
+{"type": "macro", "call": "ui-container", "args": [
+  "#main", "column", ["#header", "#content"]
+]}
+
+{"type": "macro", "call": "ui-component", "args": ["#header", "ui:Text", "2D: Structural Patterns"]}
+
+{"type": "macro", "call": "ui-component", "args": ["#content", "ui:Text", "Structural topology manages spatial structure and pattern encoding via Church pairs."]}
+
