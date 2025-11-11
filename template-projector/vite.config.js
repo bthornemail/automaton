@@ -23,8 +23,8 @@ export default defineConfig({
     exclude: ['meta-log-db']
   },
   server: {
-allowedHosts: ["universallifeprotocol.com"],
-    port: 3003,
+    allowedHosts: ["universallifeprotocol.com"],
+    port: parseInt(process.env.TEMPLATE_PROJECTOR_PORT || '3003', 10),
     open: true
   }
 });
