@@ -12,6 +12,7 @@
       <button id="prev">←</button>
       <span id="slide-counter">1 / 1</span>
       <button id="next">→</button>
+      <button id="populate" title="Populate current slide with agent content">⚡</button>
       <button id="fullscreen">⛶</button>
     </nav>
     
@@ -32,6 +33,7 @@
     const canvas = document.getElementById('render-canvas');
     const prevBtn = document.getElementById('prev');
     const nextBtn = document.getElementById('next');
+    const populateBtn = document.getElementById('populate');
     const slideCounter = document.getElementById('slide-counter');
     const statusBar = document.getElementById('status');
     
@@ -52,6 +54,23 @@
     nextBtn.addEventListener('click', () => {
       projector.nextSlide();
       render();
+    });
+    
+    // Populate handler (on-demand)
+    populateBtn.addEventListener('click', async () => {
+      if (projector.currentSlide) {
+        statusBar.textContent = 'Populating slide...';
+        try {
+          await projector.populateSlide(projector.currentSlide);
+          render();
+          statusBar.textContent = 'Slide populated';
+        } catch (error) {
+          console.error('Failed to populate slide:', error);
+          statusBar.textContent = `Error: ${error.message}`;
+        }
+      } else {
+        statusBar.textContent = 'No slide selected';
+      }
     });
     
     // Fullscreen handler

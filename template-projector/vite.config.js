@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
+import { copyFileSync, existsSync } from 'fs';
 
 const __dirname = resolve(fileURLToPath(new URL('.', import.meta.url)));
 
@@ -16,10 +17,29 @@ const nodeModulesPlugin = () => ({
   }
 });
 
+// Vite plugin to copy content-index.jsonl to dist
+const copyContentIndexPlugin = () => ({
+  name: 'copy-content-index',
+  writeBundle() {
+    const src = resolve(__dirname, 'content-index.jsonl');
+    const dest = resolve(__dirname, 'dist', 'content-index.jsonl');
+    try {
+      if (existsSync(src)) {
+        copyFileSync(src, dest);
+        console.log('✓ Copied content-index.jsonl to dist/');
+      } else {
+        console.warn('⚠ content-index.jsonl not found, skipping copy');
+      }
+    } catch (error) {
+      console.warn('⚠ Failed to copy content-index.jsonl:', error.message);
+    }
+  }
+});
+
 export default defineConfig({
   root: '.',
   publicDir: 'assets',
-  plugins: [nodeModulesPlugin()],
+  plugins: [nodeModulesPlugin(), copyContentIndexPlugin()],
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
@@ -36,7 +56,8 @@ export default defineConfig({
     commonjsOptions: {
       // Transform CommonJS to ES modules
       transformMixedEsModules: true
-    }
+    },
+    copyPublicDir: true
   },
   optimizeDeps: {
     include: ['meta-log-db'],

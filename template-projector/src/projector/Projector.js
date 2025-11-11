@@ -11,6 +11,7 @@ import { MacroExpander } from './MacroExpander.js';
 import { IncludeLoader } from './IncludeLoader.js';
 import { CanvasLExecutor } from './CanvasLExecutor.js';
 import { ErrorHandler } from '../utils/ErrorHandler.js';
+import { AgentCoordinator } from '../agents/AgentCoordinator.js';
 
 export class Projector extends BasePlugin {
   constructor(config = {}) {
@@ -29,6 +30,12 @@ export class Projector extends BasePlugin {
     this.errorHandler = new ErrorHandler();
     this.slides = [];
     this.currentSlide = null;
+    
+    // Initialize agent coordinator for slide population
+    this.agentCoordinator = new AgentCoordinator(
+      config.kernelUrl || '/automaton-kernel.jsonl',
+      config.contentIndexUrl || '/content-index.jsonl'
+    );
     
     // Set error handler for federation
     this.metaLog.setErrorHandler(this.errorHandler);
@@ -79,6 +86,9 @@ export class Projector extends BasePlugin {
       
       // Initialize R5RS fallback
       await this.metaLog.evalR5RS('(define projector-version "0.1.0")');
+      
+      // Initialize agent coordinator
+      await this.agentCoordinator.init();
       
       // Load built-in plugins
       await this.loadBuiltInPlugins();
@@ -220,6 +230,11 @@ export class Projector extends BasePlugin {
       
       this.slides = result.slides;
       
+      // Automatically populate slides with agent content
+      if (this.slides.length > 0) {
+        await this.populateSlides();
+      }
+      
       return result;
     } catch (error) {
       const recovery = await this.errorHandler.handle(error, {
@@ -302,10 +317,26 @@ export class Projector extends BasePlugin {
     let y = startY;
 
     // Debug: log slide structure
-    console.log('Rendering slide:', slide);
+    console.log('Rendering slide:', {
+      id: slide.id,
+      title: slide.title,
+      hasContent: !!slide.content,
+      contentLength: slide.content ? slide.content.length : 0,
+      populated: slide._populated,
+      populatedBy: slide._populatedBy
+    });
 
     // Title (check multiple possible properties)
     const title = slide.title || slide.name || slide.id || 'Untitled Slide';
+    
+    // Show subtitle if available
+    if (slide.subtitle) {
+      ctx.fillStyle = '#00aaff';
+      ctx.font = 'bold 36px Inter, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(slide.subtitle, padding, y);
+      y += 50;
+    }
     ctx.fillStyle = '#00ffff';
     ctx.font = 'bold 48px Inter, sans-serif';
     ctx.textAlign = 'left';
@@ -385,6 +416,96 @@ export class Projector extends BasePlugin {
    */
   getCurrentSlideIndex() {
     return this.slides.indexOf(this.currentSlide) + 1;
+  }
+
+  /**
+   * Populate all slides with agent content (automatic)
+   * @returns {Promise<Array>} Populated slides
+   */
+  async populateSlides() {
+    if (!this.agentCoordinator) {
+      console.warn('AgentCoordinator not initialized');
+      return this.slides;
+    }
+
+    try {
+      // Ensure coordinator is initialized
+      if (!this.agentCoordinator.initialized) {
+        await this.agentCoordinator.init();
+      }
+
+      // Populate all slides
+      this.slides = await this.agentCoordinator.populateAll(this.slides);
+      
+      // Update current slide if it exists
+      if (this.currentSlide) {
+        const currentIndex = this.slides.findIndex(s => 
+          s.id === this.currentSlide.id || s === this.currentSlide
+        );
+        if (currentIndex >= 0) {
+          this.currentSlide = this.slides[currentIndex];
+        }
+      }
+
+      console.log(`Populated ${this.slides.length} slides with agent content`);
+      return this.slides;
+    } catch (error) {
+      console.error('Failed to populate slides:', error);
+      return this.slides; // Return unmodified slides on error
+    }
+  }
+
+  /**
+   * Populate a single slide on-demand
+   * @param {string|Object} slideIdOrSlide - Slide ID or slide object
+   * @returns {Promise<Object|null>} Populated slide or null if not found
+   */
+  async populateSlide(slideIdOrSlide) {
+    if (!this.agentCoordinator) {
+      console.warn('AgentCoordinator not initialized');
+      return null;
+    }
+
+    try {
+      // Ensure coordinator is initialized
+      if (!this.agentCoordinator.initialized) {
+        await this.agentCoordinator.init();
+      }
+
+      // Find slide
+      let slide = null;
+      if (typeof slideIdOrSlide === 'string') {
+        slide = this.slides.find(s => s.id === slideIdOrSlide);
+      } else {
+        slide = slideIdOrSlide;
+      }
+
+      if (!slide) {
+        console.warn(`Slide not found: ${slideIdOrSlide}`);
+        return null;
+      }
+
+      // Populate slide
+      const populated = await this.agentCoordinator.populateSlide(slide);
+      
+      // Update in slides array
+      const index = this.slides.findIndex(s => 
+        s.id === slide.id || s === slide
+      );
+      if (index >= 0) {
+        this.slides[index] = populated;
+        
+        // Update current slide if it's the one being populated
+        if (this.currentSlide === slide || this.currentSlide?.id === slide.id) {
+          this.currentSlide = populated;
+        }
+      }
+
+      return populated;
+    } catch (error) {
+      console.error(`Failed to populate slide ${slideIdOrSlide}:`, error);
+      return null;
+    }
   }
 
   /**

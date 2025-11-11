@@ -6,6 +6,8 @@
   "main": "src/projector/Projector.js",
   "scripts": {
     "dev": "vite --host",
+    "build:content-index": "tsx scripts/build-content-index.ts",
+    "prebuild": "npm run build:content-index",
     "build": "vite build",
     "preview": "vite preview",
     "test": "playwright test",
@@ -51,6 +53,8 @@
   "devDependencies": {
     "@playwright/test": "^1.56.1",
     "jest": "^29.7.0",
+    "js-yaml": "^4.1.0",
+    "tsx": "^4.20.6",
     "vite": "^5.0.0"
   }
 }
