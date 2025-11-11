@@ -11,6 +11,7 @@
 
 import BiwaScheme from 'biwascheme';
 import { MetaLogBrowserAdapter } from './MetaLogBrowserAdapter.js';
+import { SparqlFederation } from '../utils/SparqlFederation.js';
 
 export class MetaLogBridge {
   constructor() {
