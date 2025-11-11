@@ -10,8 +10,17 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: './viewer.html'
+      },
+      external: ['meta-log-db'],
+      output: {
+        globals: {
+          'meta-log-db': 'MetaLogDb'
+        }
       }
     }
+  },
+  optimizeDeps: {
+    exclude: ['meta-log-db']
   },
   server: {
 allowedHosts: ["universallifeprotocol.com"],
