@@ -29,6 +29,44 @@
     
     // Initialize projector
     const projector = new Projector();
+    const canvas = document.getElementById('render-canvas');
+    const prevBtn = document.getElementById('prev');
+    const nextBtn = document.getElementById('next');
+    const slideCounter = document.getElementById('slide-counter');
+    const statusBar = document.getElementById('status');
+    
+    // Render function
+    function render() {
+      projector.renderToCanvas(canvas);
+      const current = projector.getCurrentSlideIndex();
+      const total = projector.slides.length;
+      slideCounter.textContent = `${current} / ${total}`;
+    }
+    
+    // Navigation handlers
+    prevBtn.addEventListener('click', () => {
+      projector.prevSlide();
+      render();
+    });
+    
+    nextBtn.addEventListener('click', () => {
+      projector.nextSlide();
+      render();
+    });
+    
+    // Fullscreen handler
+    document.getElementById('fullscreen').addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    });
+    
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      render();
+    });
     
     // Initialize on load
     document.addEventListener('DOMContentLoaded', async () => {
@@ -39,10 +77,18 @@
         const deck = await projector.loadDeck('templates/documents/demo-deck.canvasl.jsonl');
         
         console.log('Deck loaded:', deck);
-        document.getElementById('status').textContent = `Loaded ${deck.slides.length} slides`;
+        statusBar.textContent = `Loaded ${deck.slides.length} slides`;
+        
+        // Render first slide
+        if (deck.slides && deck.slides.length > 0) {
+          projector.currentSlide = deck.slides[0];
+          render();
+        }
       } catch (error) {
         console.error('Failed to initialize:', error);
-        document.getElementById('status').textContent = `Error: ${error.message}`;
+        statusBar.textContent = `Error: ${error.message}`;
+        // Render error message
+        projector.renderToCanvas(canvas);
       }
     });
     

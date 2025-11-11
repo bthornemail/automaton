@@ -133,17 +133,49 @@ export class CanvasLExecutor {
     const results = {
       triples: [],
       slides: [],
+      objects: new Map(), // Store all objects by ID
       errors: []
     };
 
     for (const obj of objects) {
       try {
+        // Skip @include directives (should be expanded already, but check anyway)
+        if (obj['@include'] || obj.type === '@include') {
+          continue;
+        }
+        
+        // Skip version directives
+        if (obj['@version']) {
+          continue;
+        }
+
+        // Skip macros (already expanded)
+        if (obj.type === 'macro') {
+          continue;
+        }
+
+        // Handle slide objects directly - don't execute them, just collect
+        if (obj.type === 'slide') {
+          results.slides.push(obj);
+          if (obj.id) {
+            results.objects.set(obj.id, obj);
+          }
+          continue;
+        }
+
         const result = await this.execute(obj);
+        
+        // Store object by ID if it has one
+        if (obj.id) {
+          results.objects.set(obj.id, result);
+        }
         
         if (result.type === 'rdf-triple') {
           results.triples.push(result);
-        } else if (result.type === 'slide') {
-          results.slides.push(result);
+        } else if (result.type === 'slide' || obj.type === 'slide') {
+          // Collect slides (use original obj if result doesn't have slide properties)
+          const slide = result.type === 'slide' ? result : obj;
+          results.slides.push(slide);
         } else {
           results[obj.id || 'results'] = result;
         }
@@ -155,6 +187,36 @@ export class CanvasLExecutor {
       }
     }
 
+    console.log(`CanvasLExecutor: Found ${results.slides.length} slides, ${results.objects.size} objects`);
+
+    // If deck object exists, resolve slide references
+    const deckObj = Array.from(results.objects.values()).find(o => o.type === 'deck' || o.id?.includes('deck'));
+    if (deckObj && deckObj.slides && Array.isArray(deckObj.slides)) {
+      console.log(`Deck found with ${deckObj.slides.length} slide references:`, deckObj.slides);
+      
+      // Resolve slide IDs to actual slide objects
+      const resolvedSlides = deckObj.slides
+        .map(slideId => {
+          // Try to find slide by ID
+          const slide = results.slides.find(s => s.id === slideId) || 
+                       results.objects.get(slideId);
+          if (!slide) {
+            console.warn(`Slide ${slideId} not found in results`);
+          }
+          return slide;
+        })
+        .filter(s => s); // Remove undefined
+      
+      console.log(`Resolved ${resolvedSlides.length} slides from deck`);
+      
+      if (resolvedSlides.length > 0) {
+        results.slides = resolvedSlides;
+      } else {
+        console.warn('No slides resolved from deck, using all collected slides');
+      }
+    }
+
+    console.log(`Final slides array: ${results.slides.length} slides`);
     return results;
   }
 }

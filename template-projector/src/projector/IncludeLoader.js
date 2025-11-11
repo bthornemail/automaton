@@ -32,17 +32,24 @@ export class IncludeLoader {
       return includePath;
     }
 
-    // If relative path, resolve relative to current file or base path
+    // If path starts with /, it's absolute from root
+    if (includePath.startsWith('/')) {
+      return includePath;
+    }
+
+    // If relative path (./ or ../), resolve relative to current file
     if (includePath.startsWith('./') || includePath.startsWith('../')) {
       if (currentPath) {
         const currentDir = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
         return currentDir + includePath;
       }
-      return this.basePath + includePath;
+      return includePath; // If no current path, use as-is
     }
 
-    // Otherwise, resolve relative to base path
-    return this.basePath + includePath;
+    // Otherwise, treat as relative to project root
+    // Paths like "templates/slides/..." should be resolved from root, not from basePath
+    // This prevents double-pathing like "templates/documents/templates/slides/..."
+    return includePath;
   }
 
   /**
@@ -67,13 +74,19 @@ export class IncludeLoader {
     try {
       const response = await fetch(url);
       if (!response.ok) {
-        throw new Error(`Failed to load ${url}: ${response.statusText}`);
+        throw new Error(`Failed to load ${url}: ${response.statusText} (${response.status})`);
       }
 
       const content = await response.text();
+      if (!content || content.trim().length === 0) {
+        console.warn(`Empty file loaded: ${url}`);
+        this.loadingFiles.delete(url);
+        return [];
+      }
+
       const objects = this.parseCanvasL(content, url);
       
-      // Process @include directives
+      // Process @include directives recursively
       const expanded = await this.expandIncludes(objects, url);
       
       // Cache loaded file
@@ -84,7 +97,8 @@ export class IncludeLoader {
     } catch (error) {
       this.loadingFiles.delete(url);
       console.error(`Failed to load include file ${url}:`, error);
-      throw error;
+      // Don't throw - return empty array so other includes can still work
+      return [];
     }
   }
 
@@ -154,18 +168,30 @@ export class IncludeLoader {
     const expanded = [];
 
     for (const obj of objects) {
-      if (obj.type === '@include') {
+      // Handle @include directive (check both type and property)
+      if (obj.type === '@include' || obj['@include']) {
+        // Get include path
+        const includePath = obj.path || obj['@include'];
+        if (!includePath) {
+          console.warn('@include directive missing path:', obj);
+          continue;
+        }
+        
         // Resolve include path
-        const includePath = this.resolvePath(obj.path, currentUrl);
+        const resolvedPath = this.resolvePath(includePath, currentUrl);
+        
+        console.log(`Expanding @include: ${includePath} -> ${resolvedPath}`);
         
         try {
           // Load included file
-          const includedObjects = await this.loadFile(includePath);
+          const includedObjects = await this.loadFile(resolvedPath);
+          
+          console.log(`Loaded ${includedObjects.length} objects from ${resolvedPath}`);
           
           // Add included objects
           expanded.push(...includedObjects);
         } catch (error) {
-          console.error(`Failed to include ${obj.path} from ${currentUrl}:`, error);
+          console.error(`Failed to include ${includePath} from ${currentUrl}:`, error);
           // Continue with other objects
         }
       } else {

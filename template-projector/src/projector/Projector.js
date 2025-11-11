@@ -164,8 +164,11 @@ export class Projector extends BasePlugin {
     // Parse content (handles @include directives)
     const objects = this.includeLoader.parseCanvasL(content, sourceUrl);
     
-    // Expand @include directives
+    // Expand @include directives (this loads included files)
     const expanded = await this.includeLoader.expandIncludes(objects, sourceUrl);
+    
+    console.log(`Parsed ${expanded.length} objects from ${sourceUrl}`);
+    console.log('Slides found:', expanded.filter(o => o.type === 'slide').map(s => s.id || 'unnamed'));
     
     return expanded;
   }
@@ -252,6 +255,136 @@ export class Projector extends BasePlugin {
       // Default rendering
       return slide;
     }
+  }
+
+  /**
+   * Render current slide to canvas
+   * @param {HTMLCanvasElement} canvas - Canvas element
+   */
+  renderToCanvas(canvas) {
+    if (!canvas) {
+      console.error('Canvas element not found');
+      return;
+    }
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      console.error('Could not get 2D context');
+      return;
+    }
+
+    // Set canvas size
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+
+    // Clear canvas
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    if (!this.currentSlide && this.slides.length > 0) {
+      this.currentSlide = this.slides[0];
+    }
+
+    if (!this.currentSlide) {
+      // No slide to render
+      ctx.fillStyle = '#f0f0f0';
+      ctx.font = '24px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('No slides loaded', canvas.width / 2, canvas.height / 2);
+      return;
+    }
+
+    // Render slide content
+    const slide = this.currentSlide;
+    const padding = 60;
+    const maxWidth = canvas.width - padding * 2;
+    const startY = padding + 80;
+    let y = startY;
+
+    // Debug: log slide structure
+    console.log('Rendering slide:', slide);
+
+    // Title (check multiple possible properties)
+    const title = slide.title || slide.name || slide.id || 'Untitled Slide';
+    ctx.fillStyle = '#00ffff';
+    ctx.font = 'bold 48px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(title, padding, y);
+    y += 80;
+
+    // Content (check multiple possible properties)
+    const content = slide.content || slide.text || slide.description || '';
+    if (content) {
+      ctx.fillStyle = '#f0f0f0';
+      ctx.font = '20px Inter, sans-serif';
+      ctx.textAlign = 'left';
+      
+      const lines = String(content).split('\n');
+      for (const line of lines) {
+        if (line.trim()) {
+          // Word wrap
+          const words = line.split(' ');
+          let currentLine = '';
+          for (const word of words) {
+            const testLine = currentLine + (currentLine ? ' ' : '') + word;
+            const metrics = ctx.measureText(testLine);
+            if (metrics.width > maxWidth && currentLine) {
+              ctx.fillText(currentLine, padding, y);
+              y += 30;
+              currentLine = word;
+            } else {
+              currentLine = testLine;
+            }
+          }
+          if (currentLine) {
+            ctx.fillText(currentLine, padding, y);
+            y += 30;
+          }
+        } else {
+          y += 20; // Empty line
+        }
+      }
+    }
+
+    // Render slide ID and dimension if available
+    if (slide.id || slide.dimension) {
+      y += 20;
+      ctx.fillStyle = '#888';
+      ctx.font = '14px Inter, sans-serif';
+      const info = [slide.id, slide.dimension].filter(Boolean).join(' • ');
+      if (info) {
+        ctx.fillText(info, padding, y);
+      }
+    }
+  }
+
+  /**
+   * Go to next slide
+   */
+  nextSlide() {
+    if (this.slides.length === 0) return;
+    const currentIndex = this.slides.indexOf(this.currentSlide);
+    const nextIndex = (currentIndex + 1) % this.slides.length;
+    this.currentSlide = this.slides[nextIndex];
+    return this.currentSlide;
+  }
+
+  /**
+   * Go to previous slide
+   */
+  prevSlide() {
+    if (this.slides.length === 0) return;
+    const currentIndex = this.slides.indexOf(this.currentSlide);
+    const prevIndex = (currentIndex - 1 + this.slides.length) % this.slides.length;
+    this.currentSlide = this.slides[prevIndex];
+    return this.currentSlide;
+  }
+
+  /**
+   * Get current slide index
+   */
+  getCurrentSlideIndex() {
+    return this.slides.indexOf(this.currentSlide) + 1;
   }
 
   /**
