@@ -1,0 +1,34 @@
+{
+  "domain": "universallifeprotocol.online",
+  "ipv4": "172.238.45.134",
+  "ipv6": "2600:3c0a::2000:96ff:fef2:9b19",
+  "subdomains": {
+    "www": {
+      "ipv4": "172.238.45.134",
+      "ipv6": "2600:3c0a::2000:96ff:fef2:9b19"
+    },
+    "mail": {
+      "ipv4": "172.238.45.134",
+      "ipv6": "2600:3c0a::2000:96ff:fef2:9b19"
+    }
+  },
+  "dns": {
+    "nameservers": [
+      "ns1.linode.com",
+      "ns2.linode.com",
+      "ns3.linode.com",
+      "ns4.linode.com",
+      "ns5.linode.com"
+    ],
+    "mx": {
+      "priority": 10,
+      "host": "mail.universallifeprotocol.online"
+    }
+  },
+  "ports": {
+    "http": 80,
+    "https": 443,
+    "dev": 3003
+  }
+}
+

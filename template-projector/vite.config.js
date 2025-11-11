@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { copyFileSync, existsSync } from 'fs';
+import { domainConfig } from './src/config/domain-config.js';
 
 const __dirname = resolve(fileURLToPath(new URL('.', import.meta.url)));
 
@@ -73,11 +74,34 @@ export default defineConfig({
   define: {
     // Polyfill Node.js globals for browser
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
-    'global': 'globalThis'
+    'global': 'globalThis',
+    // Make domain config available in client code
+    '__DOMAIN_CONFIG__': JSON.stringify({
+      domain: domainConfig.domain,
+      ipv4: domainConfig.ipv4,
+      ipv6: domainConfig.ipv6,
+      baseUrl: domainConfig.getBaseUrl(false),
+      baseUrlHttps: domainConfig.getBaseUrl(true)
+    })
   },
   server: {
-    allowedHosts: ["universallifeprotocol.com"],
-    port: parseInt(process.env.TEMPLATE_PROJECTOR_PORT || '3003', 10),
-    open: true
+    host: process.env.TEMPLATE_PROJECTOR_HOST || '0.0.0.0', // Listen on all interfaces
+    allowedHosts: [
+      domainConfig.domain,
+      `www.${domainConfig.domain}`,
+      `mail.${domainConfig.domain}`,
+      `templates.${domainConfig.domain}`,
+      'localhost',
+      '127.0.0.1',
+      domainConfig.ipv4, // IPv4 address
+      `[${domainConfig.ipv6}]` // IPv6 address (bracketed)
+    ],
+    port: parseInt(process.env.TEMPLATE_PROJECTOR_PORT || domainConfig.ports.dev, 10),
+    open: true,
+    // CORS configuration for domain access
+    cors: {
+      origin: domainConfig.getAllowedOrigins(),
+      credentials: true
+    }
   }
 });

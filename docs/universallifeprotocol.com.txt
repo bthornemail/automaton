@@ -1,0 +1,21 @@
+; universallifeprotocol.com [3365745]
+$TTL 86400
+@  IN  SOA  ns1.linode.com. bthornemail.gmail.com. 2021000009 14400 14400 1209600 86400
+@    NS  ns1.linode.com.
+@    NS  ns2.linode.com.
+@    NS  ns3.linode.com.
+@    NS  ns4.linode.com.
+@    NS  ns5.linode.com.
+@      MX  10  mail.universallifeprotocol.com.
+@      A  172.238.45.134
+api      A  172.238.45.134
+ide      A  172.238.45.134
+mail      A  172.238.45.134
+templates      A  172.238.45.134
+www      A  172.238.45.134
+@      AAAA  2600:3c0a::2000:96ff:fef2:9b19
+api      AAAA  2600:3c0a::2000:96ff:fef2:9b19
+ide      AAAA  2600:3c0a::2000:96ff:fef2:9b19
+mail      AAAA  2600:3c0a::2000:96ff:fef2:9b19
+templates      AAAA  2600:3c0a::2000:96ff:fef2:9b19
+www      AAAA  2600:3c0a::2000:96ff:fef2:9b19
