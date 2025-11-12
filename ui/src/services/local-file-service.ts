@@ -121,8 +121,59 @@ class LocalFileServiceImpl implements LocalFileService {
         
         // Check if text content is HTML (starts with HTML tags)
         const trimmedText = text.trim();
-        if (trimmedText.startsWith('<!doctype') || trimmedText.startsWith('<!DOCTYPE') || trimmedText.startsWith('<html')) {
-          console.warn(`Received HTML content instead of JSONL for ${file}. File may not exist or server returned error page.`);
+        const lowerText = trimmedText.toLowerCase();
+        
+        // AGGRESSIVE HTML detection - check if content starts with < (very likely HTML)
+        // This catches HTML even if there's whitespace or different casing
+        if (trimmedText.length > 0 && trimmedText[0] === '<') {
+          // Check if it's definitely HTML (not valid JSON which never starts with <)
+          if (
+            trimmedText.startsWith('<!doctype') || 
+            trimmedText.startsWith('<!DOCTYPE') || 
+            trimmedText.startsWith('<html') ||
+            trimmedText.startsWith('<HTML') ||
+            trimmedText.startsWith('<head') ||
+            trimmedText.startsWith('<body') ||
+            trimmedText.startsWith('<script') ||
+            trimmedText.startsWith('<div') ||
+            trimmedText.startsWith('<meta') ||
+            trimmedText.startsWith('<link') ||
+            trimmedText.startsWith('<title') ||
+            lowerText.startsWith('<!doctype') ||
+            lowerText.startsWith('<html') ||
+            lowerText.includes('<head>') ||
+            lowerText.includes('<body>') ||
+            lowerText.includes('</html>')
+          ) {
+            console.warn(`Received HTML content instead of JSONL for ${file}. File may not exist or server returned error page.`);
+            return [];
+          }
+          // If it starts with < but doesn't match known HTML patterns, still be suspicious
+          // Check first few lines to see if they're HTML-like
+          const firstLines = trimmedText.split('\n').slice(0, 5);
+          const htmlLikeLines = firstLines.filter(line => {
+            const trimmed = line.trim();
+            return trimmed.startsWith('<') && (
+              trimmed.startsWith('<!') ||
+              trimmed.startsWith('<html') ||
+              trimmed.startsWith('<head') ||
+              trimmed.startsWith('<body') ||
+              trimmed.startsWith('<script') ||
+              trimmed.startsWith('<div') ||
+              trimmed.startsWith('<meta') ||
+              trimmed.startsWith('<link')
+            );
+          });
+          if (htmlLikeLines.length > 0) {
+            console.warn(`Received HTML-like content instead of JSONL for ${file}. File may not exist or server returned error page.`);
+            return [];
+          }
+        }
+        
+        // Additional check: if first non-empty line starts with <, it's HTML
+        const firstNonEmptyLine = trimmedText.split('\n').find(line => line.trim().length > 0);
+        if (firstNonEmptyLine && firstNonEmptyLine.trim().startsWith('<')) {
+          console.warn(`Received HTML content instead of JSONL for ${file} (first line starts with '<'). File may not exist or server returned error page.`);
           return [];
         }
         
@@ -238,9 +289,53 @@ class LocalFileServiceImpl implements LocalFileService {
     
     // Early detection of HTML content (defensive check)
     const trimmedText = text.trim();
-    if (trimmedText.startsWith('<!doctype') || trimmedText.startsWith('<!DOCTYPE') || trimmedText.startsWith('<html')) {
-      console.warn('parseJSONL: Received HTML content instead of JSONL. Skipping parsing.');
-      return [];
+    const lowerText = trimmedText.toLowerCase();
+    
+    // AGGRESSIVE HTML detection - if content starts with <, it's almost certainly HTML
+    // Valid JSON/JSONL never starts with <
+    if (trimmedText.length > 0 && trimmedText[0] === '<') {
+      // Check for common HTML patterns
+      if (
+        trimmedText.startsWith('<!doctype') || 
+        trimmedText.startsWith('<!DOCTYPE') || 
+        trimmedText.startsWith('<html') ||
+        trimmedText.startsWith('<HTML') ||
+        trimmedText.startsWith('<head') ||
+        trimmedText.startsWith('<body') ||
+        trimmedText.startsWith('<script') ||
+        trimmedText.startsWith('<div') ||
+        trimmedText.startsWith('<meta') ||
+        trimmedText.startsWith('<link') ||
+        trimmedText.startsWith('<title') ||
+        lowerText.startsWith('<!doctype') ||
+        lowerText.startsWith('<html') ||
+        lowerText.includes('<head>') ||
+        lowerText.includes('<body>') ||
+        lowerText.includes('</html>')
+      ) {
+        console.warn('parseJSONL: Received HTML content instead of JSONL. Skipping parsing.');
+        return [];
+      }
+      // Even if it doesn't match known patterns, if it starts with <, be suspicious
+      // Check first few lines
+      const firstLines = trimmedText.split('\n').slice(0, 3);
+      const hasHtmlTags = firstLines.some(line => {
+        const trimmed = line.trim();
+        return trimmed.startsWith('<') && (
+          trimmed.startsWith('<!') ||
+          trimmed.startsWith('<html') ||
+          trimmed.startsWith('<head') ||
+          trimmed.startsWith('<body') ||
+          trimmed.startsWith('<script') ||
+          trimmed.startsWith('<div') ||
+          trimmed.startsWith('<meta') ||
+          trimmed.startsWith('<link')
+        );
+      });
+      if (hasHtmlTags) {
+        console.warn('parseJSONL: Detected HTML tags in content. Skipping parsing.');
+        return [];
+      }
     }
     
     try {
@@ -254,10 +349,38 @@ class LocalFileServiceImpl implements LocalFileService {
       const lines = text.trim().split('\n').filter((line: string) => line && line.trim());
       
       // If first few lines look like HTML, skip parsing
-      const sampleLines = lines.slice(0, 3).join(' ').toLowerCase();
-      if (sampleLines.includes('<!doctype') || sampleLines.includes('<html') || sampleLines.includes('<head>')) {
-        console.warn('parseJSONL: Content appears to be HTML. Skipping parsing.');
-        return [];
+      if (lines.length > 0) {
+        // ULTRA-AGGRESSIVE: If ANY of the first 10 lines starts with <, it's HTML
+        // Valid JSON/JSONL never starts with <
+        const firstFewLines = lines.slice(0, Math.min(10, lines.length));
+        for (const line of firstFewLines) {
+          const trimmed = line.trim();
+          // If trimmed line starts with <, it's HTML (no exceptions)
+          if (trimmed.length > 0 && trimmed[0] === '<') {
+            console.warn('parseJSONL: Detected HTML content (line starts with "<"). Skipping parsing.', trimmed.substring(0, 50));
+            return [];
+          }
+        }
+        
+        // Double-check: if first non-empty line starts with <, it's HTML
+        const firstLine = lines.find(line => line.trim().length > 0)?.trim() || '';
+        if (firstLine.length > 0 && firstLine[0] === '<') {
+          console.warn('parseJSONL: First non-empty line starts with "<", treating as HTML. Skipping parsing.');
+          return [];
+        }
+        
+        // Additional pattern check for HTML tags
+        const sampleLines = lines.slice(0, Math.min(5, lines.length)).join(' ').toLowerCase();
+        if (
+          sampleLines.includes('<!doctype') || 
+          sampleLines.includes('<html') || 
+          sampleLines.includes('<head>') ||
+          sampleLines.includes('<body>') ||
+          sampleLines.includes('</html>')
+        ) {
+          console.warn('parseJSONL: Content appears to be HTML. Skipping parsing.');
+          return [];
+        }
       }
       
       const data = lines.map((line: string, index: number) => {
@@ -266,7 +389,16 @@ class LocalFileServiceImpl implements LocalFileService {
           if (!line || typeof line !== 'string' || !line.trim()) {
             return null;
           }
-          const parsed = JSON.parse(line.trim());
+          
+          // Additional HTML check per line before parsing
+          // If line starts with <, it's HTML (valid JSON never starts with <)
+          const trimmedLine = line.trim();
+          if (trimmedLine.startsWith('<')) {
+            // Silently skip HTML lines (we already warned earlier)
+            return null;
+          }
+          
+          const parsed = JSON.parse(trimmedLine);
           // Ensure parsed result is an object
           if (typeof parsed === 'object' && parsed !== null) {
             return parsed;
@@ -274,6 +406,13 @@ class LocalFileServiceImpl implements LocalFileService {
           console.warn(`Line ${index + 1} parsed to non-object:`, typeof parsed);
           return null;
         } catch (e) {
+          // Check if this is HTML content - if so, don't spam console
+          const trimmedLine = line.trim();
+          if (trimmedLine.startsWith('<')) {
+            // This is likely HTML, skip silently (we already warned earlier)
+            return null;
+          }
+          // Only warn for actual JSON parsing errors (not HTML)
           console.warn(`Failed to parse JSONL line ${index + 1}:`, line.substring(0, 100), e);
           return null;
         }
