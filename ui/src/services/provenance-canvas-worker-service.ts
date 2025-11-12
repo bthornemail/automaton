@@ -6,6 +6,9 @@
  */
 
 import { ProvenanceChain, ProvenanceNode } from './provenance-slide-service';
+import { WorkerError } from '../utils/error-types';
+import { errorLoggingService } from './error-logging-service';
+import { retryWithBackoff, RetryOptions } from '../utils/error-handling';
 
 export interface WorkerMessage {
   type: 'init' | 'load' | 'query' | 'render' | 'interact' | 'updateCamera' | 'resize' | 'dispose';
@@ -18,17 +21,39 @@ export interface CanvasOptions {
   antialias?: boolean;
 }
 
+export interface ProvenanceCanvasWorkerServiceConfig {
+  retryOptions?: RetryOptions;
+  maxRestartAttempts?: number;
+}
+
 export class ProvenanceCanvasWorkerService {
   private worker: Worker | null;
   private canvas: OffscreenCanvas | null;
   private messageHandlers: Map<string, (data: any) => void>;
   private initialized: boolean;
+  private fallbackMode: 'normal' | '2d-only';
+  private restartAttempts: number;
+  private maxRestartAttempts: number;
+  private retryOptions: RetryOptions;
+  private currentChain: ProvenanceChain | null;
 
-  constructor() {
+  constructor(config: ProvenanceCanvasWorkerServiceConfig = {}) {
     this.worker = null;
     this.canvas = null;
     this.messageHandlers = new Map();
     this.initialized = false;
+    this.fallbackMode = 'normal';
+    this.restartAttempts = 0;
+    this.maxRestartAttempts = config.maxRestartAttempts || 3;
+    this.currentChain = null;
+    
+    // Configure retry options (per service, no fixed defaults)
+    this.retryOptions = config.retryOptions || {
+      maxRetries: 2,
+      initialDelay: 1000,
+      maxDelay: 5000,
+      backoffStrategy: 'exponential'
+    };
   }
 
   /**
@@ -41,17 +66,34 @@ export class ProvenanceCanvasWorkerService {
 
     // Check OffscreenCanvas support
     if (!canvas || !canvas.transferControlToOffscreen) {
-      throw new Error('OffscreenCanvas not supported in this browser');
+      this.fallbackMode = '2d-only';
+      throw new WorkerError(
+        'OffscreenCanvas not supported in this browser. Falling back to 2D view.',
+        { operation: 'init', fallbackMode: '2d-only' }
+      );
     }
 
     this.canvas = canvas;
     
     try {
-      // Create worker
-      this.worker = new Worker(
-        new URL('../workers/provenance-canvas-worker.ts', import.meta.url),
-        { type: 'module' }
+      // Create worker with retry logic
+      const { result: worker } = await retryWithBackoff(
+        async () => {
+          try {
+            return new Worker(
+              new URL('../workers/provenance-canvas-worker.ts', import.meta.url),
+              { type: 'module' }
+            );
+          } catch (error) {
+            const errorObj = error instanceof Error ? error : new Error(String(error));
+            (errorObj as any).name = 'NetworkError'; // Mark as retryable
+            throw errorObj;
+          }
+        },
+        this.retryOptions
       );
+      
+      this.worker = worker;
 
       // Set up error handler
       this.worker.onerror = (error) => {
@@ -86,6 +128,7 @@ export class ProvenanceCanvasWorkerService {
       await this.waitForMessage('initialized', 10000);
       
       this.initialized = true;
+      this.restartAttempts = 0; // Reset on successful init
     } catch (error) {
       // Clean up on failure
       if (this.worker) {
@@ -95,7 +138,21 @@ export class ProvenanceCanvasWorkerService {
       this.canvas = null;
       this.initialized = false;
       
-      throw new Error(`Failed to initialize worker: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      errorLoggingService.logError(errorObj, {
+        service: 'ProvenanceCanvasWorkerService',
+        action: 'init',
+        metadata: { options },
+        severity: 'error'
+      });
+      
+      // Set fallback mode
+      this.fallbackMode = '2d-only';
+      
+      throw new WorkerError(
+        `Failed to initialize worker: ${errorObj.message}. Falling back to 2D view.`,
+        { operation: 'init', fallbackMode: '2d-only' }
+      );
     }
   }
 
@@ -104,13 +161,26 @@ export class ProvenanceCanvasWorkerService {
    */
   loadProvenanceChain(chain: ProvenanceChain): void {
     if (!this.initialized || !this.worker) {
-      throw new Error('Worker not initialized');
+      // Store chain for recovery
+      this.currentChain = chain;
+      throw new WorkerError('Worker not initialized', { operation: 'loadProvenanceChain' });
     }
 
-    this.sendMessage({
-      type: 'load',
-      payload: { chain }
-    });
+    try {
+      this.currentChain = chain;
+      this.sendMessage({
+        type: 'load',
+        payload: { chain }
+      });
+    } catch (error) {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      errorLoggingService.logError(errorObj, {
+        service: 'ProvenanceCanvasWorkerService',
+        action: 'loadProvenanceChain',
+        severity: 'error'
+      });
+      throw errorObj;
+    }
   }
 
   /**
@@ -240,23 +310,89 @@ export class ProvenanceCanvasWorkerService {
   }
 
   /**
-   * Handle worker errors
+   * Handle worker errors with recovery
    */
   private handleWorkerError(error: Error | ErrorEvent): void {
-    console.error('Worker error occurred:', error);
+    const errorObj = error instanceof Error ? error : new Error(error.message || 'Unknown worker error');
+    console.error('Worker error occurred:', errorObj);
+    
+    // Log error
+    errorLoggingService.logError(errorObj, {
+      service: 'ProvenanceCanvasWorkerService',
+      action: 'handleWorkerError',
+      severity: 'error'
+    });
     
     // Notify any error handlers
     const errorHandler = this.messageHandlers.get('error');
     if (errorHandler) {
       errorHandler({
-        message: error instanceof Error ? error.message : error.message || 'Unknown worker error',
+        message: errorObj.message,
         type: 'worker-error'
       });
     }
     
-    // Optionally dispose worker on critical errors
-    // Uncomment if you want automatic cleanup on errors
-    // this.dispose();
+    // Attempt worker recovery if not exceeded max attempts
+    if (this.restartAttempts < this.maxRestartAttempts && this.canvas) {
+      this.restartAttempts++;
+      this.recoverWorker();
+    } else {
+      // Max restart attempts reached, set fallback mode
+      this.fallbackMode = '2d-only';
+      if (this.worker) {
+        this.worker.terminate();
+        this.worker = null;
+      }
+      this.initialized = false;
+    }
+  }
+
+  /**
+   * Recover worker after crash
+   */
+  private async recoverWorker(): Promise<void> {
+    try {
+      // Dispose current worker
+      if (this.worker) {
+        this.worker.terminate();
+        this.worker = null;
+      }
+      
+      this.initialized = false;
+      
+      // Reinitialize if canvas is still available
+      if (this.canvas) {
+        const options = {
+          width: this.canvas.width,
+          height: this.canvas.height,
+          antialias: true
+        };
+        
+        await this.init(this.canvas, options);
+        
+        // Reload provenance chain if available
+        if (this.currentChain) {
+          this.loadProvenanceChain(this.currentChain);
+        }
+        
+        // Notify recovery
+        const recoveryHandler = this.messageHandlers.get('recovered');
+        if (recoveryHandler) {
+          recoveryHandler({ attempts: this.restartAttempts });
+        }
+      }
+    } catch (recoveryError) {
+      const errorObj = recoveryError instanceof Error ? recoveryError : new Error(String(recoveryError));
+      errorLoggingService.logError(errorObj, {
+        service: 'ProvenanceCanvasWorkerService',
+        action: 'recoverWorker',
+        metadata: { restartAttempts: this.restartAttempts },
+        severity: 'error'
+      });
+      
+      // Set fallback mode on recovery failure
+      this.fallbackMode = '2d-only';
+    }
   }
 
   /**
@@ -271,6 +407,24 @@ export class ProvenanceCanvasWorkerService {
    */
   isInitialized(): boolean {
     return this.initialized;
+  }
+
+  /**
+   * Get fallback mode
+   */
+  getFallbackMode(): 'normal' | '2d-only' {
+    return this.fallbackMode;
+  }
+
+  /**
+   * Manually trigger fallback mode
+   */
+  setFallbackMode(mode: 'normal' | '2d-only'): void {
+    this.fallbackMode = mode;
+    if (mode === '2d-only' && this.worker) {
+      // Dispose worker when switching to 2D-only mode
+      this.dispose();
+    }
   }
 }
 

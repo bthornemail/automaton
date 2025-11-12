@@ -8,6 +8,12 @@
  * - metaverse.system.canvasl: System partition (Bipartite-BQF right side)
  */
 
+import { validateAutomatonState } from '../utils/error-handling';
+import { FileSystemError, ValidationError } from '../utils/error-types';
+import { errorLoggingService } from './error-logging-service';
+import { writeToTempFile, moveTempFile } from '../utils/error-handling';
+import { databaseService } from './database-service';
+
 export interface AutomatonState {
   id: string;
   dimension: string;
@@ -25,10 +31,14 @@ export interface BQFCoefficients {
 }
 
 export class AutomatonFileGeneratorService {
+  private tempFiles: Map<string, string> = new Map(); // Track temp files: finalPath -> tempPath
+
   /**
    * Generate automaton.kernel.canvasl from automaton state
    */
   generateKernelCanvasL(state: AutomatonState): string {
+    // Validate state before generation
+    validateAutomatonState(state);
     const lines: string[] = [];
     
     // Add version directive
@@ -203,12 +213,137 @@ export class AutomatonFileGeneratorService {
     topology: string;
     system: string;
   } {
+    // Validate state before generation
+    validateAutomatonState(state);
+    
     return {
       kernel: this.generateKernelCanvasL(state),
       seed: this.generateSeedCanvasL(state),
       topology: this.generateTopologyCanvasL(state),
       system: this.generateSystemCanvasL(state)
     };
+  }
+
+  /**
+   * Save file with temp file write and atomic move
+   */
+  async saveFile(filePath: string, content: string): Promise<void> {
+    try {
+      // Validate content
+      if (!content || content.trim().length === 0) {
+        throw new ValidationError('File content cannot be empty', { content: ['Content is required'] });
+      }
+
+      // Write to temp file first
+      const tempPath = await writeToTempFile(
+        content,
+        filePath,
+        async (path: string, content: string) => {
+          // Convert content to array of lines for writeJSONL
+          const lines = content.split('\n').filter(line => line.trim());
+          const data = lines.map(line => {
+            try {
+              return JSON.parse(line);
+            } catch {
+              return { raw: line };
+            }
+          });
+          await databaseService.writeJSONL(path, data);
+        }
+      );
+
+      // Track temp file
+      this.tempFiles.set(filePath, tempPath);
+
+      // Validate temp file content
+      const tempContent = await databaseService.readJSONL(tempPath);
+      if (!tempContent || tempContent.length === 0) {
+        throw new FileSystemError('Temporary file is empty after write', tempPath, 'write');
+      }
+
+      // Atomically move temp file to final location
+      await moveTempFile(
+        tempPath,
+        filePath,
+        async (path: string) => {
+          const data = await databaseService.readJSONL(path);
+          return data.map(item => JSON.stringify(item)).join('\n');
+        },
+        async (path: string, content: string) => {
+          const lines = content.split('\n').filter(line => line.trim());
+          const data = lines.map(line => {
+            try {
+              return JSON.parse(line);
+            } catch {
+              return { raw: line };
+            }
+          });
+          await databaseService.writeJSONL(path, data);
+        },
+        async (path: string) => {
+          // Delete operation - in browser environment, we can't actually delete
+          // Just remove from tracking
+          this.tempFiles.delete(filePath);
+        }
+      );
+
+      // Remove from tracking after successful move
+      this.tempFiles.delete(filePath);
+    } catch (error) {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      
+      // Log error with context
+      errorLoggingService.logError(errorObj, {
+        service: 'AutomatonFileGeneratorService',
+        action: 'saveFile',
+        metadata: { filePath },
+        severity: 'error'
+      });
+
+      // Clean up temp file if exists
+      const tempPath = this.tempFiles.get(filePath);
+      if (tempPath) {
+        try {
+          // Try to clean up temp file (in browser, this might not be possible)
+          this.tempFiles.delete(filePath);
+        } catch (cleanupError) {
+          // Ignore cleanup errors
+        }
+      }
+
+      // Re-throw with appropriate error type
+      if (errorObj instanceof ValidationError || errorObj instanceof FileSystemError) {
+        throw errorObj;
+      }
+      
+      throw new FileSystemError(
+        `Failed to save file: ${errorObj.message}`,
+        filePath,
+        'write',
+        errorObj
+      );
+    }
+  }
+
+  /**
+   * Clean up temporary files
+   */
+  async cleanupTempFiles(): Promise<void> {
+    for (const [finalPath, tempPath] of this.tempFiles.entries()) {
+      try {
+        // In browser environment, we can't actually delete files
+        // Just remove from tracking
+        this.tempFiles.delete(finalPath);
+      } catch (error) {
+        const errorObj = error instanceof Error ? error : new Error(String(error));
+        errorLoggingService.logError(errorObj, {
+          service: 'AutomatonFileGeneratorService',
+          action: 'cleanupTempFiles',
+          metadata: { tempPath, finalPath },
+          severity: 'warning'
+        });
+      }
+    }
   }
 }
 

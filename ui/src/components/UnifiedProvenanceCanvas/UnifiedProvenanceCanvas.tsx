@@ -17,6 +17,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from '../shared/Card';
 import { Button } from '../shared/Button';
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, Info } from 'lucide-react';
+import { WorkerErrorBoundary } from '../shared/WorkerErrorBoundary';
+import { errorLoggingService } from '../../services/error-logging-service';
 
 interface UnifiedProvenanceCanvasProps {
   evolutionPath?: string;
@@ -38,6 +40,7 @@ export const UnifiedProvenanceCanvas: React.FC<UnifiedProvenanceCanvasProps> = (
   const [currentDimension, setCurrentDimension] = useState('0D');
   const [viewMode, setViewMode] = useState<'3d' | '2d' | 'combined'>('combined');
   const [loading, setLoading] = useState(false);
+  const [workerFallbackMode, setWorkerFallbackMode] = useState<'normal' | '2d-only'>('normal');
   
   const provenanceService = useRef(new ProvenanceSlideService());
   const workerService = useRef<ProvenanceCanvasWorkerService | null>(null);
@@ -75,7 +78,21 @@ export const UnifiedProvenanceCanvas: React.FC<UnifiedProvenanceCanvasProps> = (
             // Set up error handler
             workerService.current.onMessage('error', (error: any) => {
               console.error('Worker error:', error);
-              // Could show user notification here
+              errorLoggingService.logError(
+                new Error(error.message || 'Unknown worker error'),
+                {
+                  component: 'UnifiedProvenanceCanvas',
+                  service: 'ProvenanceCanvasWorkerService',
+                  action: 'worker-error',
+                  severity: 'error'
+                }
+              );
+            });
+            
+            // Set up recovery handler
+            workerService.current.onMessage('recovered', (data: any) => {
+              console.log('Worker recovered:', data);
+              setWorkerFallbackMode('normal');
             });
             
             await workerService.current.init(offscreenCanvas, {
@@ -84,8 +101,12 @@ export const UnifiedProvenanceCanvas: React.FC<UnifiedProvenanceCanvasProps> = (
               antialias: true
             });
             
+            // Check fallback mode
+            const fallbackMode = workerService.current.getFallbackMode();
+            setWorkerFallbackMode(fallbackMode);
+            
             // Load current slide's provenance chain
-            if (slides.length > 0) {
+            if (slides.length > 0 && fallbackMode === 'normal') {
               const currentSlide = slides[currentSlideIndex];
               if (currentSlide.provenanceChain) {
                 workerService.current.loadProvenanceChain(currentSlide.provenanceChain);
@@ -93,8 +114,18 @@ export const UnifiedProvenanceCanvas: React.FC<UnifiedProvenanceCanvasProps> = (
             }
           } catch (workerError) {
             console.error('Failed to initialize worker:', workerError);
-            // Fallback: continue without worker
-            // Could implement main-thread rendering fallback here
+            
+            // Log error
+            const errorObj = workerError instanceof Error ? workerError : new Error(String(workerError));
+            errorLoggingService.logError(errorObj, {
+              component: 'UnifiedProvenanceCanvas',
+              service: 'ProvenanceCanvasWorkerService',
+              action: 'init',
+              severity: 'error'
+            });
+            
+            // Set fallback mode to 2D only
+            setWorkerFallbackMode('2d-only');
           }
         }
       } catch (error) {
@@ -276,30 +307,55 @@ export const UnifiedProvenanceCanvas: React.FC<UnifiedProvenanceCanvasProps> = (
 
       {/* Main Canvas Area */}
       <div className="flex-1 flex relative">
-        {/* 3D Provenance Canvas (Offscreen) */}
-        {(viewMode === '3d' || viewMode === 'combined') && (
-          <div className={viewMode === 'combined' ? 'w-1/2 border-r border-gray-700' : 'w-full'}>
-            <canvas
-              ref={offscreenCanvasRef}
-              className="w-full h-full"
-              width={800}
-              height={600}
-              onClick={handleCanvasClick}
-              onMouseMove={handleCanvasHover}
-            />
-          </div>
-        )}
+        <WorkerErrorBoundary
+          onRetry={() => {
+            // Retry worker initialization
+            if (offscreenCanvasRef.current && !ProvenanceCanvasWorkerService.isSupported()) {
+              setWorkerFallbackMode('2d-only');
+            } else if (offscreenCanvasRef.current) {
+              const offscreenCanvas = offscreenCanvasRef.current.transferControlToOffscreen();
+              workerService.current = new ProvenanceCanvasWorkerService();
+              workerService.current.init(offscreenCanvas, {
+                width: offscreenCanvasRef.current.width,
+                height: offscreenCanvasRef.current.height,
+                antialias: true
+              }).then(() => {
+                setWorkerFallbackMode('normal');
+              }).catch(() => {
+                setWorkerFallbackMode('2d-only');
+              });
+            }
+          }}
+        >
+          {/* 3D Provenance Canvas (Offscreen) - Only show if not in fallback mode */}
+          {(viewMode === '3d' || viewMode === 'combined') && workerFallbackMode === 'normal' && (
+            <div className={viewMode === 'combined' ? 'w-1/2 border-r border-gray-700' : 'w-full'}>
+              <canvas
+                ref={offscreenCanvasRef}
+                className="w-full h-full"
+                width={800}
+                height={600}
+                onClick={handleCanvasClick}
+                onMouseMove={handleCanvasHover}
+              />
+            </div>
+          )}
 
-        {/* 2D Dimensional Canvas */}
-        {(viewMode === '2d' || viewMode === 'combined') && (
-          <div className={viewMode === 'combined' ? 'w-1/2' : 'w-full'}>
-            <DimensionalView
-              svgRef={svgRef}
-              currentDimension={currentDimension}
-              dimensions={['0D', '1D', '2D', '3D', '4D', '5D', '6D', '7D']}
-            />
-          </div>
-        )}
+          {/* 2D Dimensional Canvas - Always show, or show only if in fallback mode */}
+          {(viewMode === '2d' || viewMode === 'combined' || workerFallbackMode === '2d-only') && (
+            <div className={
+              (viewMode === 'combined' && workerFallbackMode === 'normal') 
+                ? 'w-1/2' 
+                : 'w-full'
+            }>
+              <DimensionalView
+                svgRef={svgRef}
+                currentDimension={currentDimension}
+                dimensions={['0D', '1D', '2D', '3D', '4D', '5D', '6D', '7D']}
+              />
+            </div>
+          )}
+        </WorkerErrorBoundary>
       </div>
 
       {/* Slide Info Panel */}

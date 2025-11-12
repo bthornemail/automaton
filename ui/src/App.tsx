@@ -12,6 +12,12 @@ import AIPortal from '@/components/AIPortal/AIPortal';
 import MetaverseInterface from '@/components/AdvancedAnimations/MetaverseInterface';
 import Configuration from '@/components/Configuration/Configuration';
 import UnifiedEditor from './components/UnifiedEditor';
+import { errorLoggingService } from './services/error-logging-service';
+
+// Make error logging service available globally for error boundaries
+if (typeof window !== 'undefined') {
+  (window as any).errorLoggingService = errorLoggingService;
+}
 
 const AppContent: React.FC = () => {
   const activeTab = useAutomatonStore((state) => state.activeTab);

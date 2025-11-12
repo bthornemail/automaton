@@ -11,6 +11,8 @@ import { TopicSlideGenerator } from './projector/TopicSlideGenerator';
 import { agentProvenanceQueryService, FederatedProvenanceQuery, QueryType } from './agent-provenance-query-service';
 import { databaseService } from './database-service';
 import { jsonlCanvasService } from './jsonl-canvas-service';
+import { retryWithBackoff, withTimeout, formatUserErrorMessage, validateProvenanceChain, RetryOptions } from '../utils/error-handling';
+import { errorLoggingService } from './error-logging-service';
 
 export interface ProvenanceNode {
   id: string;
@@ -68,15 +70,33 @@ export interface Card {
   };
 }
 
+export interface ProvenanceSlideServiceConfig {
+  retryOptions?: RetryOptions;
+  timeout?: number;
+}
+
 export class ProvenanceSlideService {
   private projector: Projector;
   private agentCoordinator: AgentCoordinator;
   private topicSlideGenerator: TopicSlideGenerator;
+  private retryOptions: RetryOptions;
+  private timeout: number;
 
-  constructor() {
+  constructor(config: ProvenanceSlideServiceConfig = {}) {
     this.projector = new Projector();
     this.agentCoordinator = new AgentCoordinator();
     this.topicSlideGenerator = new TopicSlideGenerator(this.agentCoordinator, null as any);
+    
+    // Configure retry options (per service, no fixed defaults)
+    this.retryOptions = config.retryOptions || {
+      maxRetries: 3,
+      initialDelay: 1000,
+      maxDelay: 10000,
+      backoffStrategy: 'exponential'
+    };
+    
+    // Configure timeout (per service, no fixed defaults)
+    this.timeout = config.timeout || 10000;
   }
 
   /**
@@ -91,14 +111,19 @@ export class ProvenanceSlideService {
    * Build provenance chain from evolution directory with federated provenance tracking
    */
   async buildProvenanceChain(evolutionPath: string): Promise<ProvenanceChain> {
-    const nodes: ProvenanceNode[] = [];
-    const edges: ProvenanceEdge[] = [];
-    
-    // Load evolution files
-    const files = await this.loadEvolutionFiles(evolutionPath);
-    
-    // Extract self-execution patterns with federated provenance
-    const patterns = await this.extractSelfExecutionPatternsWithProvenance(files);
+    try {
+      const nodes: ProvenanceNode[] = [];
+      const edges: ProvenanceEdge[] = [];
+      
+      // Load evolution files with timeout
+      const files = await withTimeout(
+        this.loadEvolutionFiles(evolutionPath),
+        this.timeout,
+        'loadEvolutionFiles'
+      );
+      
+      // Extract self-execution patterns with federated provenance
+      const patterns = await this.extractSelfExecutionPatternsWithProvenance(files);
     
     // Build nodes for each pattern
     for (const pattern of patterns) {
@@ -162,9 +187,28 @@ export class ProvenanceSlideService {
         };
         edges.push(referenceEdge);
       }
+      
+      const chain = { nodes, edges };
+      
+      // Validate provenance chain
+      validateProvenanceChain(chain);
+      
+      return chain;
+    } catch (error) {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      const userMessage = formatUserErrorMessage(errorObj);
+      
+      // Log error with context
+      errorLoggingService.logError(errorObj, {
+        service: 'ProvenanceSlideService',
+        action: 'buildProvenanceChain',
+        metadata: { evolutionPath },
+        severity: 'error'
+      });
+      
+      // Throw user-friendly error
+      throw new Error(userMessage);
     }
-    
-    return { nodes, edges };
   }
 
   /**
@@ -310,7 +354,7 @@ export class ProvenanceSlideService {
     const files: any[] = [];
     
     try {
-      // Use database service to query for evolution files
+      // Use database service to query for evolution files with retry logic
       const query = `
         SELECT ?file ?content WHERE {
           ?file rdf:type evolution:EvolutionFile .
@@ -319,7 +363,22 @@ export class ProvenanceSlideService {
         }
       `;
       
-      const results = await databaseService.query(query, 'sparql');
+      // Wrap database query with retry logic
+      const { result: results } = await retryWithBackoff(
+        async () => {
+          try {
+            return await databaseService.query(query, 'sparql');
+          } catch (error) {
+            // Re-throw as NetworkError for retry logic
+            const errorObj = error instanceof Error ? error : new Error(String(error));
+            if (errorObj.message.includes('network') || errorObj.message.includes('fetch') || errorObj.message.includes('timeout')) {
+              (errorObj as any).name = 'NetworkError';
+            }
+            throw errorObj;
+          }
+        },
+        this.retryOptions
+      );
       
       for (const result of results) {
         try {
@@ -346,12 +405,28 @@ export class ProvenanceSlideService {
         }
       }
     } catch (e) {
+      const errorObj = e instanceof Error ? e : new Error(String(e));
+      errorLoggingService.logError(errorObj, {
+        service: 'ProvenanceSlideService',
+        action: 'loadEvolutionFiles',
+        metadata: { evolutionPath, stage: 'database-query' },
+        severity: 'warning'
+      });
+      
       console.warn('Failed to load evolution files from database, trying direct file access', e);
       
       // Fallback: try to load from file system if available
       // This would require a file system API or fetch to a file server
       try {
-        const response = await fetch(`${evolutionPath}/index.jsonl`);
+        // Use AbortController for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+        
+        const response = await fetch(`${evolutionPath}/index.jsonl`, {
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
         if (response.ok) {
           const text = await response.text();
           const lines = text.split('\n').filter(line => line.trim());
@@ -372,7 +447,15 @@ export class ProvenanceSlideService {
           }
         }
       } catch (fetchError) {
+        const errorObj = fetchError instanceof Error ? fetchError : new Error(String(fetchError));
+        errorLoggingService.logError(errorObj, {
+          service: 'ProvenanceSlideService',
+          action: 'loadEvolutionFiles',
+          metadata: { evolutionPath, stage: 'fetch-fallback' },
+          severity: 'error'
+        });
         console.warn('Failed to fetch evolution files', fetchError);
+        throw new Error(formatUserErrorMessage(errorObj));
       }
     }
     
