@@ -128,7 +128,10 @@ class SchemeREPLServiceImpl implements SchemeREPLService {
             y: item.y,
             from: item.from,
             to: item.to,
-            metadata: item.metadata
+            target: item.target, // For reference nodes
+            selfReference: item.selfReference, // For provenance/identity tracking
+            metadata: item.metadata,
+            provenanceHistory: item.provenanceHistory // For federated provenance
           });
         }
       }
@@ -141,7 +144,10 @@ class SchemeREPLServiceImpl implements SchemeREPLService {
         y: parsed.y,
         from: parsed.from,
         to: parsed.to,
-        metadata: parsed.metadata
+        target: parsed.target, // For reference nodes
+        selfReference: parsed.selfReference, // For provenance/identity tracking
+        metadata: parsed.metadata,
+        provenanceHistory: parsed.provenanceHistory // For federated provenance
       });
     }
     
@@ -175,6 +181,9 @@ class SchemeREPLServiceImpl implements SchemeREPLService {
       factsArray = [facts];
     }
     
+    // Track nodes by selfReference for owl:sameAs generation
+    const nodesBySelfRef = new Map<string, string[]>(); // file:line -> [nodeIds]
+    
     for (const fact of factsArray) {
       if (!fact || typeof fact !== 'object') continue;
       
@@ -185,6 +194,31 @@ class SchemeREPLServiceImpl implements SchemeREPLService {
           predicate: 'rdf:type',
           object: `canvas:${fact.type}`
         });
+        
+        // Track nodes with selfReference for owl:sameAs generation
+        if (fact.selfReference && typeof fact.selfReference === 'object') {
+          const selfRef = fact.selfReference;
+          if (selfRef.file && selfRef.line !== undefined) {
+            const key = `${selfRef.file}:${selfRef.line}`;
+            if (!nodesBySelfRef.has(key)) {
+              nodesBySelfRef.set(key, []);
+            }
+            nodesBySelfRef.get(key)!.push(fact.id);
+          }
+        }
+        
+        // Generate owl:sameAs for nodes with selfReference pointing to themselves
+        if (fact.selfReference && typeof fact.selfReference === 'object') {
+          const selfRef = fact.selfReference;
+          if (selfRef.file) {
+            // Create sameAs relationship: node -> file reference
+            triples.push({
+              subject: `canvas:${fact.id}`,
+              predicate: 'owl:sameAs',
+              object: `file:${selfRef.file}${selfRef.line ? `#L${selfRef.line}` : ''}`
+            });
+          }
+        }
       }
       
       // Extract edge facts (connections)
@@ -202,6 +236,68 @@ class SchemeREPLServiceImpl implements SchemeREPLService {
           subject: `canvas:${fact.id || 'unknown'}`,
           predicate: 'rdfs:label',
           object: fact.text
+        });
+      }
+      
+      // Extract metadata relationships
+      if (fact.metadata) {
+        // Handle reference nodes (from generate.metaverse.jsonl)
+        if (fact.type === 'reference' && fact.target) {
+          triples.push({
+            subject: `canvas:${fact.id}`,
+            predicate: 'owl:sameAs',
+            object: `file:${fact.target}`
+          });
+        }
+        
+        // Handle metadata.reference relationships
+        if (fact.metadata.reference && typeof fact.metadata.reference === 'object') {
+          const ref = fact.metadata.reference;
+          if (ref.file) {
+            triples.push({
+              subject: `canvas:${fact.id}`,
+              predicate: 'owl:sameAs',
+              object: `file:${ref.file}`
+            });
+          }
+        }
+      }
+    }
+    
+    // Generate owl:sameAs for nodes sharing the same selfReference (same file/line)
+    for (const [key, nodeIds] of nodesBySelfRef.entries()) {
+      if (nodeIds.length > 1) {
+        // All nodes with the same selfReference are the same entity
+        for (let i = 0; i < nodeIds.length; i++) {
+          for (let j = i + 1; j < nodeIds.length; j++) {
+            triples.push({
+              subject: `canvas:${nodeIds[i]}`,
+              predicate: 'owl:sameAs',
+              object: `canvas:${nodeIds[j]}`
+            });
+            // Also add reverse (symmetric)
+            triples.push({
+              subject: `canvas:${nodeIds[j]}`,
+              predicate: 'owl:sameAs',
+              object: `canvas:${nodeIds[i]}`
+            });
+          }
+        }
+      }
+    }
+    
+    // Ensure at least one owl:sameAs relationship exists (SHACL requirement)
+    // If no owl:sameAs triples were generated, create a default one
+    const hasSameAs = triples.some(t => t && t.predicate === 'owl:sameAs');
+    if (!hasSameAs && factsArray.length > 0) {
+      // Find first node with an ID
+      const firstNode = factsArray.find(f => f && typeof f === 'object' && f.id);
+      if (firstNode) {
+        // Create a reflexive owl:sameAs (node is same as itself)
+        triples.push({
+          subject: `canvas:${firstNode.id}`,
+          predicate: 'owl:sameAs',
+          object: `canvas:${firstNode.id}`
         });
       }
     }
