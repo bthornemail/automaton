@@ -1,3 +1,24 @@
+---
+id: api-reference-federated-provenance-canvas
+title: "API Reference: Federated Provenance Canvas Integration"
+level: intermediate
+type: reference
+tags: [federated-provenance, canvas-integration, api-reference, documentation, offscreen-workers, bipartite-bqf]
+keywords: [api-reference, api-documentation, provenance-slide-service, provenance-canvas-worker-service, automaton-file-generator-service, types, interfaces]
+prerequisites: [implementation-details-federated-provenance-canvas]
+enables: [developer-usage, integration-guide]
+related: [federated-provenance-canvas-integration-docs, implementation-details-federated-provenance-canvas, phase-completion-summary-federated-provenance-canvas]
+readingTime: 30
+difficulty: 3
+version: "1.0.0"
+blackboard:
+  status: completed
+  assignedAgent: "Query-Interface-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: [implementation-details-federated-provenance-canvas]
+  watchers: ["6D-Intelligence-Agent", "4D-Network-Agent"]
+---
+
 # API Reference: Federated Provenance Canvas Integration
 
 **Date**: 2025-01-07  

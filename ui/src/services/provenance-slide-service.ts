@@ -13,6 +13,8 @@ import { databaseService } from './database-service';
 import { jsonlCanvasService } from './jsonl-canvas-service';
 import { retryWithBackoff, withTimeout, formatUserErrorMessage, validateProvenanceChain, RetryOptions } from '../utils/error-handling';
 import { errorLoggingService } from './error-logging-service';
+import { provenanceChainCache, ProvenanceChainCache } from './provenance-chain-cache';
+import { performanceMonitoringService } from './performance-monitoring-service';
 
 export interface ProvenanceNode {
   id: string;
@@ -70,9 +72,17 @@ export interface Card {
   };
 }
 
+export interface PaginationOptions {
+  page?: number;
+  pageSize?: number;
+  cursor?: string;
+}
+
 export interface ProvenanceSlideServiceConfig {
   retryOptions?: RetryOptions;
   timeout?: number;
+  enableCache?: boolean;
+  cache?: ProvenanceChainCache;
 }
 
 export class ProvenanceSlideService {
@@ -81,6 +91,9 @@ export class ProvenanceSlideService {
   private topicSlideGenerator: TopicSlideGenerator;
   private retryOptions: RetryOptions;
   private timeout: number;
+  private enableCache: boolean;
+  private cache: ProvenanceChainCache;
+  private slideContentCache: Map<string, string> = new Map();
 
   constructor(config: ProvenanceSlideServiceConfig = {}) {
     this.projector = new Projector();
@@ -97,6 +110,10 @@ export class ProvenanceSlideService {
     
     // Configure timeout (per service, no fixed defaults)
     this.timeout = config.timeout || 10000;
+    
+    // Configure caching
+    this.enableCache = config.enableCache !== false;
+    this.cache = config.cache || provenanceChainCache;
   }
 
   /**
@@ -110,8 +127,17 @@ export class ProvenanceSlideService {
   /**
    * Build provenance chain from evolution directory with federated provenance tracking
    */
-  async buildProvenanceChain(evolutionPath: string): Promise<ProvenanceChain> {
+  async buildProvenanceChain(evolutionPath: string, dimension?: string): Promise<ProvenanceChain> {
     try {
+      // Check cache first
+      if (this.enableCache) {
+        const cacheKey = ProvenanceChainCache.generateKey(evolutionPath, dimension);
+        const cached = this.cache.get(cacheKey);
+        if (cached) {
+          return cached;
+        }
+      }
+
       const nodes: ProvenanceNode[] = [];
       const edges: ProvenanceEdge[] = [];
       
@@ -122,7 +148,7 @@ export class ProvenanceSlideService {
         'loadEvolutionFiles'
       );
       
-      // Extract self-execution patterns with federated provenance
+      // Extract self-execution patterns with federated provenance (optimized)
       const patterns = await this.extractSelfExecutionPatternsWithProvenance(files);
     
     // Build nodes for each pattern
@@ -193,6 +219,15 @@ export class ProvenanceSlideService {
       // Validate provenance chain
       validateProvenanceChain(chain);
       
+      // Update performance monitoring
+      performanceMonitoringService.updateNodeEdgeCounts(nodes.length, edges.length);
+      
+      // Cache the chain
+      if (this.enableCache) {
+        const cacheKey = ProvenanceChainCache.generateKey(evolutionPath, dimension);
+        this.cache.set(cacheKey, chain);
+      }
+      
       return chain;
     } catch (error) {
       const errorObj = error instanceof Error ? error : new Error(String(error));
@@ -246,13 +281,17 @@ export class ProvenanceSlideService {
       // Generate cards for this dimension
       const cards = await this.generateCardsForDimension(dimension, dimensionNodes);
       
+      // Generate memoized slide content
+      const contentCacheKey = `${dimension}:${dimensionNodes.length}:${new Set(dimensionNodes.map(n => n.metadata.pattern)).size}`;
+      const slideContent = this.generateSlideContentMemoized(dimension, dimensionNodes, contentCacheKey);
+      
       const slide: Slide = {
         id: `slide-${dimension}-${Date.now()}`,
         type: 'slide',
         title: `${dimension} Evolution`,
         dimension: dimension,
         description: `Provenance chain for ${dimension} dimensional evolution`,
-        content: this.generateSlideContent(dimension, dimensionNodes),
+        content: slideContent,
         provenanceChain: dimensionChain,
         cards: cards
       };
@@ -264,15 +303,21 @@ export class ProvenanceSlideService {
   }
 
   /**
-   * Generate cards grouped by pattern with JSONL line aggregation
+   * Generate cards grouped by pattern with JSONL line aggregation (optimized)
    */
   async generateCardsForDimension(dimension: string, nodes: ProvenanceNode[]): Promise<Card[]> {
+    // Early exit for empty nodes
+    if (nodes.length === 0) {
+      return [];
+    }
+
     const cards: Card[] = [];
     const patternGroups = new Map<string, { nodes: ProvenanceNode[]; jsonlLines: any[] }>();
     
-    // Group nodes by pattern and aggregate JSONL lines
+    // Optimized: Single-pass aggregation with Map
     for (const node of nodes) {
       const pattern = node.metadata.pattern || 'unknown';
+      
       if (!patternGroups.has(pattern)) {
         patternGroups.set(pattern, { nodes: [], jsonlLines: [] });
       }
@@ -280,21 +325,17 @@ export class ProvenanceSlideService {
       const group = patternGroups.get(pattern)!;
       group.nodes.push(node);
       
-      // Aggregate JSONL lines from node data
+      // Aggregate JSONL lines from node data (optimized parsing)
       if (node.data?.rawEntry) {
-        // Use raw entry if available
         group.jsonlLines.push(node.data.rawEntry);
       } else if (node.data?.rawLine) {
-        // Try to parse raw line
         try {
           const parsed = JSON.parse(node.data.rawLine);
           group.jsonlLines.push(parsed);
         } catch (e) {
-          // If parsing fails, use node data as-is
           group.jsonlLines.push(node.data);
         }
       } else {
-        // Fallback: use node data
         group.jsonlLines.push({
           id: node.id,
           type: node.type,
@@ -345,6 +386,110 @@ export class ProvenanceSlideService {
     }
     
     return cards;
+  }
+
+  /**
+   * Get evolution file count for pagination
+   */
+  async getEvolutionFileCount(evolutionPath: string): Promise<number> {
+    try {
+      const query = `
+        SELECT (COUNT(?file) as ?count) WHERE {
+          ?file rdf:type evolution:EvolutionFile .
+          ?file evolution:path "${evolutionPath}" .
+        }
+      `;
+      
+      const results = await databaseService.query(query, 'sparql');
+      if (results.length > 0 && results[0].count) {
+        return parseInt(results[0].count) || 0;
+      }
+      return 0;
+    } catch (error) {
+      console.warn('Failed to get evolution file count', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Load evolution files from directory with pagination support
+   */
+  async loadEvolutionFilesPaginated(
+    evolutionPath: string,
+    options: PaginationOptions = {}
+  ): Promise<{ files: any[]; total: number; hasMore: boolean; cursor?: string }> {
+    const page = options.page || 0;
+    const pageSize = options.pageSize || 100;
+    
+    try {
+      // Get total count
+      const total = await this.getEvolutionFileCount(evolutionPath);
+      
+      // Load files with pagination
+      const query = `
+        SELECT ?file ?content WHERE {
+          ?file rdf:type evolution:EvolutionFile .
+          ?file evolution:path "${evolutionPath}" .
+          ?file evolution:content ?content .
+        }
+        LIMIT ${pageSize}
+        OFFSET ${page * pageSize}
+      `;
+      
+      const { result: results } = await retryWithBackoff(
+        async () => {
+          try {
+            return await databaseService.query(query, 'sparql');
+          } catch (error) {
+            const errorObj = error instanceof Error ? error : new Error(String(error));
+            if (errorObj.message.includes('network') || errorObj.message.includes('fetch') || errorObj.message.includes('timeout')) {
+              (errorObj as any).name = 'NetworkError';
+            }
+            throw errorObj;
+          }
+        },
+        this.retryOptions
+      );
+      
+      const files: any[] = [];
+      for (const result of results) {
+        try {
+          const content = result.content;
+          const lines = content.split('\n').filter((line: string) => line.trim());
+          
+          for (const line of lines) {
+            try {
+              const obj = JSON.parse(line);
+              if (obj.selfReference || obj.metadata?.selfReference) {
+                files.push({
+                  ...obj,
+                  file: result.file,
+                  rawLine: line
+                });
+              }
+            } catch (e) {
+              // Skip invalid JSON lines
+            }
+          }
+        } catch (e) {
+          // Skip files that can't be parsed
+        }
+      }
+      
+      const hasMore = (page + 1) * pageSize < total;
+      const cursor = hasMore ? `page-${page + 1}` : undefined;
+      
+      return { files, total, hasMore, cursor };
+    } catch (error) {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      errorLoggingService.logError(errorObj, {
+        service: 'ProvenanceSlideService',
+        action: 'loadEvolutionFilesPaginated',
+        metadata: { evolutionPath, options },
+        severity: 'error'
+      });
+      throw errorObj;
+    }
   }
 
   /**
@@ -463,13 +608,19 @@ export class ProvenanceSlideService {
   }
 
   /**
-   * Extract self-execution patterns from files with federated provenance
+   * Extract self-execution patterns from files with federated provenance (optimized)
    */
   private async extractSelfExecutionPatternsWithProvenance(files: any[]): Promise<any[]> {
+    // Early termination for empty files
+    if (files.length === 0) {
+      return [];
+    }
+
     const patterns: any[] = [];
     const fileMap = new Map<string, any[]>();
+    const patternSet = new Set<string>(); // For duplicate detection
     
-    // Group files by source file
+    // Group files by source file (optimized with Map)
     for (const file of files) {
       const sourceFile = file.selfReference?.file || file.metadata?.selfReference?.file || file.file;
       if (!fileMap.has(sourceFile)) {
@@ -478,54 +629,83 @@ export class ProvenanceSlideService {
       fileMap.get(sourceFile)!.push(file);
     }
     
-    // Extract patterns with federated provenance tracking
+    // Batch federated provenance queries by file
+    const provenanceQueries = new Map<string, Promise<any[]>>();
+    
+    // Extract patterns with federated provenance tracking (optimized)
     for (const [sourceFile, fileEntries] of fileMap) {
+      // Batch queries for this file
+      const filePatterns: any[] = [];
+      
       for (const entry of fileEntries) {
         const selfRef = entry.selfReference || entry.metadata?.selfReference;
-        if (selfRef) {
-          // Query federated provenance for this entry
+        if (!selfRef) continue;
+        
+        const patternKey = `${sourceFile}:${selfRef.line}:${selfRef.pattern}`;
+        
+        // Skip duplicates
+        if (patternSet.has(patternKey)) continue;
+        patternSet.add(patternKey);
+        
+        // Create federated query (batch by file)
+        if (!provenanceQueries.has(sourceFile)) {
           const federatedQuery: FederatedProvenanceQuery = {
             files: [sourceFile],
             query: `
-              SELECT ?provenance WHERE {
+              SELECT ?entry ?provenance ?line WHERE {
                 ?entry prov:wasDerivedFrom ?provenance .
-                ?entry prov:atLine ${selfRef.line} .
+                ?entry prov:atLine ?line .
               }
             `,
             queryType: QueryType.SPARQL
           };
           
-          let provenanceHistory: any[] = [];
-          try {
-            const provenanceResults = await agentProvenanceQueryService.queryFederatedProvenance(federatedQuery);
-            provenanceHistory = provenanceResults || [];
-          } catch (e) {
-            console.warn('Failed to query federated provenance', e);
-            // Fallback: use selfReference as provenance
-            provenanceHistory = [{
-              file: selfRef.file,
-              line: selfRef.line,
-              pattern: selfRef.pattern,
-              timestamp: Date.now()
-            }];
-          }
-          
-          // Extract Church encoding if available
-          const churchEncoding = this.extractChurchEncoding(entry);
-          
-          patterns.push({
-            id: entry.id || `pattern-${sourceFile}-${selfRef.line}`,
-            file: sourceFile,
-            line: selfRef.line,
-            pattern: selfRef.pattern || 'unknown',
-            dimension: this.inferDimensionFromPattern(selfRef.pattern || entry.type || ''),
-            timestamp: entry.metadata?.timestamp || Date.now(),
-            agentId: entry.metadata?.agentId || this.inferAgentFromDimension(this.inferDimensionFromPattern(selfRef.pattern || entry.type || '')),
-            churchEncoding: churchEncoding,
-            provenanceHistory: provenanceHistory,
-            rawEntry: entry
-          });
+          provenanceQueries.set(sourceFile, 
+            agentProvenanceQueryService.queryFederatedProvenance(federatedQuery)
+              .catch(() => [])
+          );
         }
+        
+        // Extract Church encoding if available
+        const churchEncoding = this.extractChurchEncoding(entry);
+        
+        filePatterns.push({
+          id: entry.id || `pattern-${sourceFile}-${selfRef.line}`,
+          file: sourceFile,
+          line: selfRef.line,
+          pattern: selfRef.pattern || 'unknown',
+          dimension: this.inferDimensionFromPattern(selfRef.pattern || entry.type || ''),
+          timestamp: entry.metadata?.timestamp || Date.now(),
+          agentId: entry.metadata?.agentId || this.inferAgentFromDimension(this.inferDimensionFromPattern(selfRef.pattern || entry.type || '')),
+          churchEncoding: churchEncoding,
+          provenanceHistory: [], // Will be populated from batch query
+          rawEntry: entry,
+          patternKey
+        });
+      }
+      
+      // Execute batch query for this file
+      const provenanceResults = await provenanceQueries.get(sourceFile) || [];
+      
+      // Map provenance results to patterns
+      for (const pattern of filePatterns) {
+        const matchingProvenance = provenanceResults.filter((p: any) => 
+          p.line === pattern.line || p.entry?.includes(pattern.id)
+        );
+        
+        if (matchingProvenance.length > 0) {
+          pattern.provenanceHistory = matchingProvenance;
+        } else {
+          // Fallback: use selfReference as provenance
+          pattern.provenanceHistory = [{
+            file: pattern.file,
+            line: pattern.line,
+            pattern: pattern.pattern,
+            timestamp: pattern.timestamp
+          }];
+        }
+        
+        patterns.push(pattern);
       }
     }
     
@@ -538,6 +718,54 @@ export class ProvenanceSlideService {
     });
     
     return patterns;
+  }
+
+  /**
+   * Load provenance history on-demand for a node
+   */
+  async loadProvenanceHistory(nodeId: string, chain: ProvenanceChain): Promise<any[]> {
+    const node = chain.nodes.find(n => n.id === nodeId);
+    if (!node) {
+      return [];
+    }
+
+    // If history is already loaded, return it
+    if (node.data?.provenanceHistory && Array.isArray(node.data.provenanceHistory) && node.data.provenanceHistory.length > 0) {
+      return node.data.provenanceHistory;
+    }
+
+    // Load full history via federated provenance query
+    try {
+      const federatedQuery: FederatedProvenanceQuery = {
+        files: [node.metadata.file],
+        query: `
+          SELECT ?provenance WHERE {
+            ?entry prov:wasDerivedFrom ?provenance .
+            ?entry prov:atLine ${node.metadata.line} .
+          }
+        `,
+        queryType: QueryType.SPARQL
+      };
+      
+      const provenanceResults = await agentProvenanceQueryService.queryFederatedProvenance(federatedQuery);
+      
+      // Update node data with loaded history
+      if (node.data) {
+        node.data.provenanceHistory = provenanceResults || [];
+      }
+      
+      return provenanceResults || [];
+    } catch (error) {
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      errorLoggingService.logError(errorObj, {
+        service: 'ProvenanceSlideService',
+        action: 'loadProvenanceHistory',
+        metadata: { nodeId },
+        severity: 'warning'
+      });
+      
+      return [];
+    }
   }
   
   /**
@@ -615,6 +843,31 @@ export class ProvenanceSlideService {
     // For system partition: a=dimNum, b=1, c=1
     // We'll use topology partition by default
     return [1, 0, dimNum];
+  }
+
+  /**
+   * Generate slide content with Church encoding and dimensional topology (memoized)
+   */
+  private generateSlideContentMemoized(dimension: string, nodes: ProvenanceNode[], cacheKey?: string): string {
+    // Generate cache key if not provided
+    if (!cacheKey) {
+      const nodeCount = nodes.length;
+      const patterns = new Set(nodes.map(n => n.metadata.pattern)).size;
+      cacheKey = `${dimension}:${nodeCount}:${patterns}`;
+    }
+    
+    // Check cache
+    if (this.slideContentCache.has(cacheKey)) {
+      return this.slideContentCache.get(cacheKey)!;
+    }
+    
+    // Generate content
+    const content = this.generateSlideContent(dimension, nodes);
+    
+    // Cache it
+    this.slideContentCache.set(cacheKey, content);
+    
+    return content;
   }
 
   /**

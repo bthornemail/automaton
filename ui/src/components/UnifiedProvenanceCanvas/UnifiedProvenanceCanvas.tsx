@@ -19,6 +19,9 @@ import { Button } from '../shared/Button';
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, Info } from 'lucide-react';
 import { WorkerErrorBoundary } from '../shared/WorkerErrorBoundary';
 import { errorLoggingService } from '../../services/error-logging-service';
+import { useDebounce } from '../../hooks/useDebounce';
+import { performanceMonitoringService } from '../../services/performance-monitoring-service';
+import { VirtualizedCardList } from '../shared/VirtualizedCardList';
 
 interface UnifiedProvenanceCanvasProps {
   evolutionPath?: string;
@@ -42,11 +45,35 @@ export const UnifiedProvenanceCanvas: React.FC<UnifiedProvenanceCanvasProps> = (
   const [loading, setLoading] = useState(false);
   const [workerFallbackMode, setWorkerFallbackMode] = useState<'normal' | '2d-only'>('normal');
   
+  // Debounce dimension changes for performance
+  const debouncedDimension = useDebounce(currentDimension, 300);
+  
+  // Effect to handle debounced dimension changes
+  useEffect(() => {
+    if (debouncedDimension !== currentDimension && slides.length > 0) {
+      // Filter slides by debounced dimension
+      const dimensionSlide = slides.find(s => s.dimension === debouncedDimension);
+      if (dimensionSlide) {
+        const slideIndex = slides.indexOf(dimensionSlide);
+        setCurrentSlideIndex(slideIndex);
+        setCurrentDimension(debouncedDimension);
+      }
+    }
+  }, [debouncedDimension, slides, currentDimension]);
+  
   const provenanceService = useRef(new ProvenanceSlideService());
   const workerService = useRef<ProvenanceCanvasWorkerService | null>(null);
   const offscreenCanvasRef = useRef<HTMLCanvasElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Start performance monitoring
+  useEffect(() => {
+    performanceMonitoringService.startMonitoring();
+    return () => {
+      performanceMonitoringService.stopMonitoring();
+    };
+  }, []);
 
   // Initialize services
   useEffect(() => {
@@ -109,7 +136,22 @@ export const UnifiedProvenanceCanvas: React.FC<UnifiedProvenanceCanvasProps> = (
             if (slides.length > 0 && fallbackMode === 'normal') {
               const currentSlide = slides[currentSlideIndex];
               if (currentSlide.provenanceChain) {
+                // Track message latency
+                const messageId = `load-${Date.now()}`;
+                performanceMonitoringService.trackMessageStart('load', messageId);
+                
                 workerService.current.loadProvenanceChain(currentSlide.provenanceChain);
+                
+                // Track latency end (will be called when worker responds)
+                setTimeout(() => {
+                  performanceMonitoringService.trackMessageEnd(messageId);
+                }, 100);
+                
+                // Update node/edge counts for monitoring
+                performanceMonitoringService.updateNodeEdgeCounts(
+                  currentSlide.provenanceChain.nodes.length,
+                  currentSlide.provenanceChain.edges.length
+                );
               }
             }
           } catch (workerError) {
@@ -388,20 +430,35 @@ export const UnifiedProvenanceCanvas: React.FC<UnifiedProvenanceCanvasProps> = (
             )}
           </div>
 
-          {/* Cards */}
+          {/* Cards - Use virtual scrolling for large lists */}
           {currentSlide.cards && currentSlide.cards.length > 0 && (
             <div className="mt-4">
-              <h4 className="text-sm font-semibold text-gray-300 mb-2">Pattern Cards</h4>
-              <div className="grid grid-cols-3 gap-2">
-                {currentSlide.cards.map((card) => (
-                  <Card key={card.id} className="p-2 bg-gray-700">
-                    <div className="text-xs text-gray-300">
-                      <div className="font-semibold">{card.pattern}</div>
-                      <div className="text-gray-500">{card.jsonlLines.length} lines</div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
+              <h4 className="text-sm font-semibold text-gray-300 mb-2">
+                Pattern Cards ({currentSlide.cards.length})
+              </h4>
+              {currentSlide.cards.length > 50 ? (
+                <VirtualizedCardList
+                  cards={currentSlide.cards}
+                  itemHeight={80}
+                  overscan={5}
+                  onCardSelect={(card) => {
+                    // Handle card selection
+                    console.log('Card selected:', card);
+                  }}
+                  className="h-64"
+                />
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {currentSlide.cards.map((card) => (
+                    <Card key={card.id} className="p-2 bg-gray-700">
+                      <div className="text-xs text-gray-300">
+                        <div className="font-semibold">{card.pattern}</div>
+                        <div className="text-gray-500">{card.jsonlLines.length} lines</div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

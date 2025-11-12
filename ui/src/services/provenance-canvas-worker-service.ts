@@ -8,6 +8,7 @@
 import { ProvenanceChain, ProvenanceNode } from './provenance-slide-service';
 import { WorkerError } from '../utils/error-types';
 import { errorLoggingService } from './error-logging-service';
+import { performanceMonitoringService } from './performance-monitoring-service';
 import { retryWithBackoff, RetryOptions } from '../utils/error-handling';
 
 export interface WorkerMessage {
@@ -118,6 +119,10 @@ export class ProvenanceCanvasWorkerService {
         }
       };
 
+      // Track message latency
+      const initMessageId = `init-${Date.now()}`;
+      performanceMonitoringService.trackMessageStart('init', initMessageId);
+
       // Send init message
       this.sendMessage({
         type: 'init',
@@ -126,6 +131,9 @@ export class ProvenanceCanvasWorkerService {
 
       // Wait for initialization with timeout
       await this.waitForMessage('initialized', 10000);
+      
+      // Track latency end
+      performanceMonitoringService.trackMessageEnd(initMessageId);
       
       this.initialized = true;
       this.restartAttempts = 0; // Reset on successful init

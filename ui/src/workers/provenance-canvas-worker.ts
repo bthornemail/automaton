@@ -62,6 +62,16 @@ class ProvenanceCanvasRenderer {
   private edges: Map<string, THREE.Line> = new Map();
   private selectedNode: ProvenanceNode | null = null;
   private chain: ProvenanceChain | null = null;
+  
+  // Performance optimizations
+  private instancedMeshes: Map<string, THREE.InstancedMesh> = new Map();
+  private nodeGroups: Map<string, THREE.Group> = new Map();
+  private lodNodes: Map<string, THREE.LOD> = new Map();
+  private frustum: THREE.Frustum = new THREE.Frustum();
+  private matrix: THREE.Matrix4 = new THREE.Matrix4();
+  private enableLOD: boolean = true;
+  private enableFrustumCulling: boolean = true;
+  private enableInstancing: boolean = true;
 
   constructor(canvas: OffscreenCanvas, options: CanvasOptions) {
     // Initialize Three.js scene
@@ -115,6 +125,17 @@ class ProvenanceCanvasRenderer {
 
   private animate = () => {
     try {
+      // Update LOD based on camera distance
+      if (this.enableLOD && this.chain) {
+        this.updateLOD();
+      }
+
+      // Update frustum culling
+      if (this.enableFrustumCulling) {
+        this.updateFrustum();
+        this.cullNodes();
+      }
+
       // @ts-ignore - requestAnimationFrame may not be available in worker
       const raf = self.requestAnimationFrame || ((cb: () => void) => setTimeout(cb, 16));
       raf(this.animate);
@@ -125,6 +146,38 @@ class ProvenanceCanvasRenderer {
       setTimeout(this.animate, 16);
     }
   };
+
+  /**
+   * Update LOD for all nodes based on camera distance
+   */
+  private updateLOD(): void {
+    if (!this.chain) return;
+
+    for (const node of this.chain.nodes) {
+      const position = new THREE.Vector3(...node.position);
+      const distance = this.camera.position.distanceTo(position);
+
+      // Update LOD if exists
+      const lod = this.lodNodes.get(node.id);
+      if (lod) {
+        lod.update(this.camera);
+      }
+    }
+  }
+
+  /**
+   * Cull nodes outside frustum
+   */
+  private cullNodes(): void {
+    if (!this.chain) return;
+
+    for (const node of this.chain.nodes) {
+      const mesh = this.nodes.get(node.id);
+      if (mesh) {
+        mesh.visible = this.isNodeVisible(node);
+      }
+    }
+  }
 
   loadProvenanceChain(chain: ProvenanceChain): void {
     this.chain = chain;
@@ -143,6 +196,30 @@ class ProvenanceCanvasRenderer {
     }
     this.nodes.clear();
 
+    // Remove instanced meshes
+    for (const instancedMesh of this.instancedMeshes.values()) {
+      this.scene.remove(instancedMesh);
+      instancedMesh.geometry.dispose();
+      if (instancedMesh.material instanceof THREE.Material) {
+        instancedMesh.material.dispose();
+      }
+    }
+    this.instancedMeshes.clear();
+
+    // Remove LOD nodes
+    for (const lod of this.lodNodes.values()) {
+      this.scene.remove(lod);
+      lod.children.forEach(child => {
+        if (child instanceof THREE.Mesh) {
+          child.geometry.dispose();
+          if (child.material instanceof THREE.Material) {
+            child.material.dispose();
+          }
+        }
+      });
+    }
+    this.lodNodes.clear();
+
     // Remove existing edges
     for (const edge of this.edges.values()) {
       this.scene.remove(edge);
@@ -155,21 +232,186 @@ class ProvenanceCanvasRenderer {
   }
 
   private renderChain(chain: ProvenanceChain): void {
-    // Render nodes
-    for (const node of chain.nodes) {
-      const mesh = this.createNodeMesh(node);
-      this.scene.add(mesh);
-      this.nodes.set(node.id, mesh);
+    // Update frustum for culling
+    if (this.enableFrustumCulling) {
+      this.updateFrustum();
     }
 
-    // Render edges
-    for (const edge of chain.edges) {
-      const line = this.createEdgeLine(edge, chain.nodes);
-      if (line) {
-        this.scene.add(line);
-        this.edges.set(edge.id, line);
+    // Group nodes by type for instancing
+    if (this.enableInstancing && chain.nodes.length > 100) {
+      this.renderInstancedNodes(chain.nodes);
+    } else {
+      // Render individual nodes
+      for (const node of chain.nodes) {
+        if (this.enableFrustumCulling && !this.isNodeVisible(node)) {
+          continue;
+        }
+        
+        const mesh = this.createNodeMesh(node);
+        this.scene.add(mesh);
+        this.nodes.set(node.id, mesh);
       }
     }
+
+    // Render optimized edges
+    this.renderOptimizedEdges(chain.edges, chain.nodes);
+  }
+
+  /**
+   * Render nodes using instancing for better performance
+   */
+  private renderInstancedNodes(nodes: ProvenanceNode[]): void {
+    // Group nodes by type
+    const nodesByType = new Map<string, ProvenanceNode[]>();
+    for (const node of nodes) {
+      const type = node.type;
+      if (!nodesByType.has(type)) {
+        nodesByType.set(type, []);
+      }
+      nodesByType.get(type)!.push(node);
+    }
+
+    // Create instanced mesh for each type
+    for (const [type, typeNodes] of nodesByType) {
+      if (typeNodes.length === 0) continue;
+
+      const geometry = new THREE.SphereGeometry(0.3, 16, 16);
+      const color = this.getNodeColor(type as ProvenanceNode['type']);
+      const material = new THREE.MeshStandardMaterial({
+        color,
+        emissive: color,
+        emissiveIntensity: 0.3,
+        roughness: 0.2,
+        metalness: 0.8
+      });
+
+      const instancedMesh = new THREE.InstancedMesh(geometry, material, typeNodes.length);
+      const matrix = new THREE.Matrix4();
+
+      for (let i = 0; i < typeNodes.length; i++) {
+        const node = typeNodes[i];
+        matrix.setPosition(...node.position);
+        instancedMesh.setMatrixAt(i, matrix);
+        instancedMesh.setColorAt(i, new THREE.Color(color));
+      }
+
+      instancedMesh.instanceMatrix.needsUpdate = true;
+      this.scene.add(instancedMesh);
+      this.instancedMeshes.set(type, instancedMesh);
+    }
+  }
+
+  /**
+   * Render optimized edges with shared geometry
+   */
+  private renderOptimizedEdges(edges: ProvenanceEdge[], nodes: ProvenanceNode[]): void {
+    // Group edges by type
+    const edgesByType = new Map<string, ProvenanceEdge[]>();
+    for (const edge of edges) {
+      if (!edgesByType.has(edge.type)) {
+        edgesByType.set(edge.type, []);
+      }
+      edgesByType.get(edge.type)!.push(edge);
+    }
+
+    // Create line segments for each edge type
+    for (const [type, typeEdges] of edgesByType) {
+      const points: THREE.Vector3[] = [];
+      const colors: number[] = [];
+      const color = this.getEdgeColor(type as ProvenanceEdge['type']);
+
+      for (const edge of typeEdges) {
+        const fromNode = nodes.find(n => n.id === edge.from);
+        const toNode = nodes.find(n => n.id === edge.to);
+
+        if (!fromNode || !toNode) continue;
+
+        // Check distance for edge culling
+        const distance = new THREE.Vector3(...fromNode.position).distanceTo(
+          new THREE.Vector3(...toNode.position)
+        );
+        if (distance > 50) continue; // Cull distant edges
+
+        points.push(new THREE.Vector3(...fromNode.position));
+        points.push(new THREE.Vector3(...toNode.position));
+        colors.push(color, color);
+      }
+
+      if (points.length === 0) continue;
+
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const colorAttribute = new THREE.Float32BufferAttribute(colors, 3);
+      geometry.setAttribute('color', colorAttribute);
+
+      const material = new THREE.LineBasicMaterial({
+        vertexColors: true,
+        opacity: 0.6,
+        transparent: true
+      });
+
+      const lineSegments = new THREE.LineSegments(geometry, material);
+      this.scene.add(lineSegments);
+      this.edges.set(`type-${type}`, lineSegments);
+    }
+  }
+
+  /**
+   * Update camera frustum for culling
+   */
+  private updateFrustum(): void {
+    this.matrix.multiplyMatrices(
+      this.camera.projectionMatrix,
+      this.camera.matrixWorldInverse
+    );
+    this.frustum.setFromProjectionMatrix(this.matrix);
+  }
+
+  /**
+   * Check if node is visible in frustum
+   */
+  private isNodeVisible(node: ProvenanceNode): boolean {
+    const position = new THREE.Vector3(...node.position);
+    const distance = this.camera.position.distanceTo(position);
+
+    // Distance culling
+    if (distance > 200) return false;
+
+    // Frustum culling
+    const box = new THREE.Box3().setFromCenterAndSize(position, new THREE.Vector3(0.6, 0.6, 0.6));
+    return this.frustum.intersectsBox(box);
+  }
+
+  /**
+   * Create LOD node with multiple detail levels
+   */
+  private createLODNode(node: ProvenanceNode, distance: number): THREE.LOD {
+    const lod = new THREE.LOD();
+
+    // High detail (close)
+    if (distance < 20) {
+      const highDetail = this.createNodeMesh(node);
+      lod.addLevel(highDetail, 0);
+    }
+
+    // Medium detail
+    if (distance < 50) {
+      const mediumGeometry = new THREE.SphereGeometry(0.3, 8, 8);
+      const color = this.getNodeColor(node.type);
+      const mediumMaterial = new THREE.MeshStandardMaterial({ color });
+      const mediumDetail = new THREE.Mesh(mediumGeometry, mediumMaterial);
+      mediumDetail.position.set(...node.position);
+      lod.addLevel(mediumDetail, 20);
+    }
+
+    // Low detail (far)
+    const lowGeometry = new THREE.SphereGeometry(0.3, 4, 4);
+    const color = this.getNodeColor(node.type);
+    const lowMaterial = new THREE.MeshBasicMaterial({ color });
+    const lowDetail = new THREE.Mesh(lowGeometry, lowMaterial);
+    lowDetail.position.set(...node.position);
+    lod.addLevel(lowDetail, 50);
+
+    return lod;
   }
 
   private createNodeMesh(node: ProvenanceNode): THREE.Mesh {
