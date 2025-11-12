@@ -15,6 +15,15 @@ import { retryWithBackoff, withTimeout, formatUserErrorMessage, validateProvenan
 import { errorLoggingService } from './error-logging-service';
 import { provenanceChainCache, ProvenanceChainCache } from './provenance-chain-cache';
 import { performanceMonitoringService } from './performance-monitoring-service';
+import { avatarTemplateService } from './avatar-template-service';
+
+export interface AvatarConfig {
+  gltfModel: string;
+  scale: [number, number, number];
+  type: 'human' | 'ai-agent';
+  label?: string;
+  color?: string;
+}
 
 export interface ProvenanceNode {
   id: string;
@@ -30,6 +39,7 @@ export interface ProvenanceNode {
     pattern?: string;
   };
   data: any;
+  avatar?: AvatarConfig;
 }
 
 export interface ProvenanceEdge {
@@ -153,15 +163,38 @@ export class ProvenanceSlideService {
     
     // Build nodes for each pattern
     for (const pattern of patterns) {
+      const agentId = pattern.agentId || `${pattern.dimension}-Agent`;
+      const isAgentNode = pattern.type === 'agent' || agentId.includes('Agent');
+      
+      // Assign avatar based on agent type
+      let avatar: AvatarConfig | undefined;
+      if (isAgentNode) {
+        // Determine if it's an AI agent or human based on agentId
+        const isAIAgent = agentId.includes('Intelligence') || 
+                         agentId.includes('Quantum') || 
+                         agentId.includes('Consensus') ||
+                         agentId.includes('AI');
+        
+        const avatarType: 'human' | 'ai-agent' = isAIAgent ? 'ai-agent' : 'human';
+        const template = avatarTemplateService.getRandomTemplate(avatarType) || 
+                        avatarTemplateService.getDefaultTemplate(avatarType);
+        
+        if (template) {
+          avatar = avatarTemplateService.createAvatarConfig(template.id, {
+            label: agentId
+          });
+        }
+      }
+      
       const node: ProvenanceNode = {
         id: `pattern-${pattern.id}`,
-        type: 'evolution',
+        type: isAgentNode ? 'agent' : 'evolution',
         position: this.calculatePosition(pattern.dimension),
         metadata: {
           timestamp: pattern.timestamp || Date.now(),
           file: pattern.file,
           line: pattern.line,
-          agentId: pattern.agentId || `${pattern.dimension}-Agent`,
+          agentId: agentId,
           dimension: pattern.dimension,
           churchEncoding: pattern.churchEncoding,
           pattern: pattern.pattern
@@ -169,7 +202,8 @@ export class ProvenanceSlideService {
         data: {
           ...pattern,
           provenanceHistory: pattern.provenanceHistory || []
-        }
+        },
+        avatar: avatar
       };
       nodes.push(node);
     }

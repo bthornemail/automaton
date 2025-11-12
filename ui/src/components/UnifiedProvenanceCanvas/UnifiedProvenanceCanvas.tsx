@@ -22,6 +22,9 @@ import { errorLoggingService } from '../../services/error-logging-service';
 import { useDebounce } from '../../hooks/useDebounce';
 import { performanceMonitoringService } from '../../services/performance-monitoring-service';
 import { VirtualizedCardList } from '../shared/VirtualizedCardList';
+import { ProvenanceAvatar } from './ProvenanceAvatar';
+import { SVGTextureRenderer, ProceduralUIGenerator } from './SVGTextureRenderer';
+import { ComputationalManifoldRenderer } from './ComputationalManifoldRenderer';
 
 interface UnifiedProvenanceCanvasProps {
   evolutionPath?: string;
@@ -44,6 +47,7 @@ export const UnifiedProvenanceCanvas: React.FC<UnifiedProvenanceCanvasProps> = (
   const [viewMode, setViewMode] = useState<'3d' | '2d' | 'combined'>('combined');
   const [loading, setLoading] = useState(false);
   const [workerFallbackMode, setWorkerFallbackMode] = useState<'normal' | '2d-only'>('normal');
+  const [showComputationalManifold, setShowComputationalManifold] = useState(false);
   
   // Debounce dimension changes for performance
   const debouncedDimension = useDebounce(currentDimension, 300);
@@ -344,6 +348,16 @@ export const UnifiedProvenanceCanvas: React.FC<UnifiedProvenanceCanvasProps> = (
             <option value="2d">2D View</option>
             <option value="combined">Combined</option>
           </select>
+          
+          <label className="flex items-center gap-2 text-sm text-gray-400">
+            <input
+              type="checkbox"
+              checked={showComputationalManifold}
+              onChange={(e) => setShowComputationalManifold(e.target.checked)}
+              className="rounded"
+            />
+            Computational Manifold
+          </label>
         </div>
       </div>
 
@@ -371,7 +385,7 @@ export const UnifiedProvenanceCanvas: React.FC<UnifiedProvenanceCanvasProps> = (
         >
           {/* 3D Provenance Canvas (Offscreen) - Only show if not in fallback mode */}
           {(viewMode === '3d' || viewMode === 'combined') && workerFallbackMode === 'normal' && (
-            <div className={viewMode === 'combined' ? 'w-1/2 border-r border-gray-700' : 'w-full'}>
+            <div className={viewMode === 'combined' ? 'w-1/2 border-r border-gray-700 relative' : 'w-full relative'}>
               <canvas
                 ref={offscreenCanvasRef}
                 className="w-full h-full"
@@ -380,6 +394,63 @@ export const UnifiedProvenanceCanvas: React.FC<UnifiedProvenanceCanvasProps> = (
                 onClick={handleCanvasClick}
                 onMouseMove={handleCanvasHover}
               />
+              {/* Avatar Overlay Canvas (React Three Fiber) */}
+              {currentSlide?.provenanceChain && (
+                <div className="absolute inset-0 pointer-events-auto">
+                  <Canvas
+                    camera={{ position: [10, 10, 10], fov: 60 }}
+                    gl={{ antialias: true, alpha: true }}
+                    style={{ width: '100%', height: '100%' }}
+                    onCreated={({ gl }) => {
+                      gl.setClearColor('#000000', 0); // Transparent background
+                    }}
+                  >
+                    <ambientLight intensity={0.5} />
+                    <pointLight position={[10, 10, 10]} intensity={1.0} />
+                    <directionalLight position={[0, 10, 5]} intensity={0.5} />
+                    
+                    {/* Render avatars for nodes with avatar config */}
+                    {currentSlide.provenanceChain.nodes
+                      .filter(node => node.avatar)
+                      .map(node => (
+                        <ProvenanceAvatar
+                          key={node.id}
+                          node={node}
+                          isSelected={selectedNode?.id === node.id}
+                          isHovered={hoveredNode?.id === node.id}
+                          onClick={() => setSelectedNode(node)}
+                          onHover={(hovered) => setHoveredNode(hovered ? node : null)}
+                        />
+                      ))}
+                    
+                    {/* SVG Texture Overlay for Topology Diagram */}
+                    {currentSlide.provenanceChain && (
+                      <ProceduralUIGenerator
+                        nodes={currentSlide.provenanceChain.nodes.map(node => ({
+                          id: node.id,
+                          x: node.position[0] * 50 + 400, // Scale and center
+                          y: node.position[1] * 50 + 300,
+                          label: node.metadata.agentId || node.id
+                        }))}
+                        edges={currentSlide.provenanceChain.edges}
+                        position={[0, 0, -5]}
+                        scale={[0.1, 0.1, 1]}
+                      />
+                    )}
+                    
+                    {/* Computational Manifold Visualization */}
+                    {showComputationalManifold && currentSlide.provenanceChain && (
+                      <ComputationalManifoldRenderer
+                        nodes={currentSlide.provenanceChain.nodes}
+                        showCombinators={true}
+                        showEvaluationTraces={true}
+                      />
+                    )}
+                    
+                    <OrbitControls enableDamping dampingFactor={0.05} />
+                  </Canvas>
+                </div>
+              )}
             </div>
           )}
 
