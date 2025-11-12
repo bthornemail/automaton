@@ -68,21 +68,59 @@ export class AvatarTemplateService {
   }
 
   /**
-   * Get a template by ID
+   * Get an avatar template by ID.
+   * 
+   * Retrieves a registered avatar template by its unique ID. Returns null
+   * if the template is not found.
+   * 
+   * @param {string} id - Template ID
+   * @returns {AvatarTemplate | null} Template or null if not found
+   * 
+   * @example
+   * ```typescript
+   * const template = avatarTemplateService.getTemplate('angelica');
+   * if (template) {
+   *   // Use template
+   * }
+   * ```
    */
   getTemplate(id: string): AvatarTemplate | null {
     return this.templates.get(id) || null;
   }
 
   /**
-   * Get all templates of a specific type
+   * Get all templates of a specific type.
+   * 
+   * Returns all registered templates that match the specified type (human or AI agent).
+   * Useful for filtering templates or selecting random templates of a specific type.
+   * 
+   * @param {'human' | 'ai-agent'} type - Template type to filter by
+   * @returns {AvatarTemplate[]} Array of templates matching the type
+   * 
+   * @example
+   * ```typescript
+   * const humanTemplates = avatarTemplateService.getTemplatesByType('human');
+   * // humanTemplates contains all human avatar templates
+   * ```
    */
   getTemplatesByType(type: 'human' | 'ai-agent'): AvatarTemplate[] {
     return Array.from(this.templates.values()).filter(t => t.type === type);
   }
 
   /**
-   * Get a random template of a specific type
+   * Get a random template of a specific type.
+   * 
+   * Returns a randomly selected template from all templates of the specified type.
+   * Returns null if no templates of that type are available.
+   * 
+   * @param {'human' | 'ai-agent'} type - Template type
+   * @returns {AvatarTemplate | null} Random template or null if none available
+   * 
+   * @example
+   * ```typescript
+   * const randomHuman = avatarTemplateService.getRandomTemplate('human');
+   * // randomHuman is a randomly selected human avatar template
+   * ```
    */
   getRandomTemplate(type: 'human' | 'ai-agent'): AvatarTemplate | null {
     const templates = this.getTemplatesByType(type);
@@ -91,7 +129,19 @@ export class AvatarTemplateService {
   }
 
   /**
-   * Get default template for a type (first available)
+   * Get default template for a type (first available).
+   * 
+   * Returns the first available template of the specified type. This is useful
+   * as a fallback when a specific template is not available.
+   * 
+   * @param {'human' | 'ai-agent'} type - Template type
+   * @returns {AvatarTemplate | null} Default template or null if none available
+   * 
+   * @example
+   * ```typescript
+   * const defaultHuman = avatarTemplateService.getDefaultTemplate('human');
+   * // defaultHuman is the first human avatar template
+   * ```
    */
   getDefaultTemplate(type: 'human' | 'ai-agent'): AvatarTemplate | null {
     const templates = this.getTemplatesByType(type);
@@ -99,21 +149,67 @@ export class AvatarTemplateService {
   }
 
   /**
-   * Register a custom template
+   * Register a custom avatar template.
+   * 
+   * Adds a new avatar template to the registry. Custom templates can override
+   * default templates or add new avatar options. Templates are identified by
+   * their unique ID.
+   * 
+   * @param {AvatarTemplate} template - Template to register
+   * 
+   * @example
+   * ```typescript
+   * avatarTemplateService.registerTemplate({
+   *   id: 'custom-avatar',
+   *   name: 'Custom Avatar',
+   *   gltfModel: '/avatars/custom.glb',
+   *   scale: [0.5, 0.5, 0.5],
+   *   type: 'human'
+   * });
+   * ```
    */
   registerTemplate(template: AvatarTemplate): void {
     this.templates.set(template.id, template);
   }
 
   /**
-   * Get all registered templates
+   * Get all registered templates.
+   * 
+   * Returns all avatar templates currently registered in the service, regardless
+   * of type. Useful for listing all available avatars or debugging.
+   * 
+   * @returns {AvatarTemplate[]} Array of all registered templates
+   * 
+   * @example
+   * ```typescript
+   * const allTemplates = avatarTemplateService.getAllTemplates();
+   * console.log(`Total templates: ${allTemplates.length}`);
+   * ```
    */
   getAllTemplates(): AvatarTemplate[] {
     return Array.from(this.templates.values());
   }
 
   /**
-   * Create avatar config from template
+   * Create avatar configuration from a template.
+   * 
+   * Creates an AvatarConfig object from a template ID, with optional overrides
+   * for specific properties. This is the standard way to create avatar
+   * configurations for use with the avatar loader service.
+   * 
+   * @param {string} templateId - ID of the template to use
+   * @param {Partial<AvatarTemplate>} [overrides] - Optional property overrides
+   * @returns {AvatarConfig | null} Avatar configuration or null if template not found
+   * 
+   * @example
+   * ```typescript
+   * const config = avatarTemplateService.createAvatarConfig('angelica', {
+   *   label: 'My Avatar'
+   * });
+   * if (config) {
+   *   const model = await avatarLoaderService.loadAvatar(config);
+   * }
+   * ```
    */
   createAvatarConfig(
     templateId: string,

@@ -127,7 +127,21 @@ export class ProvenanceSlideService {
   }
 
   /**
-   * Initialize the service
+   * Initialize the service and its dependencies.
+   * 
+   * Initializes the Projector and AgentCoordinator services that are required
+   * for provenance chain building and slide generation. This method must be called
+   * before using other service methods.
+   * 
+   * @returns {Promise<void>} Promise that resolves when initialization is complete
+   * @throws {Error} If initialization fails for any dependency
+   * 
+   * @example
+   * ```typescript
+   * const service = new ProvenanceSlideService();
+   * await service.init();
+   * // Service is now ready to use
+   * ```
    */
   async init(): Promise<void> {
     await this.projector.onInit();
@@ -135,7 +149,28 @@ export class ProvenanceSlideService {
   }
 
   /**
-   * Build provenance chain from evolution directory with federated provenance tracking
+   * Build provenance chain from evolution directory with federated provenance tracking.
+   * 
+   * Loads evolution files from the specified directory, extracts self-execution patterns,
+   * and builds a provenance chain with nodes and edges. The chain includes:
+   * - Nodes for each pattern with metadata (dimension, Church encoding, pattern, etc.)
+   * - Edges for dimensional progression (0D→1D→...→7D→0D)
+   * - Edges for cross-file references (federated provenance)
+   * - Avatar assignments for agent nodes
+   * 
+   * The method uses caching to avoid rebuilding chains for the same evolution path.
+   * Results are validated and performance metrics are updated.
+   * 
+   * @param {string} evolutionPath - Path to the evolution directory containing automaton files
+   * @param {string} [dimension] - Optional dimension filter (e.g., '0D', '1D', etc.)
+   * @returns {Promise<ProvenanceChain>} Promise resolving to a provenance chain with nodes and edges
+   * @throws {Error} If evolution files cannot be loaded or chain building fails
+   * 
+   * @example
+   * ```typescript
+   * const chain = await service.buildProvenanceChain('/evolutions/advanced-automaton');
+   * console.log(`Chain has ${chain.nodes.length} nodes and ${chain.edges.length} edges`);
+   * ```
    */
   async buildProvenanceChain(evolutionPath: string, dimension?: string): Promise<ProvenanceChain> {
     try {
@@ -281,7 +316,30 @@ export class ProvenanceSlideService {
   }
 
   /**
-   * Generate slides from evolution directory (one per recursion level)
+   * Generate slides from evolution directory (one per recursion level).
+   * 
+   * Creates slides representing the dimensional progression of automaton evolution.
+   * Each slide corresponds to one dimension (0D, 1D, 2D, ..., 7D, 0D) and contains:
+   * - Provenance chain nodes for that dimension
+   * - Edges connecting nodes within and across dimensions
+   * - Cards grouped by pattern for that dimension
+   * - Slide content with Church encoding and BQF information
+   * 
+   * The slides are generated in order: 0D → 1D → 2D → 3D → 4D → 5D → 6D → 7D → 0D,
+   * representing the complete dimensional progression cycle.
+   * 
+   * @param {string} evolutionPath - Path to the evolution directory
+   * @returns {Promise<Slide[]>} Promise resolving to an array of slides, one per dimension
+   * @throws {Error} If provenance chain cannot be built or slide generation fails
+   * 
+   * @example
+   * ```typescript
+   * const slides = await service.generateSlidesFromEvolution('/evolutions/advanced-automaton');
+   * // slides.length will be 9 (0D through 7D plus final 0D)
+   * slides.forEach(slide => {
+   *   console.log(`${slide.dimension}: ${slide.provenanceChain?.nodes.length} nodes`);
+   * });
+   * ```
    */
   async generateSlidesFromEvolution(evolutionPath: string): Promise<Slide[]> {
     const slides: Slide[] = [];
@@ -337,7 +395,29 @@ export class ProvenanceSlideService {
   }
 
   /**
-   * Generate cards grouped by pattern with JSONL line aggregation (optimized)
+   * Generate cards grouped by pattern with JSONL line aggregation (optimized).
+   * 
+   * Groups provenance nodes by their pattern and creates cards containing:
+   * - All JSONL lines with the same pattern
+   * - Pattern metadata (Church encoding, BQF coefficients)
+   * - Aggregated provenance history from all nodes in the pattern
+   * 
+   * The method uses optimized single-pass aggregation with Map-based grouping
+   * for better performance with large node sets. Early exit is used for empty inputs.
+   * 
+   * @param {string} dimension - Dimension identifier (e.g., '0D', '1D', etc.)
+   * @param {ProvenanceNode[]} nodes - Array of provenance nodes for the dimension
+   * @returns {Promise<Card[]>} Promise resolving to an array of cards, one per unique pattern
+   * 
+   * @example
+   * ```typescript
+   * const nodes = chain.nodes.filter(n => n.metadata.dimension === '0D');
+   * const cards = await service.generateCardsForDimension('0D', nodes);
+   * // cards will be grouped by pattern (e.g., 'identity', 'successor', etc.)
+   * cards.forEach(card => {
+   *   console.log(`Pattern: ${card.pattern}, Lines: ${card.jsonlLines.length}`);
+   * });
+   * ```
    */
   async generateCardsForDimension(dimension: string, nodes: ProvenanceNode[]): Promise<Card[]> {
     // Early exit for empty nodes
@@ -423,7 +503,20 @@ export class ProvenanceSlideService {
   }
 
   /**
-   * Get evolution file count for pagination
+   * Get evolution file count for pagination support.
+   * 
+   * Queries the database to count the total number of evolution files in the
+   * specified directory. This is used for pagination calculations when loading
+   * large evolution directories.
+   * 
+   * @param {string} evolutionPath - Path to the evolution directory
+   * @returns {Promise<number>} Promise resolving to the total number of evolution files
+   * 
+   * @example
+   * ```typescript
+   * const count = await service.getEvolutionFileCount('/evolutions/advanced-automaton');
+   * const totalPages = Math.ceil(count / pageSize);
+   * ```
    */
   async getEvolutionFileCount(evolutionPath: string): Promise<number> {
     try {
@@ -446,7 +539,36 @@ export class ProvenanceSlideService {
   }
 
   /**
-   * Load evolution files from directory with pagination support
+   * Load evolution files from directory with pagination support.
+   * 
+   * Loads evolution files in paginated chunks to handle large directories efficiently.
+   * Supports both page-based and cursor-based pagination. Returns files along with
+   * pagination metadata (total count, hasMore flag, cursor for next page).
+   * 
+   * Files are filtered to only include entries with self-reference metadata, which
+   * are required for provenance chain building.
+   * 
+   * @param {string} evolutionPath - Path to the evolution directory
+   * @param {PaginationOptions} [options={}] - Pagination options (page, pageSize, cursor)
+   * @returns {Promise<{files: any[], total: number, hasMore: boolean, cursor?: string}>} 
+   *   Promise resolving to paginated file results with metadata
+   * @throws {Error} If files cannot be loaded or query fails
+   * 
+   * @example
+   * ```typescript
+   * // First page
+   * const page1 = await service.loadEvolutionFilesPaginated('/evolutions/advanced-automaton', {
+   *   page: 0,
+   *   pageSize: 100
+   * });
+   * 
+   * // Next page using cursor
+   * if (page1.hasMore) {
+   *   const page2 = await service.loadEvolutionFilesPaginated('/evolutions/advanced-automaton', {
+   *     cursor: page1.cursor
+   *   });
+   * }
+   * ```
    */
   async loadEvolutionFilesPaginated(
     evolutionPath: string,
@@ -755,7 +877,26 @@ export class ProvenanceSlideService {
   }
 
   /**
-   * Load provenance history on-demand for a node
+   * Load provenance history on-demand for a node (lazy loading).
+   * 
+   * Loads the full provenance history for a specific node using federated provenance
+   * queries. This method implements lazy loading - if the history is already loaded
+   * in the node's data, it returns immediately without making additional queries.
+   * 
+   * The provenance history includes all entries that the node was derived from,
+   * enabling full traceability of the node's origin across multiple files.
+   * 
+   * @param {string} nodeId - ID of the node to load history for
+   * @param {ProvenanceChain} chain - The provenance chain containing the node
+   * @returns {Promise<any[]>} Promise resolving to an array of provenance history entries
+   * 
+   * @example
+   * ```typescript
+   * const history = await service.loadProvenanceHistory('pattern-123', chain);
+   * history.forEach(entry => {
+   *   console.log(`From: ${entry.file}:${entry.line}`);
+   * });
+   * ```
    */
   async loadProvenanceHistory(nodeId: string, chain: ProvenanceChain): Promise<any[]> {
     const node = chain.nodes.find(n => n.id === nodeId);

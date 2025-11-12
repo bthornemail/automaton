@@ -34,7 +34,22 @@ export class AutomatonFileGeneratorService {
   private tempFiles: Map<string, string> = new Map(); // Track temp files: finalPath -> tempPath
 
   /**
-   * Generate automaton.kernel.canvasl from automaton state
+   * Generate automaton.kernel.canvasl from automaton state.
+   * 
+   * Creates a CanvasL file containing the core automaton structure (kernel entries).
+   * The file includes version and schema directives, and all kernel entries from
+   * the automaton state with their dimension metadata.
+   * 
+   * @param {AutomatonState} state - Automaton state containing kernel entries
+   * @returns {string} CanvasL file content as a string
+   * @throws {ValidationError} If automaton state is invalid
+   * 
+   * @example
+   * ```typescript
+   * const service = new AutomatonFileGeneratorService();
+   * const kernelContent = service.generateKernelCanvasL(automatonState);
+   * // kernelContent contains CanvasL format with kernel entries
+   * ```
    */
   generateKernelCanvasL(state: AutomatonState): string {
     // Validate state before generation
@@ -59,7 +74,20 @@ export class AutomatonFileGeneratorService {
   }
 
   /**
-   * Generate automaton.seed.canvasl with versioning
+   * Generate automaton.seed.canvasl with versioning.
+   * 
+   * Creates a CanvasL file containing the seed entry for automaton regeneration.
+   * The seed file includes version information, kernel URL reference, and
+   * regeneration metadata for self-building capabilities.
+   * 
+   * @param {AutomatonState} state - Automaton state containing seed data
+   * @returns {string} CanvasL file content as a string
+   * 
+   * @example
+   * ```typescript
+   * const seedContent = service.generateSeedCanvasL(automatonState);
+   * // seedContent contains seed entry with regeneration metadata
+   * ```
    */
   generateSeedCanvasL(state: AutomatonState): string {
     const lines: string[] = [];
@@ -90,7 +118,20 @@ export class AutomatonFileGeneratorService {
   }
 
   /**
-   * Generate metaverse.topology.canvasl from topology partition
+   * Generate metaverse.topology.canvasl from topology partition.
+   * 
+   * Creates a CanvasL file containing the topology partition entries (Bipartite-BQF
+   * left side). Each entry includes Bipartite-BQF metadata with BQF coefficients
+   * calculated for the topology partition.
+   * 
+   * @param {AutomatonState} state - Automaton state containing topology entries
+   * @returns {string} CanvasL file content as a string
+   * 
+   * @example
+   * ```typescript
+   * const topologyContent = service.generateTopologyCanvasL(automatonState);
+   * // topologyContent contains topology entries with BQF metadata
+   * ```
    */
   generateTopologyCanvasL(state: AutomatonState): string {
     const lines: string[] = [];
@@ -127,7 +168,20 @@ export class AutomatonFileGeneratorService {
   }
 
   /**
-   * Generate metaverse.system.canvasl from system partition
+   * Generate metaverse.system.canvasl from system partition.
+   * 
+   * Creates a CanvasL file containing the system partition entries (Bipartite-BQF
+   * right side). Each entry includes Bipartite-BQF metadata with BQF coefficients
+   * calculated for the system partition.
+   * 
+   * @param {AutomatonState} state - Automaton state containing system entries
+   * @returns {string} CanvasL file content as a string
+   * 
+   * @example
+   * ```typescript
+   * const systemContent = service.generateSystemCanvasL(automatonState);
+   * // systemContent contains system entries with BQF metadata
+   * ```
    */
   generateSystemCanvasL(state: AutomatonState): string {
     const lines: string[] = [];
@@ -205,7 +259,30 @@ export class AutomatonFileGeneratorService {
   }
 
   /**
-   * Generate all files for an automaton state
+   * Generate all files for an automaton state.
+   * 
+   * Generates all four standard automaton CanvasL files in a single call:
+   * - automaton.kernel.canvasl
+   * - automaton.seed.canvasl
+   * - metaverse.topology.canvasl
+   * - metaverse.system.canvasl
+   * 
+   * This is a convenience method that calls all individual generation methods
+   * and returns their results in a single object.
+   * 
+   * @param {AutomatonState} state - Automaton state containing all partitions
+   * @returns {{kernel: string, seed: string, topology: string, system: string}} 
+   *   Object containing all generated file contents
+   * @throws {ValidationError} If automaton state is invalid
+   * 
+   * @example
+   * ```typescript
+   * const files = service.generateAllFiles(automatonState);
+   * await service.saveFile('automaton.kernel.canvasl', files.kernel);
+   * await service.saveFile('automaton.seed.canvasl', files.seed);
+   * await service.saveFile('metaverse.topology.canvasl', files.topology);
+   * await service.saveFile('metaverse.system.canvasl', files.system);
+   * ```
    */
   generateAllFiles(state: AutomatonState): {
     kernel: string;
@@ -225,7 +302,28 @@ export class AutomatonFileGeneratorService {
   }
 
   /**
-   * Save file with temp file write and atomic move
+   * Save file with temp file write and atomic move.
+   * 
+   * Saves a CanvasL file using an atomic write pattern: writes to a temporary file
+   * first, validates the content, then atomically moves it to the final location.
+   * This ensures data integrity and prevents partial writes from corrupting files.
+   * 
+   * The method handles content validation, temporary file tracking, and cleanup
+   * on errors. In browser environments, file deletion may not be possible, so
+   * temporary files are tracked for manual cleanup.
+   * 
+   * @param {string} filePath - Path where the file should be saved
+   * @param {string} content - CanvasL file content to save
+   * @returns {Promise<void>} Promise that resolves when file is saved
+   * @throws {ValidationError} If content is empty or invalid
+   * @throws {FileSystemError} If file cannot be written or moved
+   * 
+   * @example
+   * ```typescript
+   * const content = service.generateKernelCanvasL(automatonState);
+   * await service.saveFile('automaton.kernel.canvasl', content);
+   * // File is now saved atomically
+   * ```
    */
   async saveFile(filePath: string, content: string): Promise<void> {
     try {
@@ -326,7 +424,21 @@ export class AutomatonFileGeneratorService {
   }
 
   /**
-   * Clean up temporary files
+   * Clean up temporary files.
+   * 
+   * Removes all tracked temporary files from the internal tracking map.
+   * In browser environments, actual file deletion may not be possible, so
+   * this primarily cleans up the tracking state. This should be called
+   * periodically or when the service is disposed to prevent memory leaks.
+   * 
+   * @returns {Promise<void>} Promise that resolves when cleanup is complete
+   * 
+   * @example
+   * ```typescript
+   * // Clean up on service disposal
+   * await service.cleanupTempFiles();
+   * // All temp file tracking is cleared
+   * ```
    */
   async cleanupTempFiles(): Promise<void> {
     for (const [finalPath, tempPath] of this.tempFiles.entries()) {

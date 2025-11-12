@@ -25,6 +25,10 @@ import { VirtualizedCardList } from '../shared/VirtualizedCardList';
 import { ProvenanceAvatar } from './ProvenanceAvatar';
 import { SVGTextureRenderer, ProceduralUIGenerator } from './SVGTextureRenderer';
 import { ComputationalManifoldRenderer } from './ComputationalManifoldRenderer';
+import { ThoughtCard3D } from './ThoughtCard3D';
+import { KnowledgeGraphCard2D } from './KnowledgeGraphCard2D';
+import { thoughtCardService } from '../../services/thought-card-service';
+import { knowledgeGraphCardService } from '../../services/knowledge-graph-card-service';
 
 interface UnifiedProvenanceCanvasProps {
   evolutionPath?: string;
@@ -48,6 +52,9 @@ export const UnifiedProvenanceCanvas: React.FC<UnifiedProvenanceCanvasProps> = (
   const [loading, setLoading] = useState(false);
   const [workerFallbackMode, setWorkerFallbackMode] = useState<'normal' | '2d-only'>('normal');
   const [showComputationalManifold, setShowComputationalManifold] = useState(false);
+  const [showThoughtCards, setShowThoughtCards] = useState(true);
+  const [showKnowledgeGraphCards, setShowKnowledgeGraphCards] = useState(true);
+  const [selectedKnowledgeGraphCard, setSelectedKnowledgeGraphCard] = useState<string | null>(null);
   
   // Debounce dimension changes for performance
   const debouncedDimension = useDebounce(currentDimension, 300);
@@ -358,6 +365,26 @@ export const UnifiedProvenanceCanvas: React.FC<UnifiedProvenanceCanvasProps> = (
             />
             Computational Manifold
           </label>
+          
+          <label className="flex items-center gap-2 text-sm text-gray-400">
+            <input
+              type="checkbox"
+              checked={showThoughtCards}
+              onChange={(e) => setShowThoughtCards(e.target.checked)}
+              className="rounded"
+            />
+            Thought Cards
+          </label>
+          
+          <label className="flex items-center gap-2 text-sm text-gray-400">
+            <input
+              type="checkbox"
+              checked={showKnowledgeGraphCards}
+              onChange={(e) => setShowKnowledgeGraphCards(e.target.checked)}
+              className="rounded"
+            />
+            Knowledge Graphs
+          </label>
         </div>
       </div>
 
@@ -412,16 +439,32 @@ export const UnifiedProvenanceCanvas: React.FC<UnifiedProvenanceCanvasProps> = (
                     {/* Render avatars for nodes with avatar config */}
                     {currentSlide.provenanceChain.nodes
                       .filter(node => node.avatar)
-                      .map(node => (
-                        <ProvenanceAvatar
-                          key={node.id}
-                          node={node}
-                          isSelected={selectedNode?.id === node.id}
-                          isHovered={hoveredNode?.id === node.id}
-                          onClick={() => setSelectedNode(node)}
-                          onHover={(hovered) => setHoveredNode(hovered ? node : null)}
-                        />
-                      ))}
+                      .map(node => {
+                        // Create thought card for avatar if enabled
+                        const thoughtCard = showThoughtCards 
+                          ? thoughtCardService.createThoughtCardFromNode(node)
+                          : null;
+                        
+                        return (
+                          <React.Fragment key={node.id}>
+                            <ProvenanceAvatar
+                              node={node}
+                              isSelected={selectedNode?.id === node.id}
+                              isHovered={hoveredNode?.id === node.id}
+                              onClick={() => setSelectedNode(node)}
+                              onHover={(hovered) => setHoveredNode(hovered ? node : null)}
+                            />
+                            {/* Render 3D thought card */}
+                            {thoughtCard && (
+                              <ThoughtCard3D
+                                card={thoughtCard}
+                                avatarPosition={node.position}
+                                isVisible={showThoughtCards}
+                              />
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
                     
                     {/* SVG Texture Overlay for Topology Diagram */}
                     {currentSlide.provenanceChain && (
@@ -501,7 +544,28 @@ export const UnifiedProvenanceCanvas: React.FC<UnifiedProvenanceCanvasProps> = (
             )}
           </div>
 
-          {/* Cards - Use virtual scrolling for large lists */}
+          {/* Knowledge Graph Cards - 2D CanvasL Cards */}
+          {showKnowledgeGraphCards && currentSlide && (() => {
+            const knowledgeGraphCards = knowledgeGraphCardService.buildKnowledgeGraphsForSlide(currentSlide);
+            return knowledgeGraphCards.length > 0 && (
+              <div className="mt-4">
+                <h4 className="text-sm font-semibold text-gray-300 mb-2">
+                  Agent Thought Processes ({knowledgeGraphCards.length})
+                </h4>
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {knowledgeGraphCards.map((kgCard) => (
+                    <KnowledgeGraphCard2D
+                      key={kgCard.id}
+                      card={kgCard}
+                      onClose={() => setSelectedKnowledgeGraphCard(null)}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Pattern Cards - Use virtual scrolling for large lists */}
           {currentSlide.cards && currentSlide.cards.length > 0 && (
             <div className="mt-4">
               <h4 className="text-sm font-semibold text-gray-300 mb-2">

@@ -64,7 +64,16 @@ export class PerformanceMonitoringService {
   private animationFrameId: number | null = null;
 
   /**
-   * Start performance monitoring
+   * Start performance monitoring.
+   * 
+   * Begins continuous performance monitoring, tracking FPS, memory usage, and
+   * message latencies. Monitoring runs in the background using requestAnimationFrame.
+   * 
+   * @example
+   * ```typescript
+   * performanceMonitoringService.startMonitoring();
+   * // Performance metrics are now being tracked
+   * ```
    */
   startMonitoring(): void {
     if (this.isMonitoring) return;
@@ -75,7 +84,16 @@ export class PerformanceMonitoringService {
   }
 
   /**
-   * Stop performance monitoring
+   * Stop performance monitoring.
+   * 
+   * Stops the continuous performance monitoring loop. Metrics collected up to
+   * this point are retained and can still be queried.
+   * 
+   * @example
+   * ```typescript
+   * performanceMonitoringService.stopMonitoring();
+   * // Monitoring is stopped, but metrics are still available
+   * ```
    */
   stopMonitoring(): void {
     if (!this.isMonitoring) return;
@@ -129,7 +147,20 @@ export class PerformanceMonitoringService {
   };
 
   /**
-   * Track message latency start
+   * Track message latency start.
+   * 
+   * Records the start time of a message operation for latency tracking.
+   * Should be called before sending a message to a worker or making an async call.
+   * 
+   * @param {string} type - Message type (e.g., 'init', 'load', 'render')
+   * @param {string} [messageId] - Optional unique message ID (auto-generated if not provided)
+   * 
+   * @example
+   * ```typescript
+   * const messageId = performanceMonitoringService.trackMessageStart('load');
+   * await workerService.loadProvenanceChain(chain);
+   * performanceMonitoringService.trackMessageEnd(messageId);
+   * ```
    */
   trackMessageStart(type: string, messageId?: string): void {
     const id = messageId || `${type}-${Date.now()}`;
@@ -140,7 +171,20 @@ export class PerformanceMonitoringService {
   }
 
   /**
-   * Track message latency end
+   * Track message latency end.
+   * 
+   * Records the end time of a message operation and calculates latency.
+   * Should be called after receiving a response or completing an async operation.
+   * 
+   * @param {string} messageId - Message ID returned from trackMessageStart
+   * 
+   * @example
+   * ```typescript
+   * const messageId = performanceMonitoringService.trackMessageStart('load');
+   * await workerService.loadProvenanceChain(chain);
+   * performanceMonitoringService.trackMessageEnd(messageId);
+   * const latency = performanceMonitoringService.getMessageLatency('load');
+   * ```
    */
   trackMessageEnd(messageId: string): void {
     const entry = this.pendingMessages.get(messageId);
@@ -177,7 +221,19 @@ export class PerformanceMonitoringService {
   }
 
   /**
-   * Update node and edge counts
+   * Update node and edge counts.
+   * 
+   * Updates the current node and edge counts for the provenance chain being
+   * rendered. This is used to generate performance warnings for large graphs.
+   * 
+   * @param {number} nodeCount - Current number of nodes
+   * @param {number} edgeCount - Current number of edges
+   * 
+   * @example
+   * ```typescript
+   * performanceMonitoringService.updateNodeEdgeCounts(chain.nodes.length, chain.edges.length);
+   * // Warnings will be generated if counts exceed thresholds
+   * ```
    */
   updateNodeEdgeCounts(nodeCount: number, edgeCount: number): void {
     this.nodeCount = nodeCount;
@@ -209,21 +265,54 @@ export class PerformanceMonitoringService {
   }
 
   /**
-   * Get current FPS
+   * Get current FPS.
+   * 
+   * Returns the current frames per second, calculated from the most recent
+   * frame time measurement.
+   * 
+   * @returns {number} Current FPS (0 if monitoring is not active)
+   * 
+   * @example
+   * ```typescript
+   * const fps = performanceMonitoringService.getFPS();
+   * console.log(`Current FPS: ${fps.toFixed(1)}`);
+   * ```
    */
   getFPS(): number {
     return this.currentFps;
   }
 
   /**
-   * Get average FPS
+   * Get average FPS.
+   * 
+   * Returns the average FPS over the last 60 frames, providing a more stable
+   * performance metric than the current FPS.
+   * 
+   * @returns {number} Average FPS over last 60 frames
+   * 
+   * @example
+   * ```typescript
+   * const avgFps = performanceMonitoringService.getAverageFPS();
+   * console.log(`Average FPS: ${avgFps.toFixed(1)}`);
+   * ```
    */
   getAverageFPS(): number {
     return this.averageFps;
   }
 
   /**
-   * Get memory usage
+   * Get memory usage.
+   * 
+   * Returns current memory usage statistics if available in the browser.
+   * Includes used, total, and estimated memory breakdown by component.
+   * 
+   * @returns {MemoryUsage} Memory usage statistics
+   * 
+   * @example
+   * ```typescript
+   * const memory = performanceMonitoringService.getMemoryUsage();
+   * console.log(`Memory used: ${(memory.used / 1024 / 1024).toFixed(2)} MB`);
+   * ```
    */
   getMemoryUsage(): MemoryUsage {
     // Try to use performance.memory API (Chrome)
@@ -347,7 +436,18 @@ export class PerformanceMonitoringService {
   }
 
   /**
-   * Get all performance metrics
+   * Get all performance metrics.
+   * 
+   * Returns a comprehensive object containing all performance metrics:
+   * FPS, memory usage, message latencies, node/edge counts, and warnings.
+   * 
+   * @returns {PerformanceMetrics} Complete performance metrics object
+   * 
+   * @example
+   * ```typescript
+   * const metrics = performanceMonitoringService.getMetrics();
+   * console.log('Performance Metrics:', metrics);
+   * ```
    */
   getMetrics(): PerformanceMetrics {
     return {

@@ -427,7 +427,180 @@ void main() {
 }
 ```
 
-#### 2.4.4 A-Frame Integration (SHOULD)
+#### 2.4.4 2D CanvasL Knowledge Graph Cards (MUST)
+
+Implementations MUST support 2D CanvasL knowledge graph cards that visualize agent thought processes as knowledge graphs.
+
+**Requirements**:
+- MUST render knowledge graphs in CanvasL format
+- MUST extract thought processes from agent nodes
+- MUST visualize thought processes as graph structures (nodes and edges)
+- MUST support CanvasL directives and references
+- SHOULD support interactive exploration of knowledge graphs
+- SHOULD support filtering by dimension, pattern, or agent
+
+**Implementation**:
+```typescript
+interface KnowledgeGraphCard {
+  id: string;
+  agentId: string;
+  slideId: string;
+  nodes: CanvasLNode[];
+  edges: CanvasLEdge[];
+  metadata: {
+    dimension?: string;
+    pattern?: string;
+    timestamp: number;
+    thoughtProcess: string;
+  };
+}
+
+interface KnowledgeGraphRenderer {
+  renderKnowledgeGraph(card: KnowledgeGraphCard): SVGElement;
+  extractThoughtProcess(agentNode: ProvenanceNode): CanvasLNode[];
+  buildKnowledgeGraph(slide: Slide, agentId: string): KnowledgeGraphCard;
+}
+```
+
+**CanvasL Knowledge Graph Structure**:
+```typescript
+// Extract thought process from agent node
+function extractThoughtProcess(agentNode: ProvenanceNode): CanvasLNode[] {
+  const nodes: CanvasLNode[] = [];
+  
+  // Extract from metadata
+  if (agentNode.metadata.churchEncoding) {
+    nodes.push({
+      id: `${agentNode.id}-church-encoding`,
+      type: 'node',
+      text: agentNode.metadata.churchEncoding,
+      x: 0,
+      y: 0
+    });
+  }
+  
+  // Extract from pattern
+  if (agentNode.metadata.pattern) {
+    nodes.push({
+      id: `${agentNode.id}-pattern`,
+      type: 'node',
+      text: agentNode.metadata.pattern,
+      x: 200,
+      y: 0
+    });
+  }
+  
+  // Extract from dimension
+  if (agentNode.metadata.dimension) {
+    nodes.push({
+      id: `${agentNode.id}-dimension`,
+      type: 'node',
+      text: agentNode.metadata.dimension,
+      x: 400,
+      y: 0
+    });
+  }
+  
+  return nodes;
+}
+
+// Build knowledge graph from slide
+function buildKnowledgeGraph(slide: Slide, agentId: string): KnowledgeGraphCard {
+  const agentNodes = slide.provenanceChain?.nodes.filter(
+    n => n.metadata.agentId === agentId
+  ) || [];
+  
+  const canvaslNodes: CanvasLNode[] = [];
+  const canvaslEdges: CanvasLEdge[] = [];
+  
+  // Convert provenance nodes to CanvasL nodes
+  agentNodes.forEach((node, index) => {
+    canvaslNodes.push({
+      id: node.id,
+      type: 'node',
+      text: node.metadata.agentId || node.id,
+      x: (index % 3) * 200,
+      y: Math.floor(index / 3) * 150
+    });
+    
+    // Create edges for dimensional progression
+    if (index > 0) {
+      canvaslEdges.push({
+        id: `edge-${agentNodes[index - 1].id}-${node.id}`,
+        type: 'vertical',
+        from: agentNodes[index - 1].id,
+        to: node.id
+      });
+    }
+  });
+  
+  return {
+    id: `kg-${agentId}-${slide.id}`,
+    agentId,
+    slideId: slide.id,
+    nodes: canvaslNodes,
+    edges: canvaslEdges,
+    metadata: {
+      dimension: slide.dimension,
+      timestamp: Date.now(),
+      thoughtProcess: `Thought process for ${agentId} in ${slide.dimension}`
+    }
+  };
+}
+```
+
+**2D CanvasL Card Rendering**:
+```typescript
+// Render knowledge graph as SVG (2D CanvasL card)
+function renderKnowledgeGraph(card: KnowledgeGraphCard): SVGElement {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('width', '800');
+  svg.setAttribute('height', '600');
+  svg.setAttribute('viewBox', '0 0 800 600');
+  
+  // Render edges first
+  card.edges.forEach(edge => {
+    const fromNode = card.nodes.find(n => n.id === edge.from);
+    const toNode = card.nodes.find(n => n.id === edge.to);
+    
+    if (fromNode && toNode) {
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', String(fromNode.x || 0));
+      line.setAttribute('y1', String(fromNode.y || 0));
+      line.setAttribute('x2', String(toNode.x || 0));
+      line.setAttribute('y2', String(toNode.y || 0));
+      line.setAttribute('stroke', '#4b5563');
+      line.setAttribute('stroke-width', '2');
+      svg.appendChild(line);
+    }
+  });
+  
+  // Render nodes
+  card.nodes.forEach(node => {
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('x', String((node.x || 0) - 50));
+    rect.setAttribute('y', String((node.y || 0) - 25));
+    rect.setAttribute('width', '100');
+    rect.setAttribute('height', '50');
+    rect.setAttribute('fill', '#3b82f6');
+    rect.setAttribute('rx', '5');
+    svg.appendChild(rect);
+    
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.setAttribute('x', String(node.x || 0));
+    text.setAttribute('y', String(node.y || 0));
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('fill', 'white');
+    text.setAttribute('font-size', '12');
+    text.textContent = node.text || node.id;
+    svg.appendChild(text);
+  });
+  
+  return svg;
+}
+```
+
+### 2.4.5 A-Frame Integration (SHOULD)
 
 Implementations SHOULD support A-Frame for VR/AR metaverse visualization and multiplayer synchronization.
 

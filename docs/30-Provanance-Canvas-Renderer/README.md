@@ -72,6 +72,45 @@ Evolution documentation tracking the progression from basic rendering to full We
 - **Worker Message Latency**: Per-message-type latency tracking
 - **Performance Warnings**: Automatic warnings for low FPS, high memory, high latency, large scenes
 
+### ✅ 3D Thought Cards for Avatars
+
+The system supports 3D thought cards that appear near avatars in the 3D scene, rendered using offscreen canvas:
+
+- **Billboard Planes**: Thought cards are rendered as 3D billboard planes that always face the camera
+- **Dynamic Content**: Cards display agent thought processes extracted from node metadata
+- **Positioning**: Cards can be positioned above, left, right, or behind avatars
+- **Animations**: Gentle floating animations and fade effects
+- **Offscreen Canvas**: Rendered using offscreen canvas for optimal performance
+
+**Usage**:
+```typescript
+import { thoughtCardService } from '@/services/thought-card-service';
+
+// Create thought card for avatar
+const card = thoughtCardService.createThoughtCardFromNode(agentNode);
+```
+
+### ✅ 2D CanvasL Knowledge Graph Cards
+
+The system supports 2D CanvasL knowledge graph cards that visualize agent thought processes:
+
+- **Knowledge Graph Extraction**: Extracts thought processes from agent nodes
+- **CanvasL Format**: Renders knowledge graphs in CanvasL format with nodes and edges
+- **SVG Rendering**: Knowledge graphs are rendered as SVG for crisp 2D visualization
+- **Interactive Exploration**: Cards support interactive exploration of thought processes
+- **Multi-Agent Support**: Generates knowledge graphs for all agents in a slide
+
+**Usage**:
+```typescript
+import { knowledgeGraphCardService } from '@/services/knowledge-graph-card-service';
+
+// Build knowledge graph for agent
+const kgCard = knowledgeGraphCardService.buildKnowledgeGraph(slide, agentId);
+
+// Render as SVG
+const svg = knowledgeGraphCardService.renderKnowledgeGraph(kgCard);
+```
+
 ### ✅ 3D Rendering Capabilities
 
 #### GLTF Avatar Support

@@ -48,6 +48,18 @@ Detailed technical documentation covering:
 ### 4. [API Reference](./04-API-REFERENCE.md)
 Complete API documentation for all services, methods, and types.
 
+### 5. [Developer Guide](./05-DEVELOPER-GUIDE.md)
+Comprehensive guide for extending services, creating custom implementations, and integration patterns.
+
+### 6. [Troubleshooting Guide](./06-TROUBLESHOOTING-GUIDE.md)
+Solutions to common issues, debugging tips, and error message reference.
+
+### 7. [Workflow Walkthroughs](./07-WORKFLOW-WALKTHROUGHS.md)
+Step-by-step walkthroughs for common workflows, suitable for video tutorials.
+
+### 8. [Code Examples](./examples/)
+Complete, runnable code examples demonstrating all major features and patterns.
+
 ## Quick Start
 
 ### 1. Initialize Services
@@ -220,6 +232,29 @@ All success criteria have been met:
 3. Card detail views
 4. Export provenance chains to various formats
 5. Performance optimizations for large chains
+
+## Additional Resources
+
+### Code Examples
+
+The `examples/` directory contains complete, runnable code examples:
+
+- **[01-basic-provenance-chain.ts](./examples/01-basic-provenance-chain.ts)** - Basic provenance chain building
+- **[02-slide-generation.ts](./examples/02-slide-generation.ts)** - Slide generation from evolution directory
+- **[03-worker-setup.ts](./examples/03-worker-setup.ts)** - Setting up offscreen canvas worker
+- **[04-avatar-integration.ts](./examples/04-avatar-integration.ts)** - Integrating avatars with thought cards
+- **[05-knowledge-graph-extraction.ts](./examples/05-knowledge-graph-extraction.ts)** - Extracting knowledge graphs
+- **[06-performance-optimization.ts](./examples/06-performance-optimization.ts)** - Performance optimization patterns
+- **[07-custom-thought-card.ts](./examples/07-custom-thought-card.ts)** - Creating custom thought card renderer
+- **[08-custom-knowledge-graph.ts](./examples/08-custom-knowledge-graph.ts)** - Creating custom knowledge graph extractor
+- **[09-error-handling.ts](./examples/09-error-handling.ts)** - Error handling patterns
+- **[10-integration-example.ts](./examples/10-integration-example.ts)** - Complete integration example
+
+### Documentation Links
+
+- **[Developer Guide](./05-DEVELOPER-GUIDE.md)** - Learn how to extend services and create custom implementations
+- **[Troubleshooting Guide](./06-TROUBLESHOOTING-GUIDE.md)** - Find solutions to common issues and debugging tips
+- **[Workflow Walkthroughs](./07-WORKFLOW-WALKTHROUGHS.md)** - Follow step-by-step workflows for common tasks
 
 ## Related Documentation
 

@@ -28,7 +28,27 @@ export class AvatarLoaderService {
   }
 
   /**
-   * Load a GLTF avatar model
+   * Load a GLTF avatar model.
+   * 
+   * Loads a GLTF/GLB avatar model from the specified URL with caching and
+   * error handling. The model is scaled and colored according to the avatar
+   * configuration. If loading fails, a fallback model is used.
+   * 
+   * Models are cached to avoid redundant network requests. The cache uses
+   * LRU eviction when the maximum cache size is reached.
+   * 
+   * @param {AvatarConfig} config - Avatar configuration with GLTF model URL
+   * @returns {Promise<THREE.Group>} Promise resolving to a Three.js Group containing the model
+   * 
+   * @example
+   * ```typescript
+   * const model = await avatarLoaderService.loadAvatar({
+   *   gltfModel: '/evolutions/angelica.glb',
+   *   scale: [0.5, 0.5, 0.5],
+   *   type: 'human'
+   * });
+   * scene.add(model);
+   * ```
    */
   async loadAvatar(config: AvatarConfig): Promise<THREE.Group> {
     const cacheKey = this.getCacheKey(config);
@@ -178,7 +198,17 @@ export class AvatarLoaderService {
   }
 
   /**
-   * Clear cache
+   * Clear the avatar model cache.
+   * 
+   * Removes all cached models and loading promises. This should be called
+   * when memory needs to be freed or when switching to a different set of
+   * avatar models.
+   * 
+   * @example
+   * ```typescript
+   * avatarLoaderService.clearCache();
+   * // All cached models are removed
+   * ```
    */
   clearCache(): void {
     this.cache.clear();
@@ -186,7 +216,18 @@ export class AvatarLoaderService {
   }
 
   /**
-   * Get cache statistics
+   * Get cache statistics.
+   * 
+   * Returns information about the current cache state, including size,
+   * maximum size, and all cache keys. Useful for debugging and monitoring.
+   * 
+   * @returns {{size: number, maxSize: number, keys: string[]}} Cache statistics
+   * 
+   * @example
+   * ```typescript
+   * const stats = avatarLoaderService.getCacheStats();
+   * console.log(`Cache: ${stats.size}/${stats.maxSize} models`);
+   * ```
    */
   getCacheStats(): { size: number; maxSize: number; keys: string[] } {
     return {
@@ -197,7 +238,19 @@ export class AvatarLoaderService {
   }
 
   /**
-   * Preload avatar templates
+   * Preload all default avatar templates.
+   * 
+   * Preloads all default avatar templates (angelica, shantae, sploot) to
+   * improve initial rendering performance. This should be called during
+   * application initialization.
+   * 
+   * @returns {Promise<void>} Promise that resolves when all templates are loaded
+   * 
+   * @example
+   * ```typescript
+   * await avatarLoaderService.preloadTemplates();
+   * // All default avatars are now cached and ready to use
+   * ```
    */
   async preloadTemplates(): Promise<void> {
     const templates = avatarTemplateService.getAllTemplates();
