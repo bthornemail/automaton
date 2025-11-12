@@ -1,6 +1,11 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
+import { existsSync } from 'fs'
+
+// Check if gpu.js is installed
+const gpuJsPath = resolve(__dirname, 'node_modules/gpu.js');
+const gpuJsInstalled = existsSync(gpuJsPath);
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -11,6 +16,10 @@ export default defineConfig({
       // Force single instance of CodeMirror packages
       '@codemirror/state': resolve(__dirname, 'node_modules/@codemirror/state'),
       '@codemirror/view': resolve(__dirname, 'node_modules/@codemirror/view'),
+      // Use stub module for gpu.js if not installed
+      ...(gpuJsInstalled ? {} : {
+        'gpu.js': resolve(__dirname, 'src/utils/gpu-stub.ts'),
+      }),
     },
     dedupe: [
       '@codemirror/state',
@@ -27,7 +36,7 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     strictPort: true,
-    allowedHosts: ["universallifeprotocol.com"],
+    allowedHosts: ["universallifeprotocol.com","universallifeprotocol.net","universallifeprotocol.store","universallifeprotocol.online"],
     proxy: {
       '/api': {
         target: 'http://localhost:3000',
@@ -83,5 +92,6 @@ export default defineConfig({
       '@codemirror/lang-markdown',
       '@codemirror/theme-one-dark'
     ],
+    exclude: ['gpu.js'], // Exclude optional dependency from optimization
   },
 })

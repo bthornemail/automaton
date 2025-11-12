@@ -119,7 +119,11 @@ export const domainConfig = {
       `http://${this.ipv4}`,
       `http://[${this.ipv6}]`,
       'http://localhost:3003',
-      'http://127.0.0.1:3003'
+	'http://127.0.0.1:3003',
+      'http://localhost',
+	'http://127.0.0.1',
+      'http://universallifeonline.online',
+      'https://universallifeonline.online'
     ];
   }
 };

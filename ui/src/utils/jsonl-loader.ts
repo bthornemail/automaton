@@ -64,10 +64,33 @@ export async function loadJSONLFromBrowser(
         }
       }
       
+      // Check if response is HTML (error page or index.html)
+      if (contentType.includes('text/html')) {
+        console.warn(`[JSONL Loader] Received HTML instead of JSONL for ${filename}. File may not exist or server returned error page.`);
+        return {
+          data: [],
+          source: 'error',
+          filename,
+          itemCount: 0
+        };
+      }
+      
       // Otherwise, treat as text and parse JSONL
       const text = await response.text();
       if (typeof text !== 'string') {
         console.warn(`[JSONL Loader] Unexpected response type for ${filename}, expected string`);
+        return {
+          data: [],
+          source: 'error',
+          filename,
+          itemCount: 0
+        };
+      }
+      
+      // Check if text content is HTML (starts with HTML tags)
+      const trimmedText = text.trim();
+      if (trimmedText.startsWith('<!doctype') || trimmedText.startsWith('<!DOCTYPE') || trimmedText.startsWith('<html')) {
+        console.warn(`[JSONL Loader] Received HTML content instead of JSONL for ${filename}. File may not exist or server returned error page.`);
         return {
           data: [],
           source: 'error',
@@ -88,6 +111,18 @@ export async function loadJSONLFromBrowser(
       }
       
       const lines = text.trim().split('\n').filter((line: string) => line && line.trim());
+      
+      // If first few lines look like HTML, skip parsing
+      const sampleLines = lines.slice(0, 3).join(' ').toLowerCase();
+      if (sampleLines.includes('<!doctype') || sampleLines.includes('<html') || sampleLines.includes('<head>')) {
+        console.warn(`[JSONL Loader] Content appears to be HTML. Skipping parsing for ${filename}.`);
+        return {
+          data: [],
+          source: 'error',
+          filename,
+          itemCount: 0
+        };
+      }
       const data = lines.map((line: string, index: number) => {
         try {
           if (!line || typeof line !== 'string' || !line.trim()) {

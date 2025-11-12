@@ -106,10 +106,23 @@ class LocalFileServiceImpl implements LocalFileService {
           return [];
         }
         
+        // Check if response is HTML (error page or index.html)
+        if (contentType.includes('text/html')) {
+          console.warn(`Received HTML instead of JSONL for ${file}. File may not exist or server returned error page.`);
+          return [];
+        }
+        
         // Otherwise, treat as text/JSONL and parse line by line
         const text = await response.text();
         if (typeof text !== 'string' || !text.trim()) {
           console.warn(`Empty or invalid response for ${file}`);
+          return [];
+        }
+        
+        // Check if text content is HTML (starts with HTML tags)
+        const trimmedText = text.trim();
+        if (trimmedText.startsWith('<!doctype') || trimmedText.startsWith('<!DOCTYPE') || trimmedText.startsWith('<html')) {
+          console.warn(`Received HTML content instead of JSONL for ${file}. File may not exist or server returned error page.`);
           return [];
         }
         
@@ -127,8 +140,21 @@ class LocalFileServiceImpl implements LocalFileService {
       });
       
       if (rootResponse.ok) {
+        const rootContentType = rootResponse.headers.get('content-type') || '';
+        if (rootContentType.includes('text/html')) {
+          console.warn(`Received HTML instead of JSONL for ${file} from root directory.`);
+          throw new Error(`File not found: ${file}`);
+        }
+        
         const text = await rootResponse.text();
         if (typeof text === 'string' && text.trim()) {
+          // Check if text content is HTML
+          const trimmedText = text.trim();
+          if (trimmedText.startsWith('<!doctype') || trimmedText.startsWith('<!DOCTYPE') || trimmedText.startsWith('<html')) {
+            console.warn(`Received HTML content instead of JSONL for ${file} from root directory.`);
+            throw new Error(`File not found: ${file}`);
+          }
+          
           const data = this.parseJSONL(text);
           console.log(`✓ Loaded ${data.length} items from browser-side root file: /${file}`);
           return data;
@@ -210,6 +236,13 @@ class LocalFileServiceImpl implements LocalFileService {
       return [];
     }
     
+    // Early detection of HTML content (defensive check)
+    const trimmedText = text.trim();
+    if (trimmedText.startsWith('<!doctype') || trimmedText.startsWith('<!DOCTYPE') || trimmedText.startsWith('<html')) {
+      console.warn('parseJSONL: Received HTML content instead of JSONL. Skipping parsing.');
+      return [];
+    }
+    
     try {
       // Ensure text is a string before splitting
       if (typeof text !== 'string') {
@@ -219,6 +252,14 @@ class LocalFileServiceImpl implements LocalFileService {
       
       // Split by newlines and filter empty lines
       const lines = text.trim().split('\n').filter((line: string) => line && line.trim());
+      
+      // If first few lines look like HTML, skip parsing
+      const sampleLines = lines.slice(0, 3).join(' ').toLowerCase();
+      if (sampleLines.includes('<!doctype') || sampleLines.includes('<html') || sampleLines.includes('<head>')) {
+        console.warn('parseJSONL: Content appears to be HTML. Skipping parsing.');
+        return [];
+      }
+      
       const data = lines.map((line: string, index: number) => {
         try {
           // Skip empty lines

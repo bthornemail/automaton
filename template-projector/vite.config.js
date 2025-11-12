@@ -91,8 +91,8 @@ export default defineConfig({
       `www.${domainConfig.domain}`,
       `mail.${domainConfig.domain}`,
       `templates.${domainConfig.domain}`,
-      'localhost',
-      '127.0.0.1',
+	'localhost',
+	'127.0.0.1',
       domainConfig.ipv4, // IPv4 address
       `[${domainConfig.ipv6}]` // IPv6 address (bracketed)
     ],

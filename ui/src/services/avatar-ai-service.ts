@@ -75,16 +75,24 @@ class AvatarAIService {
     // Initialize TinyML
     await tinyMLService.initialize();
 
-    // Check for GPU.js availability
+    // Check for GPU.js availability (optional dependency)
     try {
-      // Dynamic import to avoid errors if GPU.js not installed
+      // Dynamic import - Vite plugin handles missing module gracefully
       const GPU = await import('gpu.js').catch(() => null);
-      if (GPU && GPU.default) {
+      if (GPU && GPU.default && typeof GPU.default === 'function') {
         this.gpuAvailable = true;
         console.log('[AvatarAI] GPU.js available for parallel computation');
+      } else if (GPU && GPU.GPU && typeof GPU.GPU === 'function') {
+        this.gpuAvailable = true;
+        console.log('[AvatarAI] GPU.js available for parallel computation');
+      } else {
+        this.gpuAvailable = false;
+        console.log('[AvatarAI] GPU.js not available, using CPU computation');
       }
     } catch (error) {
+      // GPU.js is optional - continue without it
       console.log('[AvatarAI] GPU.js not available, using CPU computation');
+      this.gpuAvailable = false;
     }
   }
 
