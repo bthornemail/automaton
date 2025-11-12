@@ -1,0 +1,36 @@
+{
+  "name": "@automaton/bipartite-bqf-canvasl-spec",
+  "version": "1.0.0",
+  "description": "Immutable reference package for Bipartite Binary Quadratic Polynomial Form extension to CanvasL",
+  "type": "specification",
+  "specification": {
+    "format": "RFC2119",
+    "status": "draft",
+    "immutable": false,
+    "versioning": "semver"
+  },
+  "files": {
+    "meta": "00-META-SPECIFICATION-RFC2119.md",
+    "extension": "01-BIPARTITE-BQF-EXTENSION-RFC2119.md",
+    "protocol": "02-PROTOCOL-SPECIFICATION-RFC2119.md",
+    "frontmatter": "03-FRONTMATTER-INTEGRATION-RFC2119.md"
+  },
+  "dependencies": {
+    "canvasl-base": "^1.0.0",
+    "multiverse-canvas": "^1.0.0",
+    "frontmatter-knowledge-model": "^1.0.0"
+  },
+  "references": {
+    "canvasl-base": "docs/04-CanvasL/CANVASL-RFC2119-SPEC.md",
+    "multiverse-canvas": "docs/05-Meta-Log/MULTIVERSE-CANVAS-RFC2119-SPEC.md",
+    "frontmatter-model": "evolutions/obsidian-frontmatter-knowledge-model/"
+  },
+  "author": "Automaton System",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/automaton/automaton"
+  },
+  "releaseDate": "2025-01-07",
+  "gitTag": "v1.0.0"
+}

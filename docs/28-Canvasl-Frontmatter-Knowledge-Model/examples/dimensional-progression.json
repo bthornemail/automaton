@@ -1,0 +1,99 @@
+{
+  "dimensionalProgression": {
+    "0D": {
+      "bqf": {
+        "form": "Q() = 0",
+        "variables": []
+      },
+      "symbol": "()",
+      "polynomial": "0",
+      "procedure": "(lambda () 'vacuum)",
+      "description": "Quantum vacuum topology, empty patterns"
+    },
+    "1D": {
+      "bqf": {
+        "form": "Q(x) = x²",
+        "variables": ["x"]
+      },
+      "symbol": "Point0D",
+      "polynomial": "x",
+      "procedure": "(lambda (x) (* x x))",
+      "description": "Temporal topology, line structures"
+    },
+    "2D": {
+      "bqf": {
+        "form": "Q(x,y) = x² + y²",
+        "coefficients": [1, 0, 1],
+        "signature": "euclidean",
+        "variables": ["x", "y"]
+      },
+      "symbol": "(Point0D Point1D)",
+      "polynomial": "x² + y²",
+      "procedure": "(lambda (x y) (+ (* x x) (* y y)))",
+      "description": "Bipartite topology, spatial structures"
+    },
+    "3D": {
+      "bqf": {
+        "form": "Q(x,y,z,t) = x² + y² + z² - t²",
+        "coefficients": [1, 1, 1, -1],
+        "signature": "lorentz",
+        "variables": ["x", "y", "z", "t"]
+      },
+      "symbol": "(Point0D Point1D Point2D)",
+      "polynomial": "x² + y² + z² - t²",
+      "procedure": "(lambda (x y z t) (- (+ (* x x) (* y y) (* z z)) (* t t)))",
+      "description": "Algebraic topology, type structures"
+    },
+    "4D": {
+      "bqf": {
+        "form": "Q(w,x,y,z,t) = w² + x² + y² + z² - t²",
+        "coefficients": [1, 1, 1, 1, -1],
+        "signature": "lorentz",
+        "variables": ["w", "x", "y", "z", "t"]
+      },
+      "description": "Network topology, connectivity structures"
+    },
+    "5D": {
+      "bqf": {
+        "form": "Q(...) = Σᵢ xᵢ² - t²",
+        "signature": "consensus",
+        "variables": ["x₁", "x₂", "x₃", "x₄", "t"]
+      },
+      "description": "Consensus topology, agreement structures"
+    },
+    "6D": {
+      "bqf": {
+        "form": "Q(...) = Σᵢ xᵢ² - t² + higher terms",
+        "signature": "intelligence",
+        "variables": ["x₁", "x₂", "x₃", "x₄", "x₅", "t"]
+      },
+      "description": "Intelligence topology, learning structures"
+    },
+    "7D": {
+      "bqf": {
+        "form": "Q(...) = Σᵢ xᵢ² - t² + quantum terms",
+        "signature": "quantum",
+        "variables": ["x₁", "x₂", "x₃", "x₄", "x₅", "x₆", "t"]
+      },
+      "description": "Quantum topology, superposition structures"
+    }
+  },
+  "transformations": {
+    "0D→1D": {
+      "function": "tan",
+      "description": "tan(): 0 → x",
+      "polynomial": "0 → x"
+    },
+    "1D→2D": {
+      "function": "sin",
+      "description": "sin(): x → x² + y²",
+      "polynomial": "x → x² + y²"
+    },
+    "2D→3D": {
+      "function": "cos",
+      "description": "cos(): x²+y² → x²+y²+z²-t²",
+      "polynomial": "x² + y² → x² + y² + z² - t²"
+    }
+  }
+}
+
