@@ -10,6 +10,12 @@ The validation system checks:
 2. **Relationship Entries**: Valid relationship types and references
 3. **RDF Triple Entries**: Valid subject-predicate-object structure
 4. **Bipartite Metadata**: When present, validates BQF and polynomial objects according to RFC 2119 spec
+5. **BQF Progression**: Validates BQF forms match expected patterns for each dimension
+6. **Variable Count**: Validates variable count matches dimension requirements
+7. **Mapping Chain**: Validates Symbol → Polynomial → BQF → Procedure chain
+8. **Cross-Entry Consistency**: Validates bipartite relationships reference existing nodes
+9. **Dimensional Progression**: Validates BQF progression consistency across dimensions
+10. **Bipartite Graph**: Validates graph structure consistency
 
 ## Validation Rules
 
@@ -43,15 +49,56 @@ When `frontmatter.bipartite` is present:
 When `bipartite.bqf` is present:
 
 - **Required Fields**:
-  - `form`: Must be a string
-  - `coefficients`: Must be an array of numbers
-  - `signature`: Must be one of: `"euclidean"`, `"lorentz"`, `"custom"`
-  - `variables`: Must be an array of strings
+  - `form`: Must be a string matching expected progression pattern for dimension
+  - `coefficients`: Must be an array of valid numbers (not NaN or Infinity)
+  - `signature`: Must be one of: `"euclidean"`, `"lorentz"`, `"consensus"`, `"intelligence"`, `"quantum"`, `"custom"`
+  - `variables`: Must be an array of strings matching expected count for dimension
 
 - **Optional Fields**:
-  - `polynomial`: String (optional)
-  - `symbol`: String (optional)
-  - `procedure`: String (optional)
+  - `polynomial`: String (optional, must match BQF form if present)
+  - `symbol`: String (optional, must be valid S-expression or identifier)
+  - `procedure`: String (optional, must be valid R5RS Scheme expression)
+
+#### BQF Progression Validation
+
+BQF forms must match expected patterns for each dimension:
+
+- **0D**: `Q() = 0` (0 variables)
+- **1D**: `Q(x) = x²` (1 variable: `x`)
+- **2D**: `Q(x,y) = x² + y²` (2 variables: `x`, `y`)
+- **3D**: `Q(x,y,z,t) = x² + y² + z² - t²` (4 variables: `x`, `y`, `z`, `t`)
+- **4D**: `Q(w,x,y,z,t) = w² + x² + y² + z² - t²` (5 variables: `w`, `x`, `y`, `z`, `t`)
+- **5D**: `Q(...) = Σᵢ xᵢ² - t²` (5+ variables)
+- **6D**: `Q(...) = Σᵢ xᵢ² - t² + higher terms` (6+ variables)
+- **7D**: `Q(...) = Σᵢ xᵢ² - t² + quantum terms` (7+ variables)
+
+#### Variable Count Validation
+
+Variable count must match dimension requirements:
+
+- **0D**: 0 variables
+- **1D**: 1 variable (`x`)
+- **2D**: 2 variables (`x`, `y`)
+- **3D**: 4 variables (`x`, `y`, `z`, `t`)
+- **4D**: 5 variables (`w`, `x`, `y`, `z`, `t`)
+- **5D+**: Variable count matches dimension number
+
+#### Mapping Chain Validation
+
+When all mapping components are present (symbol, polynomial, procedure), they are validated as a chain:
+
+- **Symbol**: Must be valid S-expression (matching parentheses) or identifier
+- **Polynomial**: Must match BQF form structure
+- **BQF Form**: Must match polynomial expression
+- **Procedure**: Must be valid R5RS Scheme syntax (matching parentheses, valid lambda syntax)
+
+### Cross-Entry Validation
+
+The validator performs cross-entry consistency checks:
+
+- **Bipartite Relationships**: References in `bipartite.relationships.topology` and `bipartite.relationships.system` must point to existing document IDs
+- **Dimensional Progression**: BQF progression consistency is checked across dimensions (0D → 1D → 2D → ...)
+- **Graph Structure**: Bipartite graph structure is validated for consistency
 
 ### Polynomial Object Validation
 
@@ -102,7 +149,9 @@ When `bipartite.polynomial` is present:
 - `BQF_MISSING_COEFFICIENTS`: BQF coefficients array is required
 - `BQF_INVALID_COEFFICIENTS`: BQF coefficients must be numbers
 - `BQF_MISSING_SIGNATURE`: BQF signature is required
-- `BQF_INVALID_SIGNATURE`: BQF signature must be euclidean, lorentz, or custom
+- `BQF_INVALID_SIGNATURE`: BQF signature must be one of: euclidean, lorentz, consensus, intelligence, quantum, custom
+- `BQF_INVALID_PROGRESSION`: BQF form does not match expected progression pattern for dimension
+- `BQF_INVALID_VARIABLE_COUNT`: BQF variable count does not match dimension requirements
 - `BQF_MISSING_VARIABLES`: BQF variables array is required
 - `BQF_INVALID_VARIABLES`: BQF variables must be strings
 
@@ -111,7 +160,13 @@ When `bipartite.polynomial` is present:
 - `POLY_INVALID_FORMAT`: Polynomial must be an object
 - `POLY_MISSING_ARRAY`: Polynomial array is required
 - `POLY_INVALID_LENGTH`: Polynomial array must have 8 elements
-- `POLY_INVALID_NUMBERS`: Polynomial array must contain only numbers
+- `POLY_INVALID_NUMBERS`: Polynomial array must contain only valid numbers
+
+### Mapping Chain Errors
+
+- `MAPPING_INVALID_SYMBOL`: Symbol format invalid (must be valid S-expression or identifier)
+- `MAPPING_INVALID_POLYNOMIAL`: Polynomial expression does not match BQF form
+- `MAPPING_INVALID_PROCEDURE`: Procedure syntax invalid (must be valid R5RS Scheme)
 
 ### Relationship Errors
 

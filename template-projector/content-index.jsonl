@@ -2587,3 +2587,4 @@
 {"type":"rdf-triple","subject":"#testing-enhancements-complete","predicate":"rdfs:seeAlso","object":"#testing-complete"}
 {"type":"relationship","from":"testing-enhancements-complete","to":"enhancements-complete","relType":"related"}
 {"type":"rdf-triple","subject":"#testing-enhancements-complete","predicate":"rdfs:seeAlso","object":"#enhancements-complete"}
+{"type":"bipartite-graph","graph":{"nodes":[{"id":"2D-topology","partition":"topology","dimension":"2D","metadata":{"title":"2D: Bipartite Topology","filePath":"docs/28-Canvasl-Frontmatter-Knowledge-Model/examples/frontmatter-example.md","source":"docs","docId":"2D-topology"}}],"edges":[],"metadata":{"topologyNodeCount":1,"systemNodeCount":0,"horizontalEdgeCount":0,"verticalEdgeCount":0}}}

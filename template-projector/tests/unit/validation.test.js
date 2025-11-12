@@ -177,4 +177,100 @@ invalid json`;
 
     expect(result.errors.some(e => e.code === 'PARSE_ERROR')).toBe(true);
   });
+
+  test('should validate BQF progression for 0D', () => {
+    const content = `{"type":"document","id":"doc-1","source":"wiki","frontmatter":{"bipartite":{"partition":"topology","dimension":"0D","bqf":{"form":"Q() = 0","coefficients":[0],"signature":"euclidean","variables":[]}}}}`;
+
+    writeFileSync(tempFile, content);
+
+    const result = validateContentIndex(tempFile);
+
+    expect(result.valid).toBe(true);
+    expect(result.errors.filter(e => e.code === 'BQF_INVALID_PROGRESSION').length).toBe(0);
+  });
+
+  test('should detect invalid BQF progression', () => {
+    const content = `{"type":"document","id":"doc-1","source":"wiki","frontmatter":{"bipartite":{"partition":"topology","dimension":"1D","bqf":{"form":"Q() = 0","coefficients":[0],"signature":"euclidean","variables":["x"]}}}}`;
+
+    writeFileSync(tempFile, content);
+
+    const result = validateContentIndex(tempFile);
+
+    expect(result.errors.some(e => e.code === 'BQF_INVALID_PROGRESSION')).toBe(true);
+  });
+
+  test('should validate BQF variable count', () => {
+    const content = `{"type":"document","id":"doc-1","source":"wiki","frontmatter":{"bipartite":{"partition":"topology","dimension":"2D","bqf":{"form":"Q(x,y) = x² + y²","coefficients":[1,0,1],"signature":"euclidean","variables":["x","y"]}}}}`;
+
+    writeFileSync(tempFile, content);
+
+    const result = validateContentIndex(tempFile);
+
+    expect(result.valid).toBe(true);
+    expect(result.errors.filter(e => e.code === 'BQF_INVALID_VARIABLE_COUNT').length).toBe(0);
+  });
+
+  test('should detect invalid BQF variable count', () => {
+    const content = `{"type":"document","id":"doc-1","source":"wiki","frontmatter":{"bipartite":{"partition":"topology","dimension":"2D","bqf":{"form":"Q(x,y) = x² + y²","coefficients":[1,0,1],"signature":"euclidean","variables":["x"]}}}}`;
+
+    writeFileSync(tempFile, content);
+
+    const result = validateContentIndex(tempFile);
+
+    expect(result.errors.some(e => e.code === 'BQF_INVALID_VARIABLE_COUNT')).toBe(true);
+  });
+
+  test('should validate extended signatures', () => {
+    const content = `{"type":"document","id":"doc-1","source":"wiki","frontmatter":{"bipartite":{"partition":"topology","dimension":"0D","bqf":{"form":"Q() = 0","coefficients":[0],"signature":"consensus","variables":[]}}}}`;
+
+    writeFileSync(tempFile, content);
+
+    const result = validateContentIndex(tempFile);
+
+    expect(result.valid).toBe(true);
+    expect(result.errors.filter(e => e.code === 'BQF_INVALID_SIGNATURE').length).toBe(0);
+  });
+
+  test('should validate mapping chain', () => {
+    const content = `{"type":"document","id":"doc-1","source":"wiki","frontmatter":{"bipartite":{"partition":"topology","dimension":"1D","bqf":{"form":"Q(x) = x²","coefficients":[1],"signature":"euclidean","variables":["x"],"symbol":"Point0D","polynomial":"x","procedure":"(lambda (x) (* x x))"}}}}`;
+
+    writeFileSync(tempFile, content);
+
+    const result = validateContentIndex(tempFile);
+
+    expect(result.valid).toBe(true);
+    expect(result.errors.filter(e => e.code.startsWith('MAPPING_')).length).toBe(0);
+  });
+
+  test('should detect invalid mapping chain', () => {
+    const content = `{"type":"document","id":"doc-1","source":"wiki","frontmatter":{"bipartite":{"partition":"topology","dimension":"1D","bqf":{"form":"Q(x) = x²","coefficients":[1],"signature":"euclidean","variables":["x"],"symbol":"(Point0D","polynomial":"x","procedure":"(lambda (x) (* x x))"}}}}`;
+
+    writeFileSync(tempFile, content);
+
+    const result = validateContentIndex(tempFile);
+
+    expect(result.errors.some(e => e.code === 'MAPPING_INVALID_SYMBOL')).toBe(true);
+  });
+
+  test('should validate cross-entry consistency', () => {
+    const content = `{"type":"document","id":"doc-1","source":"wiki","frontmatter":{"bipartite":{"partition":"topology","dimension":"0D","relationships":{"topology":"doc-2"}}}}
+{"type":"document","id":"doc-2","source":"wiki","frontmatter":{"bipartite":{"partition":"topology","dimension":"1D"}}}`;
+
+    writeFileSync(tempFile, content);
+
+    const result = validateContentIndex(tempFile);
+
+    expect(result.valid).toBe(true);
+    expect(result.errors.filter(e => e.code === 'FRONTMATTER_INVALID_RELATIONSHIP').length).toBe(0);
+  });
+
+  test('should detect invalid cross-entry references', () => {
+    const content = `{"type":"document","id":"doc-1","source":"wiki","frontmatter":{"bipartite":{"partition":"topology","dimension":"0D","relationships":{"topology":"nonexistent-doc"}}}}`;
+
+    writeFileSync(tempFile, content);
+
+    const result = validateContentIndex(tempFile);
+
+    expect(result.errors.some(e => e.code === 'FRONTMATTER_INVALID_RELATIONSHIP' && e.message.includes('non-existent'))).toBe(true);
+  });
 });
