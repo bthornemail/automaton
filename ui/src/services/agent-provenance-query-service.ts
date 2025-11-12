@@ -31,6 +31,12 @@ export interface QueryTemplate {
   description: string;
 }
 
+export interface FederatedProvenanceQuery {
+  files: string[];
+  query: string;
+  queryType: QueryType;
+}
+
 export interface AgentProvenanceQueryService {
   // Query execution
   queryProlog(agentId: string, query: string): Promise<PrologResult>;
@@ -46,6 +52,11 @@ export interface AgentProvenanceQueryService {
   
   // Query templates
   getQueryTemplates(): QueryTemplate[];
+  
+  // CanvasL file queries (extensions)
+  queryCanvasLFile(canvasLFile: string, query: string, queryType: QueryType): Promise<any>;
+  queryFederatedProvenance(query: FederatedProvenanceQuery): Promise<any>;
+  extractProvenanceFromCanvasL(canvasLFile: string): Promise<any[]>;
 }
 
 class AgentProvenanceQueryServiceImpl implements AgentProvenanceQueryService {
@@ -382,6 +393,112 @@ ORDER BY ?timestamp`,
         description: 'Find provenance chain using SPARQL'
       }
     ];
+  }
+
+  /**
+   * Query CanvasL file directly
+   */
+  async queryCanvasLFile(canvasLFile: string, query: string, queryType: QueryType): Promise<any> {
+    // Load CanvasL file into Meta-Log DB
+    if (metaLogApiService.isAvailable()) {
+      try {
+        await metaLogApiService.loadCanvas(canvasLFile);
+        
+        // Execute query based on type
+        switch (queryType) {
+          case 'prolog':
+            return await metaLogApiService.prologQuery(query, canvasLFile);
+          case 'datalog':
+            return await metaLogApiService.datalogQuery(query, null, canvasLFile);
+          case 'sparql':
+            return await metaLogApiService.sparqlQuery(query, canvasLFile);
+        }
+      } catch (error) {
+        console.warn('Meta-Log API query failed:', error);
+      }
+    }
+    
+    // Fallback: extract provenance from file directly
+    const provenance = await this.extractProvenanceFromCanvasL(canvasLFile);
+    return { provenance };
+  }
+
+  /**
+   * Query federated provenance across multiple CanvasL files
+   */
+  async queryFederatedProvenance(query: FederatedProvenanceQuery): Promise<any> {
+    const results: any[] = [];
+    
+    // Load all files into Meta-Log DB
+    if (metaLogApiService.isAvailable()) {
+      try {
+        for (const file of query.files) {
+          await metaLogApiService.loadCanvas(file);
+        }
+        
+        // Execute query across all loaded files
+        switch (query.queryType) {
+          case 'prolog':
+            return await metaLogApiService.prologQuery(query.query);
+          case 'datalog':
+            return await metaLogApiService.datalogQuery(query.query);
+          case 'sparql':
+            return await metaLogApiService.sparqlQuery(query.query);
+        }
+      } catch (error) {
+        console.warn('Federated query failed:', error);
+      }
+    }
+    
+    // Fallback: extract provenance from all files and combine
+    for (const file of query.files) {
+      const provenance = await this.extractProvenanceFromCanvasL(file);
+      results.push(...provenance);
+    }
+    
+    return { results };
+  }
+
+  /**
+   * Extract provenance information from CanvasL file
+   */
+  async extractProvenanceFromCanvasL(canvasLFile: string): Promise<any[]> {
+    const provenance: any[] = [];
+    
+    try {
+      const entries = await databaseService.readJSONL(canvasLFile);
+      
+      for (const entry of entries) {
+        // Extract self-reference metadata
+        if (entry.selfReference) {
+          provenance.push({
+            id: entry.id,
+            file: entry.selfReference.file,
+            line: entry.selfReference.line,
+            pattern: entry.selfReference.pattern,
+            timestamp: entry.selfReference.timestamp || Date.now()
+          });
+        }
+        
+        // Extract provenance history
+        if (entry.provenanceHistory && Array.isArray(entry.provenanceHistory)) {
+          for (const prov of entry.provenanceHistory) {
+            provenance.push({
+              id: entry.id,
+              file: prov.file,
+              line: prov.line,
+              pattern: prov.pattern,
+              timestamp: prov.timestamp || Date.now(),
+              source: 'provenanceHistory'
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error(`Failed to extract provenance from ${canvasLFile}:`, error);
+    }
+    
+    return provenance;
   }
 }
 

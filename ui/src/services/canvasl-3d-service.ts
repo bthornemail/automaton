@@ -45,6 +45,13 @@ export interface Canvas3D {
   };
 }
 
+export interface BipartiteCanvas3D {
+  topology: Canvas3D;
+  system: Canvas3D;
+  horizontalEdges: Edge3D[];
+  verticalEdges: Edge3D[];
+}
+
 export interface CanvasL3DService {
   loadCanvasLTo3D(filename: string): Promise<Canvas3D>;
   convertGraphTo3D(graph: CanvasGraph): Canvas3D;
@@ -55,6 +62,10 @@ export interface CanvasL3DService {
   addEdge3D(canvas3D: Canvas3D, edge: Edge3D): Canvas3D;
   deleteEdge3D(canvas3D: Canvas3D, edgeId: string): Canvas3D;
   sync3DToCanvasL(canvas3D: Canvas3D, filename: string): Promise<void>;
+  // Bipartite-BQF extensions
+  loadBipartiteCanvasL(topologyFile: string, systemFile: string): Promise<BipartiteCanvas3D>;
+  renderBipartitePartition(canvas3D: Canvas3D, partition: 'topology' | 'system'): Canvas3D;
+  extractBipartiteStructure(canvas3D: Canvas3D): BipartiteCanvas3D;
 }
 
 class CanvasL3DServiceImpl implements CanvasL3DService {
@@ -381,6 +392,155 @@ class CanvasL3DServiceImpl implements CanvasL3DService {
       return match ? match[0] : undefined;
     }
     return undefined;
+  }
+
+  /**
+   * Load bipartite CanvasL files (topology and system partitions)
+   */
+  async loadBipartiteCanvasL(topologyFile: string, systemFile: string): Promise<BipartiteCanvas3D> {
+    const topology3D = await this.loadCanvasLTo3D(topologyFile);
+    const system3D = await this.loadCanvasLTo3D(systemFile);
+    
+    // Extract horizontal and vertical edges
+    const horizontalEdges: Edge3D[] = [];
+    const verticalEdges: Edge3D[] = [];
+    
+    // Combine edges from both partitions
+    for (const edge of [...topology3D.edgeList, ...system3D.edgeList]) {
+      if (edge.type === 'horizontal') {
+        horizontalEdges.push(edge);
+      } else if (edge.type === 'vertical') {
+        verticalEdges.push(edge);
+      }
+    }
+    
+    return {
+      topology: topology3D,
+      system: system3D,
+      horizontalEdges,
+      verticalEdges
+    };
+  }
+
+  /**
+   * Render bipartite partition (topology or system)
+   */
+  renderBipartitePartition(canvas3D: Canvas3D, partition: 'topology' | 'system'): Canvas3D {
+    const filteredNodes = new Map<string, Node3D>();
+    const filteredEdges = new Map<string, Edge3D>();
+    
+    // Filter nodes by partition
+    for (const node of canvas3D.nodeList) {
+      const nodePartition = node.metadata?.frontmatter?.bipartite?.partition ||
+                           (node.metadata?.type === 'topology' ? 'topology' : 'system');
+      
+      if (nodePartition === partition) {
+        filteredNodes.set(node.id, node);
+      }
+    }
+    
+    // Filter edges connecting nodes in this partition
+    for (const edge of canvas3D.edgeList) {
+      const fromNode = filteredNodes.get(edge.from);
+      const toNode = filteredNodes.get(edge.to);
+      
+      if (fromNode && toNode) {
+        filteredEdges.set(edge.id, edge);
+      }
+    }
+    
+    // Recalculate bounds
+    const positions = Array.from(filteredNodes.values()).map(n => n.position);
+    const minX = Math.min(...positions.map(p => p[0]), 0);
+    const minY = Math.min(...positions.map(p => p[1]), 0);
+    const minZ = Math.min(...positions.map(p => p[2]), 0);
+    const maxX = Math.max(...positions.map(p => p[0]), 0);
+    const maxY = Math.max(...positions.map(p => p[1]), 0);
+    const maxZ = Math.max(...positions.map(p => p[2]), 0);
+    
+    return {
+      nodes: filteredNodes,
+      edges: filteredEdges,
+      nodeList: Array.from(filteredNodes.values()),
+      edgeList: Array.from(filteredEdges.values()),
+      bounds: {
+        min: [minX, minY, minZ],
+        max: [maxX, maxY, maxZ],
+        center: [(minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2]
+      }
+    };
+  }
+
+  /**
+   * Extract bipartite structure from unified Canvas3D
+   */
+  extractBipartiteStructure(canvas3D: Canvas3D): BipartiteCanvas3D {
+    const topologyNodes = new Map<string, Node3D>();
+    const systemNodes = new Map<string, Node3D>();
+    const horizontalEdges: Edge3D[] = [];
+    const verticalEdges: Edge3D[] = [];
+    
+    // Separate nodes by partition
+    for (const node of canvas3D.nodeList) {
+      const partition = node.metadata?.frontmatter?.bipartite?.partition ||
+                       (node.metadata?.type === 'topology' ? 'topology' : 'system');
+      
+      if (partition === 'topology') {
+        topologyNodes.set(node.id, node);
+      } else {
+        systemNodes.set(node.id, node);
+      }
+    }
+    
+    // Extract edges
+    for (const edge of canvas3D.edgeList) {
+      if (edge.type === 'horizontal') {
+        horizontalEdges.push(edge);
+      } else if (edge.type === 'vertical') {
+        verticalEdges.push(edge);
+      }
+    }
+    
+    // Create topology and system Canvas3D structures
+    const createCanvas3D = (nodes: Map<string, Node3D>, edges: Edge3D[]): Canvas3D => {
+      const filteredEdges = new Map<string, Edge3D>();
+      for (const edge of edges) {
+        if (nodes.has(edge.from) && nodes.has(edge.to)) {
+          filteredEdges.set(edge.id, edge);
+        }
+      }
+      
+      const positions = Array.from(nodes.values()).map(n => n.position);
+      const minX = Math.min(...positions.map(p => p[0]), 0);
+      const minY = Math.min(...positions.map(p => p[1]), 0);
+      const minZ = Math.min(...positions.map(p => p[2]), 0);
+      const maxX = Math.max(...positions.map(p => p[0]), 0);
+      const maxY = Math.max(...positions.map(p => p[1]), 0);
+      const maxZ = Math.max(...positions.map(p => p[2]), 0);
+      
+      return {
+        nodes,
+        edges: filteredEdges,
+        nodeList: Array.from(nodes.values()),
+        edgeList: Array.from(filteredEdges.values()),
+        bounds: {
+          min: [minX, minY, minZ],
+          max: [maxX, maxY, maxZ],
+          center: [(minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2]
+        }
+      };
+    };
+    
+    return {
+      topology: createCanvas3D(topologyNodes, verticalEdges.filter(e => 
+        topologyNodes.has(e.from) && topologyNodes.has(e.to)
+      )),
+      system: createCanvas3D(systemNodes, verticalEdges.filter(e => 
+        systemNodes.has(e.from) && systemNodes.has(e.to)
+      )),
+      horizontalEdges,
+      verticalEdges
+    };
   }
 }
 
