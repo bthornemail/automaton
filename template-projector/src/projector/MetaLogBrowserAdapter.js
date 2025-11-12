@@ -6,6 +6,16 @@
  * - IndexedDB caching for performance
  * - Built-in encryption support (optional)
  * - No Node.js polyfills required
+ * 
+ * @see {@link https://github.com/automaton-system/meta-log-db/blob/main/docs/27-Meta-Log-Browser-Db/README.md Meta-Log Browser Database Documentation}
+ * @see {@link https://github.com/automaton-system/meta-log-db/blob/main/docs/27-Meta-Log-Browser-Db/BROWSER-API-REFERENCE.md Browser API Reference}
+ * @see {@link https://github.com/automaton-system/meta-log-db/blob/main/docs/27-Meta-Log-Browser-Db/MIGRATION-GUIDE.md Migration Guide}
+ * 
+ * Related Documentation:
+ * - meta-log-browser-db-readme: Browser database overview
+ * - meta-log-browser-db-api-reference: Complete API documentation
+ * - meta-log-browser-db-migration-guide: Migration from Node.js version
+ * - meta-log-browser-db-architecture: Architecture explanation
  */
 
 export class MetaLogBrowserAdapter {

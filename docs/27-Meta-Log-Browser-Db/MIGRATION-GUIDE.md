@@ -1,3 +1,28 @@
+---
+id: meta-log-browser-db-migration-guide
+title: "Migration Guide: Node.js to Browser"
+level: practical
+type: migration-guide
+tags: [meta-log-browser-db, migration, nodejs-to-browser, compatibility, api-migration]
+keywords: [migration-guide, nodejs-to-browser, api-compatibility, migration-steps, breaking-changes, compatibility-layer]
+prerequisites: [meta-log-db-progress-readme, meta-log-browser-db-readme]
+enables: [meta-log-browser-db-architecture]
+related: [meta-log-browser-db-readme, meta-log-browser-db-api-reference, meta-log-db-progress-readme]
+readingTime: 25
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "6D-Intelligence-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: [meta-log-browser-db-readme, meta-log-db-progress-readme]
+  watchers: ["4D-Network-Agent"]
+  migrationSteps:
+    - "Update import paths"
+    - "Add async initialization"
+    - "Update file loading to use URLs"
+    - "Configure cache strategies"
+---
+
 # Migration Guide: Node.js to Browser
 
 Guide for migrating from Node.js `MetaLogDb` to browser `MetaLogDbBrowser`.

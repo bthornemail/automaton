@@ -1,3 +1,30 @@
+---
+id: meta-log-browser-db-architecture
+title: "Browser Architecture"
+level: foundational
+type: architecture-explanation
+tags: [meta-log-browser-db, architecture, browser-architecture, design-patterns, component-diagram]
+keywords: [browser-architecture, component-design, data-flow, encryption-flow, cache-strategy, browser-apis, web-crypto-api, indexeddb-api]
+prerequisites: [meta-log-browser-db-readme]
+enables: [meta-log-browser-db-api-reference, meta-log-browser-db-migration-guide]
+related: [meta-log-browser-db-readme, meta-log-browser-db-api-reference, meta-log-browser-db-bip32-39-44-guide, meta-log-browser-db-indexeddb-guide]
+readingTime: 45
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "6D-Intelligence-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: [meta-log-browser-db-readme]
+  watchers: ["4D-Network-Agent", "5D-Consensus-Agent"]
+  architectureLayers:
+    - "MetaLogDbBrowser (API Layer)"
+    - "ProLog/DataLog/R5RS/RDF/SHACL Engines"
+    - "BrowserJsonlParser / BrowserR5RSRegistry"
+    - "BrowserFileIO / IndexedDBStorage"
+    - "BIP32/39/44 / Storage Encryption"
+    - "Fetch API / IndexedDB / Web Crypto API"
+---
+
 # Browser Architecture
 
 Architecture explanation for Meta-Log Browser Database.

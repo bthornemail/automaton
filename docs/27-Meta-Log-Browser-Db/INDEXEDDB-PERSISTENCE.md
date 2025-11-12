@@ -1,3 +1,27 @@
+---
+id: meta-log-browser-db-indexeddb-guide
+title: "IndexedDB Persistence Guide"
+level: practical
+type: guide
+tags: [meta-log-browser-db, indexeddb, persistence, browser-storage, caching]
+keywords: [indexeddb-persistence, browser-storage, persistent-cache, object-stores, async-storage, storage-quotas]
+prerequisites: [meta-log-browser-db-readme]
+enables: [meta-log-browser-db-migration-guide, meta-log-browser-db-architecture]
+related: [meta-log-browser-db-readme, meta-log-browser-db-api-reference, meta-log-browser-db-bip32-39-44-guide]
+readingTime: 35
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "4D-Network-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: [meta-log-browser-db-readme]
+  watchers: ["6D-Intelligence-Agent"]
+  storageImplementation:
+    objectStores: ["files", "triples", "facts"]
+    cacheStrategies: ["memory", "indexeddb", "both"]
+    encryption: "Optional BIP32/39/44 encryption"
+---
+
 # IndexedDB Persistence Guide
 
 Complete guide to using IndexedDB persistence in Meta-Log Browser Database.

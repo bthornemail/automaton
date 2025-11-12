@@ -1,5 +1,22 @@
 /**
  * Browser JSONL Parser Tests
+ * 
+ * Tests for browser-native JSONL/CanvasL parser implementation.
+ * 
+ * @see {@link https://github.com/automaton-system/meta-log-db/blob/main/docs/27-Meta-Log-Browser-Db/README.md Meta-Log Browser Database Documentation}
+ * @see {@link https://github.com/automaton-system/meta-log-db/blob/main/docs/27-Meta-Log-Browser-Db/BROWSER-API-REFERENCE.md Browser API Reference}
+ * 
+ * Related Documentation:
+ * - meta-log-browser-db-readme: Browser database overview
+ * - meta-log-browser-db-api-reference: Complete API documentation
+ * - meta-log-browser-db-architecture: Architecture explanation
+ * 
+ * Test Coverage:
+ * - JSONL file parsing from URLs
+ * - CanvasL directive parsing
+ * - Fact extraction
+ * - RDF triple conversion
+ * - Encryption support
  */
 
 import { BrowserJsonlParser } from '../jsonl/browser-parser';

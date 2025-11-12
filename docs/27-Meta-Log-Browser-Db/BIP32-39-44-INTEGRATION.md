@@ -1,3 +1,28 @@
+---
+id: meta-log-browser-db-bip32-39-44-guide
+title: "BIP32/39/44 Integration Guide"
+level: intermediate
+type: guide
+tags: [meta-log-browser-db, bip32, bip39, bip44, cryptography, hd-wallet, mnemonic, encryption]
+keywords: [bip32-bip39-bip44, hd-wallet-derivation, mnemonic-generation, seed-derivation, storage-encryption, web-crypto-api, deterministic-keys]
+prerequisites: [meta-log-browser-db-readme]
+enables: [meta-log-browser-db-indexeddb-guide, meta-log-browser-db-migration-guide]
+related: [meta-log-browser-db-readme, meta-log-browser-db-api-reference, meta-log-browser-db-indexeddb-guide]
+readingTime: 30
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "5D-Consensus-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: [meta-log-browser-db-readme]
+  watchers: ["4D-Network-Agent", "6D-Intelligence-Agent"]
+  cryptoImplementation:
+    bip32: "HD key derivation using Web Crypto API"
+    bip39: "Mnemonic generation/validation with PBKDF2"
+    bip44: "Standard derivation paths for storage keys"
+    encryption: "AES-GCM encryption with derived keys"
+---
+
 # BIP32/39/44 Integration Guide
 
 Complete guide to using BIP32, BIP39, and BIP44 cryptographic features in Meta-Log Browser Database.

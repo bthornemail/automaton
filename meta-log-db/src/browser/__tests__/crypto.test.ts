@@ -1,5 +1,22 @@
 /**
  * Browser Crypto Tests
+ * 
+ * Tests for BIP32/39/44 cryptographic implementation and storage encryption.
+ * 
+ * @see {@link https://github.com/automaton-system/meta-log-db/blob/main/docs/27-Meta-Log-Browser-Db/BIP32-39-44-INTEGRATION.md BIP32/39/44 Integration Guide}
+ * @see {@link https://github.com/automaton-system/meta-log-db/blob/main/docs/27-Meta-Log-Browser-Db/README.md Meta-Log Browser Database Documentation}
+ * 
+ * Related Documentation:
+ * - meta-log-browser-db-bip32-39-44-guide: Complete BIP32/39/44 guide
+ * - meta-log-browser-db-readme: Browser database overview
+ * - meta-log-browser-db-indexeddb-guide: Storage encryption usage
+ * 
+ * Test Coverage:
+ * - BIP39 mnemonic generation and validation
+ * - BIP32 HD key derivation
+ * - BIP44 standard derivation paths
+ * - Storage encryption/decryption
+ * - Key derivation from mnemonics
  */
 
 import { generateMnemonic, validateMnemonic, mnemonicToSeed } from '../crypto/bip39';

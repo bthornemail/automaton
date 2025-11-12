@@ -1,5 +1,22 @@
 /**
  * IndexedDB Storage Tests
+ * 
+ * Tests for IndexedDB persistence layer implementation.
+ * 
+ * @see {@link https://github.com/automaton-system/meta-log-db/blob/main/docs/27-Meta-Log-Browser-Db/INDEXEDDB-PERSISTENCE.md IndexedDB Persistence Guide}
+ * @see {@link https://github.com/automaton-system/meta-log-db/blob/main/docs/27-Meta-Log-Browser-Db/README.md Meta-Log Browser Database Documentation}
+ * 
+ * Related Documentation:
+ * - meta-log-browser-db-indexeddb-guide: Complete IndexedDB guide
+ * - meta-log-browser-db-readme: Browser database overview
+ * - meta-log-browser-db-api-reference: IndexedDBStorage API reference
+ * 
+ * Test Coverage:
+ * - IndexedDB initialization
+ * - Object store operations (get, set, delete, clear)
+ * - Key management
+ * - Error handling
+ * - Database lifecycle
  */
 
 import { IndexedDBStorage } from '../indexeddb-storage';

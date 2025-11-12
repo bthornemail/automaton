@@ -1,3 +1,39 @@
+---
+id: meta-log-browser-db-readme
+title: "Meta-Log Browser Database"
+level: foundational
+type: navigation
+tags: [meta-log-browser-db, browser-native, indexeddb, bip32, bip39, bip44, encryption, prolog, datalog, r5rs]
+keywords: [meta-log-browser-db, browser-native-database, indexeddb-persistence, bip32-bip39-bip44, storage-encryption, browser-file-io, fetch-api, web-crypto-api]
+prerequisites: [meta-log-db-progress-readme, meta-log-docs-readme]
+enables: [meta-log-browser-db-api-reference, meta-log-browser-db-bip32-39-44-guide, meta-log-browser-db-indexeddb-guide, meta-log-browser-db-migration-guide]
+related: [meta-log-db-progress-readme, meta-log-docs-readme, canvasl-rfc2119-spec, multiverse-canvas-rfc2119-spec]
+readingTime: 20
+difficulty: 4
+blackboard:
+  status: active
+  assignedAgent: "4D-Network-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: [meta-log-db]
+  watchers: ["6D-Intelligence-Agent", "5D-Consensus-Agent"]
+  r5rsEngine: "r5rs-canvas-engine.scm"
+  selfBuilding:
+    enabled: true
+    source: "meta-log-db/src/browser"
+    pattern: "browser-native-implementation"
+    regeneration:
+      function: "r5rs:parse-jsonl-canvas"
+      args: ["generate.metaverse.jsonl"]
+      context:
+        module: "MODULE 2: JSONL Parser & Canvas Loader"
+        functions: ["r5rs:parse-jsonl-canvas", "r5rs:extract-facts", "r5rs:jsonl-to-rdf"]
+  browserFeatures:
+    fileIO: "BrowserFileIO with fetch API"
+    storage: "IndexedDBStorage for persistence"
+    encryption: "BIP32/39/44 cryptographic support"
+    caching: "Memory + IndexedDB cache strategies"
+---
+
 # Meta-Log Browser Database
 
 Browser-native implementation of Meta-Log Database with BIP32/39/44 cryptographic support, IndexedDB persistence, and browser file I/O.

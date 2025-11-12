@@ -1,3 +1,23 @@
+---
+id: meta-log-browser-db-api-reference
+title: "Browser API Reference"
+level: practical
+type: api-reference
+tags: [meta-log-browser-db, api-reference, browser-api, typescript, javascript]
+keywords: [meta-log-browser-db-api, browser-api-reference, metadlogdbbrowser, browserfileio, indexeddbstorage, typescript-api, javascript-api]
+prerequisites: [meta-log-browser-db-readme]
+enables: [meta-log-browser-db-migration-guide, meta-log-browser-db-architecture]
+related: [meta-log-browser-db-readme, meta-log-browser-db-bip32-39-44-guide, meta-log-browser-db-indexeddb-guide]
+readingTime: 40
+difficulty: 3
+blackboard:
+  status: active
+  assignedAgent: "6D-Intelligence-Agent"
+  lastUpdate: "2025-01-07"
+  dependencies: [meta-log-browser-db-readme]
+  watchers: ["4D-Network-Agent"]
+---
+
 # Browser API Reference
 
 Complete API documentation for Meta-Log Browser Database.
