@@ -7,10 +7,13 @@ import { domainConfig } from './src/config/domain-config.js';
 const __dirname = resolve(fileURLToPath(new URL('.', import.meta.url)));
 
 // Vite plugin to replace Node.js modules with browser-compatible stubs
+// NOTE: MetaLogDbBrowser is browser-native and doesn't use Node.js modules.
+// This plugin is kept only for other dependencies that might need polyfills.
 const nodeModulesPlugin = () => ({
   name: 'node-modules-polyfill',
   resolveId(id) {
-    // Replace Node.js built-in modules with empty stubs
+    // Replace Node.js built-in modules with empty stubs (only for non-browser-native code)
+    // MetaLogDbBrowser uses browser APIs directly, so it won't hit this
     if (id === 'fs' || id === 'path' || id === 'os') {
       return resolve(__dirname, 'src/projector/node-polyfills.js');
     }
