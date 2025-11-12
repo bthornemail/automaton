@@ -13,9 +13,53 @@
       <span id="slide-counter">1 / 1</span>
       <button id="next">→</button>
       <button id="re-render" title="Re-render and re-populate current slide">⚡</button>
+      <button id="generate-topic" title="Generate slide from topic">✨</button>
       <button id="blackboard" title="Open blackboard editor">📝</button>
       <button id="fullscreen">⛶</button>
     </nav>
+    
+    <!-- Topic Input Modal -->
+    <div id="topic-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1001; overflow: auto;">
+      <div style="max-width: 800px; margin: 2rem auto; background: #1a1a1a; padding: 2rem; border-radius: 1rem; border: 2px solid #00ffff;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h2 style="color: #00ffff; margin: 0;">Generate Slide from Topic</h2>
+          <button id="close-topic-modal" style="background: #ff4444; color: white; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer;">×</button>
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label style="color: #f0f0f0; display: block; margin-bottom: 0.5rem; font-weight: bold;">Topic:</label>
+          <input type="text" id="topic-input" placeholder="e.g., quantum computing, blockchain consensus, neural networks..." style="width: 100%; padding: 0.75rem; background: #0a0a0a; color: #f0f0f0; border: 2px solid #00ffff; border-radius: 0.5rem; font-size: 1rem;" />
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+          <div>
+            <label style="color: #f0f0f0; display: block; margin-bottom: 0.5rem;">Dimension (optional):</label>
+            <select id="topic-dimension" style="width: 100%; padding: 0.5rem; background: #0a0a0a; color: #f0f0f0; border: 1px solid #333; border-radius: 0.5rem;">
+              <option value="">Auto-detect</option>
+              <option value="0D">0D - Topology</option>
+              <option value="1D">1D - Temporal</option>
+              <option value="2D">2D - Structural</option>
+              <option value="3D">3D - Algebraic</option>
+              <option value="4D">4D - Network</option>
+              <option value="5D">5D - Consensus</option>
+              <option value="6D">6D - Intelligence</option>
+              <option value="7D">7D - Quantum</option>
+            </select>
+          </div>
+          <div>
+            <label style="color: #f0f0f0; display: block; margin-bottom: 0.5rem;">Partition (optional):</label>
+            <select id="topic-partition" style="width: 100%; padding: 0.5rem; background: #0a0a0a; color: #f0f0f0; border: 1px solid #333; border-radius: 0.5rem;">
+              <option value="">Auto-detect</option>
+              <option value="topology">Topology</option>
+              <option value="system">System</option>
+            </select>
+          </div>
+        </div>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+          <button id="generate-topic-slide" style="background: #00ff00; color: #000; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer; font-weight: bold; flex: 1;">Generate Slide</button>
+          <button id="cancel-topic" style="background: #666; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 0.5rem; cursor: pointer;">Cancel</button>
+        </div>
+        <div id="topic-status" style="margin-top: 1rem; color: #888; font-size: 0.875rem;"></div>
+      </div>
+    </div>
     
     <!-- Blackboard Editor Modal -->
     <div id="blackboard-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; overflow: auto;">
@@ -64,6 +108,7 @@
   <script type="module">
     import { Projector } from './src/projector/Projector.js';
     import { AgentWorkerCoordinator } from './src/workers/AgentWorkerCoordinator.js';
+    import { TopicSlideGenerator } from './src/projector/TopicSlideGenerator.js';
     
     // Initialize projector
     const projector = new Projector();
@@ -71,12 +116,27 @@
     
     // Initialize agent worker coordinator
     const agentWorkerCoordinator = new AgentWorkerCoordinator();
+    
+    // Initialize topic slide generator
+    let topicSlideGenerator = null;
+    
     const prevBtn = document.getElementById('prev');
     const nextBtn = document.getElementById('next');
     const reRenderBtn = document.getElementById('re-render');
+    const generateTopicBtn = document.getElementById('generate-topic');
     const blackboardBtn = document.getElementById('blackboard');
     const slideCounter = document.getElementById('slide-counter');
     const statusBar = document.getElementById('status');
+    
+    // Topic modal elements
+    const topicModal = document.getElementById('topic-modal');
+    const topicInput = document.getElementById('topic-input');
+    const topicDimension = document.getElementById('topic-dimension');
+    const topicPartition = document.getElementById('topic-partition');
+    const generateTopicSlideBtn = document.getElementById('generate-topic-slide');
+    const closeTopicModal = document.getElementById('close-topic-modal');
+    const cancelTopic = document.getElementById('cancel-topic');
+    const topicStatus = document.getElementById('topic-status');
     
     // Blackboard editor elements
     const blackboardModal = document.getElementById('blackboard-modal');
@@ -375,6 +435,87 @@
       }
     }
     
+    // Topic generation handlers
+    generateTopicBtn.addEventListener('click', () => {
+      topicModal.style.display = 'block';
+      topicInput.focus();
+    });
+    
+    closeTopicModal.addEventListener('click', () => {
+      topicModal.style.display = 'none';
+      topicInput.value = '';
+      topicDimension.value = '';
+      topicPartition.value = '';
+      topicStatus.textContent = '';
+    });
+    
+    cancelTopic.addEventListener('click', () => {
+      topicModal.style.display = 'none';
+      topicInput.value = '';
+      topicDimension.value = '';
+      topicPartition.value = '';
+      topicStatus.textContent = '';
+    });
+    
+    generateTopicSlideBtn.addEventListener('click', async () => {
+      const topic = topicInput.value.trim();
+      if (!topic) {
+        topicStatus.textContent = '⚠️ Please enter a topic';
+        topicStatus.style.color = '#ffaa00';
+        return;
+      }
+      
+      topicStatus.textContent = 'Generating slide...';
+      topicStatus.style.color = '#00aaff';
+      generateTopicSlideBtn.disabled = true;
+      
+      try {
+        if (!topicSlideGenerator) {
+          topicSlideGenerator = new TopicSlideGenerator(
+            projector.agentCoordinator,
+            projector.agentCoordinator.contentLoader
+          );
+        }
+        
+        const dimension = topicDimension.value || null;
+        const partition = topicPartition.value || null;
+        
+        const slide = await topicSlideGenerator.generateSlideFromTopic(topic, {
+          dimension,
+          partition
+        });
+        
+        // Add slide to deck
+        projector.slides.push(slide);
+        projector.currentSlide = slide;
+        
+        // Render the new slide
+        render();
+        
+        // Close modal
+        topicModal.style.display = 'none';
+        topicInput.value = '';
+        topicDimension.value = '';
+        topicPartition.value = '';
+        topicStatus.textContent = '';
+        
+        statusBar.textContent = `Generated slide: "${slide.title}"`;
+      } catch (error) {
+        console.error('Failed to generate topic slide:', error);
+        topicStatus.textContent = `❌ Error: ${error.message}`;
+        topicStatus.style.color = '#ff4444';
+      } finally {
+        generateTopicSlideBtn.disabled = false;
+      }
+    });
+    
+    // Allow Enter key to generate slide
+    topicInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        generateTopicSlideBtn.click();
+      }
+    });
+    
     // Blackboard editor handlers
     blackboardBtn.addEventListener('click', async () => {
       await loadBlackboardFile(blackboardFileSelect.value);
@@ -548,8 +689,36 @@
         // Preload content sources first (enables blackboard editing)
         await preloadContentSources();
         
-        // Load demo deck
+        // Initialize topic slide generator after projector is ready
+        topicSlideGenerator = new TopicSlideGenerator(
+          projector.agentCoordinator,
+          projector.agentCoordinator.contentLoader
+        );
+        
+        // Load initial automaton agents overview slide first
+        try {
+          const agentsOverviewDeck = await projector.loadDeck('templates/slides/automaton-agents-overview.canvasl.jsonl');
+          if (agentsOverviewDeck.slides && agentsOverviewDeck.slides.length > 0) {
+            projector.currentSlide = agentsOverviewDeck.slides[0];
+            projector.slides = [agentsOverviewDeck.slides[0]]; // Start with just the overview
+            render();
+            statusBar.textContent = 'Automaton Agents Overview loaded';
+          }
+        } catch (error) {
+          console.warn('Failed to load automaton agents overview:', error);
+        }
+        
+        // Then load demo deck (append to existing slides)
+        const initialSlideCount = projector.slides.length;
         const deck = await projector.loadDeck('templates/documents/demo-deck.canvasl.jsonl');
+        
+        // Ensure overview slide stays at the beginning
+        if (initialSlideCount > 0 && projector.slides.length > initialSlideCount) {
+          const overviewSlide = projector.slides[0];
+          const demoSlides = projector.slides.slice(initialSlideCount);
+          projector.slides = [overviewSlide, ...demoSlides];
+          projector.currentSlide = overviewSlide; // Keep overview as current
+        }
         
         console.log('Deck loaded:', deck);
         console.log('Slides found:', projector.slides.length);

@@ -64,14 +64,50 @@ See [API.md](./API.md) for complete API documentation.
 ## Development
 
 ```bash
-# Build
+# Build (Node.js)
 npm run build
+
+# Build browser bundle
+npm run build:browser
+
+# Build all (Node.js + browser)
+npm run build:all
+
+# Verify browser build
+npm run verify:browser
 
 # Watch mode
 npm run watch
 
 # Test
 npm test
+```
+
+## Browser Usage
+
+For browser environments, use the browser-specific build:
+
+```typescript
+import { MetaLogDbBrowser } from 'meta-log-db/browser';
+
+const db = new MetaLogDbBrowser({
+  enableProlog: true,
+  enableDatalog: true,
+  enableRdf: true,
+  enableShacl: true,
+  cacheStrategy: 'both', // Use both memory and IndexedDB cache
+  indexedDBName: 'meta-log-db'
+});
+
+// Initialize (sets up IndexedDB, file I/O, etc.)
+await db.init();
+
+// Load canvas from URL
+await db.loadCanvas('automaton-kernel.jsonl', '/jsonl/automaton-kernel.jsonl');
+
+// Use same API as Node.js version
+const facts = db.extractFacts();
+const results = await db.prologQuery('(node ?Id ?Type)');
 ```
 
 ## Linking to Plugins

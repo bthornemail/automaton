@@ -1,5 +1,20 @@
 import { ShaclShapes, ShaclValidationReport, ShaclViolation, RdfTriple } from '../types/index.js';
-import * as fs from 'fs';
+// Conditional fs import - only available in Node.js
+// Use dynamic import to avoid TypeScript errors in browser builds
+let fs: any = null;
+// @ts-ignore - Check for Node.js environment
+if (typeof window === 'undefined') {
+  try {
+    // @ts-ignore - fs is not available in browser, require may not exist
+    const nodeRequire = typeof require !== 'undefined' ? require : null;
+    if (nodeRequire) {
+      fs = nodeRequire('fs');
+    }
+  } catch {
+    // fs not available
+    fs = null;
+  }
+}
 import { TurtleParser, TurtleTriple } from './turtle-parser.js';
 
 /**
@@ -10,6 +25,9 @@ export class ShaclValidator {
    * Load SHACL shapes from file
    */
   async loadShapes(path: string): Promise<ShaclShapes> {
+    if (!fs) {
+      throw new Error('File system access not available in browser. Use loadShapesFromContent() instead.');
+    }
     const content = fs.readFileSync(path, 'utf-8');
     
     // Try to parse as Turtle first

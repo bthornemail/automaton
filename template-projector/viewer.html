@@ -33,7 +33,8 @@
     // Initialize on load
     document.addEventListener('DOMContentLoaded', async () => {
       try {
-        await projector.init(projector.metaLog);
+        // Call onInit which initializes metaLog internally
+        await projector.onInit();
         
         // Load demo deck
         const deck = await projector.loadDeck('templates/documents/demo-deck.canvasl.jsonl');

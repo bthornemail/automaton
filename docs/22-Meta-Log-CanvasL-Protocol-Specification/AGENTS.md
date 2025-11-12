@@ -519,18 +519,135 @@ const analysis = await agentApi.executeAgent('6D-Intelligence-Agent', {
 - Check agent dependencies
 - Ensure proper dimensional progression
 
+## Bipartite-BQF Extension
+
+### Overview
+
+The **Bipartite Binary Quadratic Polynomial Form (Bipartite-BQF)** extension to CanvasL provides optimal mathematical encoding of the dimensional progression (0D-7D) through bipartite graph structures. This extension enhances agent capabilities with explicit topology-system separation and BQF encoding.
+
+**Status**: Specification complete (v1.0.0)
+**Package**: `@automaton/bipartite-bqf-canvasl-spec@1.0.0`
+**Documentation**: `docs/28-Canvasl-Frontmatter-Knowledge-Model/`
+
+### Key Concepts
+
+1. **Bipartite Structure**: Explicit topology (left) and system (right) partitions
+2. **Binary Quadratic Forms**: Mathematical encoding as `BQF(x, y) = ax² + bxy + cy²`
+3. **Mapping Chain**: Symbol → Polynomial → BQF → R5RS Procedure
+4. **Frontmatter Integration**: Seamless sync with Obsidian frontmatter
+
+### Agent Enhancements
+
+#### 2D-Structural-Agent: Primary Bipartite Agent
+
+**Enhanced Capabilities**:
+- Builds and validates bipartite graph structure
+- Handles BQF encoding and polynomial representation
+- Manages mapping chain transformations
+- Synchronizes CanvasL ↔ Frontmatter bipartite metadata
+
+**New Operations**:
+- `buildBipartiteGraph`: Extract bipartite structure from canvas
+- `validateBipartite`: Validate bipartite structure and BQF progression
+- `syncBipartiteFrontmatter`: Sync bipartite metadata with frontmatter
+
+**Example**:
+```typescript
+// Build bipartite graph
+const graph = await agentApi.executeAgent('2D-Structural-Agent', {
+  operation: 'buildBipartiteGraph',
+  parameters: {
+    canvasFile: 'automaton-kernel.jsonl',
+    extractTopology: true,
+    extractSystem: true,
+    extractBQFMetadata: true
+  }
+});
+```
+
+#### 6D-Intelligence-Agent: BQF Analysis
+
+**Enhanced Capabilities**:
+- Analyzes BQF patterns across dimensions
+- Optimizes polynomial representations
+- Discovers BQF symmetries and relationships
+- Validates dimensional progression consistency
+
+**New Operations**:
+- `analyzeBQFPatterns`: Analyze BQF patterns across dimensions
+- `optimizeBQFRepresentation`: Optimize BQF encoding
+- `discoverBQFSymmetries`: Find BQF symmetries
+
+#### Dimensional Agents: BQF Encoding
+
+Each dimensional agent (0D-7D) maintains BQF encoding for its dimension:
+
+- **0D-Topology-Agent**: BQF(x,y) = 0 (identity)
+- **1D-Temporal-Agent**: BQF(x,y) = x² (successor)
+- **2D-Structural-Agent**: BQF(x,y) = x² + xy + y² (pairing)
+- **3D-7D Agents**: Higher-dimensional BQF operations
+
+### Frontmatter Schema Extension
+
+Bipartite-BQF adds the following to frontmatter:
+
+```yaml
+bipartite:
+  partition: topology | system
+  dimension: 0D | 1D | 2D | 3D | 4D | 5D | 6D | 7D
+  bqf:
+    coefficients: [a, b, c]
+    form: "ax² + bxy + cy²"
+    signature: identity | successor | pairing | algebra | network | consensus | intelligence | quantum
+  mappingChain:
+    symbol: "(church-add x y)"
+    polynomial: "x² + 2xy + y²"
+    bqf: [1, 2, 1]
+    procedure: "r5rs:church-add"
+```
+
+### Validation Requirements
+
+Agents MUST validate:
+1. Bipartite structure (topology/system partitions)
+2. BQF progression (0D → 7D dimensional consistency)
+3. Mapping chain completeness (Symbol → Polynomial → BQF → Procedure)
+4. Horizontal edges (topology ↔ system mappings)
+5. Vertical edges (dimensional progression)
+6. Frontmatter synchronization (CanvasL ↔ Frontmatter)
+
+### Documentation References
+
+**Core Specifications (v1.0.0)**:
+- **`docs/28-Canvasl-Frontmatter-Knowledge-Model/00-META-SPECIFICATION-RFC2119.md`**: Meta-specification
+- **`docs/28-Canvasl-Frontmatter-Knowledge-Model/01-BIPARTITE-BQF-EXTENSION-RFC2119.md`**: Extension spec
+- **`docs/28-Canvasl-Frontmatter-Knowledge-Model/02-PROTOCOL-SPECIFICATION-RFC2119.md`**: Protocol spec
+- **`docs/28-Canvasl-Frontmatter-Knowledge-Model/03-FRONTMATTER-INTEGRATION-RFC2119.md`**: Integration spec
+
+**Supporting Materials**:
+- **`docs/28-Canvasl-Frontmatter-Knowledge-Model/README.md`**: Quick start guide
+- **`docs/28-Canvasl-Frontmatter-Knowledge-Model/examples/`**: Working examples
+- **`docs/28-Canvasl-Frontmatter-Knowledge-Model/reference/`**: Grammar and validation references
+
+**Related**:
+- **`docs/04-CanvasL/CANVASL-RFC2119-SPEC.md`**: Base CanvasL specification
+- **`evolutions/obsidian-frontmatter-knowledge-model/`**: Frontmatter knowledge model
+- **`wiki/horizontal/integration-guides/topology-to-system-mappings.md`**: Bipartite structure guide
+
 ## Related Documentation
 
 - **`META-LOG-CANVASL-PROTOCOL-RFC2119-SPEC.md`**: Complete protocol specification
 - **`INTRODUCTION.md`**: Introduction for all audiences
 - **`docs/19-Agent-Procedures-Constraints-API/README.md`**: Agent API documentation
 - **`AGENTS.md`** (root): Complete multi-agent system documentation
+- **`docs/28-Canvasl-Frontmatter-Knowledge-Model/`**: Bipartite-BQF extension specifications
 
 ## Questions?
 
 - **Agent Questions**: See this guide
 - **API Questions**: See `docs/19-Agent-Procedures-Constraints-API/README.md`
 - **Technical Questions**: See `META-LOG-CANVASL-PROTOCOL-RFC2119-SPEC.md`
+- **Bipartite-BQF Questions**: See `docs/28-Canvasl-Frontmatter-Knowledge-Model/README.md`
 
 ---
 

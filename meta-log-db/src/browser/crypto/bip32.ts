@@ -31,15 +31,19 @@ function parsePath(path: string): number[] {
  * HMAC-SHA512 using Web Crypto API
  */
 async function hmacSha512(key: Uint8Array, data: Uint8Array): Promise<Uint8Array> {
+  // Ensure we have proper ArrayBuffer views
+  const keyBuffer = key.buffer instanceof ArrayBuffer ? key : new Uint8Array(key).buffer;
+  const dataBuffer = data.buffer instanceof ArrayBuffer ? data : new Uint8Array(data).buffer;
+  
   const cryptoKey = await crypto.subtle.importKey(
     'raw',
-    key,
+    keyBuffer as ArrayBuffer,
     { name: 'HMAC', hash: 'SHA-512' },
     false,
     ['sign']
   );
 
-  const signature = await crypto.subtle.sign('HMAC', cryptoKey, data);
+  const signature = await crypto.subtle.sign('HMAC', cryptoKey, dataBuffer as ArrayBuffer);
   return new Uint8Array(signature);
 }
 
@@ -100,19 +104,23 @@ export async function deriveKey(seed: Uint8Array, path: string): Promise<CryptoK
   const indices = parsePath(path);
 
   // Derive through each level
-  let currentKey = masterKey;
-  let currentChainCode = masterChainCode;
+  let currentKey: Uint8Array = masterKey;
+  let currentChainCode: Uint8Array = masterChainCode;
 
   for (const index of indices) {
     const result = await deriveChildKey(currentKey, currentChainCode, index);
-    currentKey = result.key;
-    currentChainCode = result.chainCode;
+    currentKey = new Uint8Array(result.key);
+    currentChainCode = new Uint8Array(result.chainCode);
   }
 
   // Import as AES-GCM key for encryption
+  // Ensure we have a proper ArrayBuffer
+  const keyBuffer = currentKey.buffer instanceof ArrayBuffer 
+    ? currentKey.buffer 
+    : new Uint8Array(currentKey).buffer;
   return await crypto.subtle.importKey(
     'raw',
-    currentKey,
+    keyBuffer as ArrayBuffer,
     { name: 'AES-GCM', length: 256 },
     false,
     ['encrypt', 'decrypt']
@@ -154,7 +162,12 @@ export async function derivePublicKey(privateKey: CryptoKey): Promise<CryptoKey>
  */
 export async function deriveFromExtendedKey(extendedKey: string, path: string): Promise<CryptoKey> {
   // For now, decode as hex (full implementation would use base58)
-  const keyBytes = Uint8Array.from(Buffer.from(extendedKey, 'hex'));
+  // Browser-compatible hex decoding
+  const hexMatch = extendedKey.match(/.{1,2}/g);
+  if (!hexMatch) {
+    throw new Error('Invalid hex string');
+  }
+  const keyBytes = new Uint8Array(hexMatch.map(byte => parseInt(byte, 16)));
   
   if (keyBytes.length < 78) {
     throw new Error('Invalid extended key length');
@@ -167,18 +180,22 @@ export async function deriveFromExtendedKey(extendedKey: string, path: string): 
   const indices = parsePath(path.startsWith('m/') ? path : `m/${path}`);
 
   // Derive through each level
-  let currentKey = key;
-  let currentChainCode = chainCode;
+  let currentKey: Uint8Array = new Uint8Array(key);
+  let currentChainCode: Uint8Array = new Uint8Array(chainCode);
 
   for (const index of indices) {
     const result = await deriveChildKey(currentKey, currentChainCode, index);
-    currentKey = result.key;
-    currentChainCode = result.chainCode;
+    currentKey = new Uint8Array(result.key);
+    currentChainCode = new Uint8Array(result.chainCode);
   }
 
+  // Ensure we have a proper ArrayBuffer
+  const keyBuffer = currentKey.buffer instanceof ArrayBuffer 
+    ? currentKey.buffer 
+    : new Uint8Array(currentKey).buffer;
   return await crypto.subtle.importKey(
     'raw',
-    currentKey,
+    keyBuffer as ArrayBuffer,
     { name: 'AES-GCM', length: 256 },
     false,
     ['encrypt', 'decrypt']

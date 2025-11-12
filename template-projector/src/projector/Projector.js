@@ -239,7 +239,13 @@ export class Projector extends BasePlugin {
       // Execute
       const result = await this.execute(expanded);
       
-      this.slides = result.slides;
+      // Append slides instead of replacing (allows multiple deck loads)
+      if (result.slides && result.slides.length > 0) {
+        this.slides = this.slides || [];
+        this.slides.push(...result.slides);
+      } else {
+        this.slides = result.slides || this.slides || [];
+      }
       
       // Log slide loading details
       console.log(`Loaded ${this.slides.length} slides from deck`);

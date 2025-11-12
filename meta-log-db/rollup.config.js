@@ -1,5 +1,9 @@
 /**
  * Rollup configuration for browser bundle
+ * 
+ * Bundles browser-specific code into a single ES module file.
+ * The TypeScript plugin compiles on-the-fly, so the separate tsc step
+ * in build:browser is mainly for type checking and declarations.
  */
 
 const { nodeResolve } = require('@rollup/plugin-node-resolve');
@@ -12,13 +16,15 @@ module.exports = {
     {
       file: 'dist/browser/index.js',
       format: 'es',
-      sourcemap: true
+      sourcemap: true,
+      exports: 'named'
     },
     {
       file: 'dist/browser/index.umd.js',
       format: 'umd',
       name: 'MetaLogDbBrowser',
-      sourcemap: true
+      sourcemap: true,
+      exports: 'named'
     }
   ],
   plugins: [
@@ -30,7 +36,8 @@ module.exports = {
     typescript({
       tsconfig: 'tsconfig.browser.json',
       declaration: false,
-      declarationMap: false
+      declarationMap: false,
+      sourceMap: true
     })
   ],
   external: []

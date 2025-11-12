@@ -1,0 +1,38 @@
+{"id": "automaton-agents-overview", "type": "slide", "title": "Automaton Agents Overview", "dimension": "0D", "description": "Multi-agent system for computational topology canvas spanning dimensions 0D-7D"}
+
+{"type": "rdf-triple", "subject": "#automaton-agents-overview", "predicate": "rdf:type", "object": "automaton:AgentOverview"}
+
+{"type": "rdf-triple", "subject": "#automaton-agents-overview", "predicate": "automaton:hasDimension", "object": "\"0D\""}
+
+{"type": "rdf-triple", "subject": "#automaton-agents-overview", "predicate": "automaton:hasPartition", "object": "\"topology\""}
+
+{"id": "agent-0d-topology", "type": "ui-component", "component": {"type": "card", "title": "0D-Topology-Agent", "content": "Maintains quantum vacuum topology and identity processes\n\n**Church Encoding:** r5rs:church-zero\n**Purpose:** Base foundation for all dimensional agents", "dimension": "0D", "partition": "topology"}}
+
+{"id": "agent-1d-temporal", "type": "ui-component", "component": {"type": "card", "title": "1D-Temporal-Agent", "content": "Handles temporal evolution and Church successor operations\n\n**Church Encoding:** r5rs:church-succ\n**Dependencies:** 0D-Topology-Agent", "dimension": "1D", "partition": "topology"}}
+
+{"id": "agent-2d-structural", "type": "ui-component", "component": {"type": "card", "title": "2D-Structural-Agent", "content": "Manages spatial structure and pattern encoding\n\n**Church Encoding:** r5rs:church-pair\n**Dependencies:** 1D-Temporal-Agent", "dimension": "2D", "partition": "topology"}}
+
+{"id": "agent-3d-algebraic", "type": "ui-component", "component": {"type": "card", "title": "3D-Algebraic-Agent", "content": "Performs Church algebra operations\n\n**Church Encoding:** r5rs:church-add, r5rs:church-mult, r5rs:church-exp\n**Dependencies:** 2D-Structural-Agent", "dimension": "3D", "partition": "system"}}
+
+{"id": "agent-4d-network", "type": "ui-component", "component": {"type": "card", "title": "4D-Network-Agent", "content": "Manages spacetime and network operations\n\n**Capabilities:** IPv4/IPv6, localhost, CI/CD\n**Dependencies:** 3D-Algebraic-Agent", "dimension": "4D", "partition": "system"}}
+
+{"id": "agent-5d-consensus", "type": "ui-component", "component": {"type": "card", "title": "5D-Consensus-Agent", "content": "Implements distributed consensus and blockchain operations\n\n**Requirements:** MUST implement exactly one blockchain system\n**Dependencies:** 4D-Network-Agent", "dimension": "5D", "partition": "system"}}
+
+{"id": "agent-6d-intelligence", "type": "ui-component", "component": {"type": "card", "title": "6D-Intelligence-Agent", "content": "Handles emergent AI and neural network operations\n\n**Requirements:** MUST implement exactly one AI system\n**Dependencies:** 5D-Consensus-Agent", "dimension": "6D", "partition": "system"}}
+
+{"id": "agent-7d-quantum", "type": "ui-component", "component": {"type": "card", "title": "7D-Quantum-Agent", "content": "Manages quantum superposition and entanglement\n\n**Requirements:** MUST implement exactly one qubit system\n**Dependencies:** 6D-Intelligence-Agent", "dimension": "7D", "partition": "system"}}
+
+{"type": "rdf-triple", "subject": "#agent-0d-topology", "predicate": "rdfs:subClassOf", "object": "#agent-1d-temporal"}
+
+{"type": "rdf-triple", "subject": "#agent-1d-temporal", "predicate": "rdfs:subClassOf", "object": "#agent-2d-structural"}
+
+{"type": "rdf-triple", "subject": "#agent-2d-structural", "predicate": "rdfs:subClassOf", "object": "#agent-3d-algebraic"}
+
+{"type": "rdf-triple", "subject": "#agent-3d-algebraic", "predicate": "rdfs:subClassOf", "object": "#agent-4d-network"}
+
+{"type": "rdf-triple", "subject": "#agent-4d-network", "predicate": "rdfs:subClassOf", "object": "#agent-5d-consensus"}
+
+{"type": "rdf-triple", "subject": "#agent-5d-consensus", "predicate": "rdfs:subClassOf", "object": "#agent-6d-intelligence"}
+
+{"type": "rdf-triple", "subject": "#agent-6d-intelligence", "predicate": "rdfs:subClassOf", "object": "#agent-7d-quantum"}
+

@@ -394,5 +394,3 @@ export class MetaLogDbBrowser {
   }
 }
 
-export type { BrowserConfig } from './database.js';
-

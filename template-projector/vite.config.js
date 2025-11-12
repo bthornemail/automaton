@@ -17,6 +17,29 @@ const nodeModulesPlugin = () => ({
     if (id === 'fs' || id === 'path' || id === 'os') {
       return resolve(__dirname, 'src/projector/node-polyfills.js');
     }
+    // Handle meta-log-db/browser import
+    if (id === 'meta-log-db/browser') {
+      const builtPath = resolve(__dirname, 'node_modules/meta-log-db/dist/browser/index.js');
+      const sourcePath = resolve(__dirname, 'node_modules/meta-log-db/src/browser/index.ts');
+      
+      // Production: prefer built bundle if it exists
+      if (existsSync(builtPath)) {
+        return builtPath;
+      }
+      
+      // Development: fall back to TypeScript source
+      if (existsSync(sourcePath)) {
+        return sourcePath;
+      }
+      
+      // Neither exists - provide helpful error
+      throw new Error(
+        `meta-log-db/browser not found. ` +
+        `Built path: ${builtPath} (exists: ${existsSync(builtPath)}), ` +
+        `Source path: ${sourcePath} (exists: ${existsSync(sourcePath)}). ` +
+        `Run: cd meta-log-db && npm run build:browser`
+      );
+    }
     return null;
   }
 });
@@ -73,6 +96,7 @@ export default defineConfig({
   resolve: {
     // Let npm resolve meta-log-db from node_modules symlink
     // Vite will automatically transform CommonJS to ESM
+    // meta-log-db/browser resolution is handled by nodeModulesPlugin
   },
   define: {
     // Polyfill Node.js globals for browser
