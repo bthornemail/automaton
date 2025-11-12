@@ -12,7 +12,8 @@
     "build-production": "../build-production.sh",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "test:worker-bundling": "tsx scripts/test-worker-bundling.ts"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^1.0.27",

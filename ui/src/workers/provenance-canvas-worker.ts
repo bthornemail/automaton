@@ -84,7 +84,14 @@ class ProvenanceCanvasRenderer {
       antialias: options.antialias ?? true
     });
     this.renderer.setSize(options.width, options.height);
-    this.renderer.setPixelRatio(window.devicePixelRatio);
+    // Note: devicePixelRatio is not available in worker context
+    // Use default pixel ratio or pass it as option
+    try {
+      // @ts-ignore - devicePixelRatio may not be available in worker
+      this.renderer.setPixelRatio(self.devicePixelRatio || 1);
+    } catch (e) {
+      this.renderer.setPixelRatio(1);
+    }
 
     // Lights
     const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
@@ -107,8 +114,16 @@ class ProvenanceCanvasRenderer {
   }
 
   private animate = () => {
-    requestAnimationFrame(this.animate);
-    this.renderer.render(this.scene, this.camera);
+    try {
+      // @ts-ignore - requestAnimationFrame may not be available in worker
+      const raf = self.requestAnimationFrame || ((cb: () => void) => setTimeout(cb, 16));
+      raf(this.animate);
+      this.renderer.render(this.scene, this.camera);
+    } catch (error) {
+      console.error('Error in render loop:', error);
+      // Fallback: use setTimeout if requestAnimationFrame fails
+      setTimeout(this.animate, 16);
+    }
   };
 
   loadProvenanceChain(chain: ProvenanceChain): void {
@@ -283,57 +298,179 @@ class ProvenanceCanvasRenderer {
 // Worker global scope
 let renderer: ProvenanceCanvasRenderer | null = null;
 
-self.onmessage = (event: MessageEvent<WorkerMessage>) => {
-  const { type, payload } = event.data;
+// Error handling wrapper
+function handleWorkerMessage(event: MessageEvent<WorkerMessage>) {
+  try {
+    const { type, payload } = event.data;
 
-  switch (type) {
-    case 'init':
-      const { canvas, options } = payload;
-      renderer = new ProvenanceCanvasRenderer(canvas, options);
-      self.postMessage({ type: 'initialized' });
-      break;
-
-    case 'load':
-      if (renderer) {
-        renderer.loadProvenanceChain(payload.chain);
-        self.postMessage({ type: 'loaded', payload: { nodeCount: payload.chain.nodes.length } });
-      }
-      break;
-
-    case 'interact':
-      if (renderer) {
-        const { x, y, width, height, interactionType } = payload;
-        let result: ProvenanceNode | null = null;
-        
-        if (interactionType === 'click') {
-          result = renderer.handleClick(x, y, width, height);
-        } else if (interactionType === 'hover') {
-          result = renderer.handleHover(x, y, width, height);
+    switch (type) {
+      case 'init':
+        try {
+          const { canvas, options } = payload;
+          if (!canvas || !options) {
+            throw new Error('Invalid init payload: canvas and options required');
+          }
+          renderer = new ProvenanceCanvasRenderer(canvas, options);
+          self.postMessage({ type: 'initialized' });
+        } catch (error) {
+          console.error('Worker initialization error:', error);
+          self.postMessage({ 
+            type: 'error', 
+            payload: { 
+              message: error instanceof Error ? error.message : 'Unknown initialization error',
+              type: 'init'
+            } 
+          });
         }
-        
-        if (result) {
-          self.postMessage({ type: 'nodeSelected', payload: { node: result } });
+        break;
+
+      case 'load':
+        try {
+          if (!renderer) {
+            throw new Error('Renderer not initialized');
+          }
+          if (!payload.chain) {
+            throw new Error('Invalid load payload: chain required');
+          }
+          renderer.loadProvenanceChain(payload.chain);
+          self.postMessage({ type: 'loaded', payload: { nodeCount: payload.chain.nodes.length } });
+        } catch (error) {
+          console.error('Worker load error:', error);
+          self.postMessage({ 
+            type: 'error', 
+            payload: { 
+              message: error instanceof Error ? error.message : 'Unknown load error',
+              type: 'load'
+            } 
+          });
         }
-      }
-      break;
+        break;
 
-    case 'updateCamera':
-      if (renderer) {
-        renderer.updateCamera(payload.position, payload.target);
-      }
-      break;
+      case 'interact':
+        try {
+          if (!renderer) {
+            throw new Error('Renderer not initialized');
+          }
+          const { x, y, width, height, interactionType } = payload;
+          if (typeof x !== 'number' || typeof y !== 'number' || typeof width !== 'number' || typeof height !== 'number') {
+            throw new Error('Invalid interact payload: x, y, width, height must be numbers');
+          }
+          let result: ProvenanceNode | null = null;
+          
+          if (interactionType === 'click') {
+            result = renderer.handleClick(x, y, width, height);
+          } else if (interactionType === 'hover') {
+            result = renderer.handleHover(x, y, width, height);
+          } else {
+            throw new Error(`Invalid interaction type: ${interactionType}`);
+          }
+          
+          if (result) {
+            self.postMessage({ type: 'nodeSelected', payload: { node: result } });
+          } else {
+            self.postMessage({ type: 'nodeSelected', payload: { node: null } });
+          }
+        } catch (error) {
+          console.error('Worker interact error:', error);
+          self.postMessage({ 
+            type: 'error', 
+            payload: { 
+              message: error instanceof Error ? error.message : 'Unknown interact error',
+              type: 'interact'
+            } 
+          });
+        }
+        break;
 
-    case 'resize':
-      if (renderer) {
-        renderer.resize(payload.width, payload.height);
-      }
-      break;
+      case 'updateCamera':
+        try {
+          if (!renderer) {
+            throw new Error('Renderer not initialized');
+          }
+          if (!payload.position || !payload.target) {
+            throw new Error('Invalid updateCamera payload: position and target required');
+          }
+          renderer.updateCamera(payload.position, payload.target);
+        } catch (error) {
+          console.error('Worker updateCamera error:', error);
+          self.postMessage({ 
+            type: 'error', 
+            payload: { 
+              message: error instanceof Error ? error.message : 'Unknown updateCamera error',
+              type: 'updateCamera'
+            } 
+          });
+        }
+        break;
 
-    case 'dispose':
-      if (renderer) {
-        renderer.dispose();
-        renderer = null;
-      }
-      break;
+      case 'resize':
+        try {
+          if (!renderer) {
+            throw new Error('Renderer not initialized');
+          }
+          if (typeof payload.width !== 'number' || typeof payload.height !== 'number') {
+            throw new Error('Invalid resize payload: width and height must be numbers');
+          }
+          renderer.resize(payload.width, payload.height);
+        } catch (error) {
+          console.error('Worker resize error:', error);
+          self.postMessage({ 
+            type: 'error', 
+            payload: { 
+              message: error instanceof Error ? error.message : 'Unknown resize error',
+              type: 'resize'
+            } 
+          });
+        }
+        break;
+
+      case 'dispose':
+        try {
+          if (renderer) {
+            renderer.dispose();
+            renderer = null;
+          }
+          self.postMessage({ type: 'disposed' });
+        } catch (error) {
+          console.error('Worker dispose error:', error);
+          // Still try to clean up
+          renderer = null;
+        }
+        break;
+
+      default:
+        console.warn(`Unknown worker message type: ${type}`);
+        self.postMessage({ 
+          type: 'error', 
+          payload: { 
+            message: `Unknown message type: ${type}`,
+            type: 'unknown'
+          } 
+        });
+    }
+  } catch (error) {
+    console.error('Unhandled worker error:', error);
+    self.postMessage({ 
+      type: 'error', 
+      payload: { 
+        message: error instanceof Error ? error.message : 'Unknown error',
+        type: 'unhandled'
+      } 
+    });
   }
+}
+
+self.onmessage = handleWorkerMessage;
+
+// Handle uncaught errors
+self.onerror = (error) => {
+  console.error('Worker uncaught error:', error);
+  self.postMessage({ 
+    type: 'error', 
+    payload: { 
+      message: error.message || 'Uncaught error in worker',
+      type: 'uncaught'
+    } 
+  });
+  return true; // Prevent default error handling
 };

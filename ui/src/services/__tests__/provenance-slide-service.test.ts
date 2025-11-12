@@ -9,35 +9,77 @@ import { generateMockProvenanceNodes } from './utils/mockProvenanceChain';
 import { createMockDatabaseService, setupMockDatabaseService } from './utils/mockDatabaseService';
 import { createMockMetaLogApiService, setupMockMetaLogApiService } from './utils/mockMetaLogApiService';
 
-// Mock dependencies
-vi.mock('../database-service', () => ({
-  databaseService: createMockDatabaseService()
-}));
+// Mock dependencies - inline to avoid hoisting issues
+vi.mock('../database-service', () => {
+  return {
+    databaseService: {
+      readJSONL: vi.fn().mockResolvedValue([]),
+      writeJSONL: vi.fn().mockResolvedValue(undefined),
+      queryJSONL: vi.fn().mockResolvedValue([]),
+      readCanvasL: vi.fn().mockResolvedValue([]),
+      writeCanvasL: vi.fn().mockResolvedValue(undefined),
+      queryCanvasL: vi.fn().mockResolvedValue([]),
+      query: vi.fn().mockResolvedValue([]),
+      appendJSONL: vi.fn().mockResolvedValue(undefined),
+      getR5RSFunction: vi.fn().mockResolvedValue(null),
+      listR5RSFunctions: vi.fn().mockResolvedValue([]),
+      invokeR5RSFunction: vi.fn().mockResolvedValue(null),
+      registerR5RSFunction: vi.fn().mockResolvedValue(undefined),
+      create: vi.fn().mockResolvedValue(''),
+      read: vi.fn().mockResolvedValue(null),
+      update: vi.fn().mockResolvedValue(undefined),
+      delete: vi.fn().mockResolvedValue(undefined)
+    }
+  };
+});
 
-vi.mock('../agent-provenance-query-service', () => ({
-  agentProvenanceQueryService: createMockMetaLogApiService(),
-  QueryType: {
-    SPARQL: 'sparql',
-    PROLOG: 'prolog',
-    DATALOG: 'datalog'
-  }
-}));
+vi.mock('../agent-provenance-query-service', () => {
+  return {
+    agentProvenanceQueryService: {
+      queryFederatedProvenance: vi.fn().mockResolvedValue([]),
+      queryProvenanceByFile: vi.fn().mockResolvedValue([]),
+      queryProvenanceByPattern: vi.fn().mockResolvedValue([]),
+      queryProvenanceByAgent: vi.fn().mockResolvedValue([]),
+      extractProvenanceFromCanvasL: vi.fn().mockResolvedValue([]),
+      queryProlog: vi.fn().mockResolvedValue({ bindings: [] }),
+      queryDatalog: vi.fn().mockResolvedValue({ facts: [] }),
+      querySparql: vi.fn().mockResolvedValue({ results: { bindings: [] } }),
+      buildQuery: vi.fn().mockReturnValue(''),
+      loadAgentHistory: vi.fn().mockResolvedValue(undefined),
+      getQueryTemplates: vi.fn().mockReturnValue([]),
+      executeQuery: vi.fn().mockResolvedValue({})
+    },
+    QueryType: {
+      SPARQL: 'sparql',
+      PROLOG: 'prolog',
+      DATALOG: 'datalog'
+    }
+  };
+});
 
-vi.mock('../projector/Projector', () => ({
-  Projector: vi.fn().mockImplementation(() => ({
-    onInit: vi.fn().mockResolvedValue(undefined)
-  }))
-}));
+vi.mock('../projector/Projector', () => {
+  return {
+    Projector: class {
+      onInit = vi.fn().mockResolvedValue(undefined);
+    }
+  };
+});
 
-vi.mock('../agent-coordinator/AgentCoordinator', () => ({
-  AgentCoordinator: vi.fn().mockImplementation(() => ({
-    init: vi.fn().mockResolvedValue(undefined)
-  }))
-}));
+vi.mock('../agent-coordinator/AgentCoordinator', () => {
+  return {
+    AgentCoordinator: class {
+      init = vi.fn().mockResolvedValue(undefined);
+    }
+  };
+});
 
-vi.mock('../projector/TopicSlideGenerator', () => ({
-  TopicSlideGenerator: vi.fn().mockImplementation(() => ({}))
-}));
+vi.mock('../projector/TopicSlideGenerator', () => {
+  return {
+    TopicSlideGenerator: class {
+      constructor(coordinator: any, options: any) {}
+    }
+  };
+});
 
 describe('ProvenanceSlideService', () => {
   let service: ProvenanceSlideService;
@@ -66,14 +108,40 @@ describe('ProvenanceSlideService', () => {
       });
       
       const dbResults = generateMockDatabaseResults(evolutionEntries);
-      setupMockDatabaseService(mockDatabaseService, {
-        evolutionFiles: dbResults
-      });
       
-      setupMockMetaLogApiService(mockAgentProvenanceService, {
-        available: true,
-        sparqlResults: { results: { bindings: [] } }
-      });
+      // Setup database service mock - loadEvolutionFiles calls query with SPARQL
+      if (mockDatabaseService.query) {
+        mockDatabaseService.query.mockImplementation(async (query: string, type?: string) => {
+          if (type === 'sparql' && query.includes('evolution:EvolutionFile')) {
+            // Return SPARQL results format - service expects result.content and result.file directly
+            return dbResults.map((result: any) => ({
+              file: result.file,
+              content: result.content
+            }));
+          }
+          return [];
+        });
+      }
+      
+      // Also mock readJSONL in case it's used as fallback
+      if (mockDatabaseService.readJSONL) {
+        mockDatabaseService.readJSONL.mockImplementation(async (file: string) => {
+          if (file.includes('evolution')) {
+            return evolutionEntries;
+          }
+          return [];
+        });
+      }
+      
+      // Setup agent provenance service mock directly
+      if (mockAgentProvenanceService.queryFederatedProvenance) {
+        mockAgentProvenanceService.queryFederatedProvenance.mockResolvedValue([]);
+      }
+      if (mockAgentProvenanceService.queryProvenanceByFile) {
+        mockAgentProvenanceService.queryProvenanceByFile.mockResolvedValue([]);
+      }
+      // Don't use setupMockMetaLogApiService - it expects different method names
+      // Mock setup is done directly above
 
       const chain = await service.buildProvenanceChain('evolution/test');
 
@@ -88,14 +156,38 @@ describe('ProvenanceSlideService', () => {
       const entries1D = generateMockEvolutionEntries(2, { dimension: '1D', file: 'evolution/1d.jsonl' });
       
       const dbResults = generateMockDatabaseResults([...entries0D, ...entries1D]);
-      setupMockDatabaseService(mockDatabaseService, {
-        evolutionFiles: dbResults
-      });
+      // Setup database service mock - loadEvolutionFiles calls query with SPARQL
+      if (mockDatabaseService.query) {
+        mockDatabaseService.query.mockImplementation(async (query: string, type?: string) => {
+          if (type === 'sparql' && query.includes('evolution:EvolutionFile')) {
+            return dbResults.map((result: any) => ({
+              file: result.file,
+              content: result.content
+            }));
+          }
+          return [];
+        });
+      }
       
-      setupMockMetaLogApiService(mockAgentProvenanceService, {
-        available: true,
-        sparqlResults: { results: { bindings: [] } }
-      });
+      // Also mock readJSONL in case it's used as fallback
+      if (mockDatabaseService.readJSONL) {
+        mockDatabaseService.readJSONL.mockImplementation(async (file: string) => {
+          if (file.includes('evolution')) {
+            return [...entries0D, ...entries1D];
+          }
+          return [];
+        });
+      }
+      
+      // Setup agent provenance service mock directly
+      if (mockAgentProvenanceService.queryFederatedProvenance) {
+        mockAgentProvenanceService.queryFederatedProvenance.mockResolvedValue([]);
+      }
+      if (mockAgentProvenanceService.queryProvenanceByFile) {
+        mockAgentProvenanceService.queryProvenanceByFile.mockResolvedValue([]);
+      }
+      // Don't use setupMockMetaLogApiService - it expects different method names
+      // Mock setup is done directly above
 
       const chain = await service.buildProvenanceChain('evolution/test');
 
@@ -109,14 +201,28 @@ describe('ProvenanceSlideService', () => {
       const entries2 = generateMockEvolutionEntries(2, { dimension: '0D', file: 'evolution/file2.jsonl' });
       
       const dbResults = generateMockDatabaseResults([...entries1, ...entries2]);
-      setupMockDatabaseService(mockDatabaseService, {
-        evolutionFiles: dbResults
-      });
+      // Setup database service mock
+      if (mockDatabaseService.query) {
+        mockDatabaseService.query.mockImplementation(async (query: string, type?: string) => {
+          if (type === 'sparql' && query.includes('evolution:EvolutionFile')) {
+            return dbResults.map((result: any) => ({
+              file: result.file,
+              content: result.content
+            }));
+          }
+          return [];
+        });
+      }
       
-      setupMockMetaLogApiService(mockAgentProvenanceService, {
-        available: true,
-        sparqlResults: { results: { bindings: [] } }
-      });
+      // Setup agent provenance service mock directly
+      if (mockAgentProvenanceService.queryFederatedProvenance) {
+        mockAgentProvenanceService.queryFederatedProvenance.mockResolvedValue([]);
+      }
+      if (mockAgentProvenanceService.queryProvenanceByFile) {
+        mockAgentProvenanceService.queryProvenanceByFile.mockResolvedValue([]);
+      }
+      // Don't use setupMockMetaLogApiService - it expects different method names
+      // Mock setup is done directly above
 
       const chain = await service.buildProvenanceChain('evolution/test');
 
@@ -143,9 +249,18 @@ describe('ProvenanceSlideService', () => {
         }
       ];
       
-      setupMockDatabaseService(mockDatabaseService, {
-        evolutionFiles: dbResults
-      });
+      // Setup database service mock
+      if (mockDatabaseService.query) {
+        mockDatabaseService.query.mockImplementation(async (query: string, type?: string) => {
+          if (type === 'sparql' && query.includes('evolution:EvolutionFile')) {
+            return dbResults.map((result: any) => ({
+              file: result.file,
+              content: result.content
+            }));
+          }
+          return [];
+        });
+      }
 
       const chain = await service.buildProvenanceChain('evolution/invalid');
 
@@ -160,18 +275,32 @@ describe('ProvenanceSlideService', () => {
       });
       
       const dbResults = generateMockDatabaseResults(entries);
-      setupMockDatabaseService(mockDatabaseService, {
-        evolutionFiles: dbResults
-      });
+      // Setup database service mock
+      if (mockDatabaseService.query) {
+        mockDatabaseService.query.mockImplementation(async (query: string, type?: string) => {
+          if (type === 'sparql' && query.includes('evolution:EvolutionFile')) {
+            return dbResults.map((result: any) => ({
+              file: result.file,
+              content: result.content
+            }));
+          }
+          return [];
+        });
+      }
       
       const provenanceResults = [
         { file: 'source.jsonl', line: 1, pattern: 'identity', timestamp: Date.now() }
       ];
       
-      setupMockMetaLogApiService(mockAgentProvenanceService, {
-        available: true,
-        sparqlResults: { results: { bindings: provenanceResults } }
-      });
+      // Setup agent provenance service mock directly
+      if (mockAgentProvenanceService.queryFederatedProvenance) {
+        mockAgentProvenanceService.queryFederatedProvenance.mockResolvedValue([]);
+      }
+      if (mockAgentProvenanceService.queryProvenanceByFile) {
+        mockAgentProvenanceService.queryProvenanceByFile.mockResolvedValue([]);
+      }
+      // Don't use setupMockMetaLogApiService - it expects different method names
+      // Mock setup is done directly above
 
       const chain = await service.buildProvenanceChain('evolution/test');
 
@@ -186,14 +315,28 @@ describe('ProvenanceSlideService', () => {
     test('should generate slides for all dimensions', async () => {
       const entries = generateMockEvolutionEntries(3, { dimension: '0D' });
       const dbResults = generateMockDatabaseResults(entries);
-      setupMockDatabaseService(mockDatabaseService, {
-        evolutionFiles: dbResults
-      });
+      // Setup database service mock
+      if (mockDatabaseService.query) {
+        mockDatabaseService.query.mockImplementation(async (query: string, type?: string) => {
+          if (type === 'sparql' && query.includes('evolution:EvolutionFile')) {
+            return dbResults.map((result: any) => ({
+              file: result.file,
+              content: result.content
+            }));
+          }
+          return [];
+        });
+      }
       
-      setupMockMetaLogApiService(mockAgentProvenanceService, {
-        available: true,
-        sparqlResults: { results: { bindings: [] } }
-      });
+      // Setup agent provenance service mock directly
+      if (mockAgentProvenanceService.queryFederatedProvenance) {
+        mockAgentProvenanceService.queryFederatedProvenance.mockResolvedValue([]);
+      }
+      if (mockAgentProvenanceService.queryProvenanceByFile) {
+        mockAgentProvenanceService.queryProvenanceByFile.mockResolvedValue([]);
+      }
+      // Don't use setupMockMetaLogApiService - it expects different method names
+      // Mock setup is done directly above
 
       const slides = await service.generateSlidesFromEvolution('evolution/test');
 
@@ -209,14 +352,38 @@ describe('ProvenanceSlideService', () => {
       const entries1D = generateMockEvolutionEntries(2, { dimension: '1D' });
       
       const dbResults = generateMockDatabaseResults([...entries0D, ...entries1D]);
-      setupMockDatabaseService(mockDatabaseService, {
-        evolutionFiles: dbResults
-      });
+      // Setup database service mock - loadEvolutionFiles calls query with SPARQL
+      if (mockDatabaseService.query) {
+        mockDatabaseService.query.mockImplementation(async (query: string, type?: string) => {
+          if (type === 'sparql' && query.includes('evolution:EvolutionFile')) {
+            return dbResults.map((result: any) => ({
+              file: result.file,
+              content: result.content
+            }));
+          }
+          return [];
+        });
+      }
       
-      setupMockMetaLogApiService(mockAgentProvenanceService, {
-        available: true,
-        sparqlResults: { results: { bindings: [] } }
-      });
+      // Also mock readJSONL in case it's used as fallback
+      if (mockDatabaseService.readJSONL) {
+        mockDatabaseService.readJSONL.mockImplementation(async (file: string) => {
+          if (file.includes('evolution')) {
+            return [...entries0D, ...entries1D];
+          }
+          return [];
+        });
+      }
+      
+      // Setup agent provenance service mock directly
+      if (mockAgentProvenanceService.queryFederatedProvenance) {
+        mockAgentProvenanceService.queryFederatedProvenance.mockResolvedValue([]);
+      }
+      if (mockAgentProvenanceService.queryProvenanceByFile) {
+        mockAgentProvenanceService.queryProvenanceByFile.mockResolvedValue([]);
+      }
+      // Don't use setupMockMetaLogApiService - it expects different method names
+      // Mock setup is done directly above
 
       const slides = await service.generateSlidesFromEvolution('evolution/test');
 
@@ -230,14 +397,28 @@ describe('ProvenanceSlideService', () => {
     test('should generate slide content with Church encoding', async () => {
       const entries = generateMockEvolutionEntries(2, { dimension: '0D' });
       const dbResults = generateMockDatabaseResults(entries);
-      setupMockDatabaseService(mockDatabaseService, {
-        evolutionFiles: dbResults
-      });
+      // Setup database service mock
+      if (mockDatabaseService.query) {
+        mockDatabaseService.query.mockImplementation(async (query: string, type?: string) => {
+          if (type === 'sparql' && query.includes('evolution:EvolutionFile')) {
+            return dbResults.map((result: any) => ({
+              file: result.file,
+              content: result.content
+            }));
+          }
+          return [];
+        });
+      }
       
-      setupMockMetaLogApiService(mockAgentProvenanceService, {
-        available: true,
-        sparqlResults: { results: { bindings: [] } }
-      });
+      // Setup agent provenance service mock directly
+      if (mockAgentProvenanceService.queryFederatedProvenance) {
+        mockAgentProvenanceService.queryFederatedProvenance.mockResolvedValue([]);
+      }
+      if (mockAgentProvenanceService.queryProvenanceByFile) {
+        mockAgentProvenanceService.queryProvenanceByFile.mockResolvedValue([]);
+      }
+      // Don't use setupMockMetaLogApiService - it expects different method names
+      // Mock setup is done directly above
 
       const slides = await service.generateSlidesFromEvolution('evolution/test');
 
@@ -249,14 +430,28 @@ describe('ProvenanceSlideService', () => {
     test('should generate slide content with BQF forms', async () => {
       const entries = generateMockEvolutionEntries(2, { dimension: '2D' });
       const dbResults = generateMockDatabaseResults(entries);
-      setupMockDatabaseService(mockDatabaseService, {
-        evolutionFiles: dbResults
-      });
+      // Setup database service mock
+      if (mockDatabaseService.query) {
+        mockDatabaseService.query.mockImplementation(async (query: string, type?: string) => {
+          if (type === 'sparql' && query.includes('evolution:EvolutionFile')) {
+            return dbResults.map((result: any) => ({
+              file: result.file,
+              content: result.content
+            }));
+          }
+          return [];
+        });
+      }
       
-      setupMockMetaLogApiService(mockAgentProvenanceService, {
-        available: true,
-        sparqlResults: { results: { bindings: [] } }
-      });
+      // Setup agent provenance service mock directly
+      if (mockAgentProvenanceService.queryFederatedProvenance) {
+        mockAgentProvenanceService.queryFederatedProvenance.mockResolvedValue([]);
+      }
+      if (mockAgentProvenanceService.queryProvenanceByFile) {
+        mockAgentProvenanceService.queryProvenanceByFile.mockResolvedValue([]);
+      }
+      // Don't use setupMockMetaLogApiService - it expects different method names
+      // Mock setup is done directly above
 
       const slides = await service.generateSlidesFromEvolution('evolution/test');
 
@@ -272,14 +467,28 @@ describe('ProvenanceSlideService', () => {
       delete entries[1].metadata.dimension;
       
       const dbResults = generateMockDatabaseResults(entries);
-      setupMockDatabaseService(mockDatabaseService, {
-        evolutionFiles: dbResults
-      });
+      // Setup database service mock
+      if (mockDatabaseService.query) {
+        mockDatabaseService.query.mockImplementation(async (query: string, type?: string) => {
+          if (type === 'sparql' && query.includes('evolution:EvolutionFile')) {
+            return dbResults.map((result: any) => ({
+              file: result.file,
+              content: result.content
+            }));
+          }
+          return [];
+        });
+      }
       
-      setupMockMetaLogApiService(mockAgentProvenanceService, {
-        available: true,
-        sparqlResults: { results: { bindings: [] } }
-      });
+      // Setup agent provenance service mock directly
+      if (mockAgentProvenanceService.queryFederatedProvenance) {
+        mockAgentProvenanceService.queryFederatedProvenance.mockResolvedValue([]);
+      }
+      if (mockAgentProvenanceService.queryProvenanceByFile) {
+        mockAgentProvenanceService.queryProvenanceByFile.mockResolvedValue([]);
+      }
+      // Don't use setupMockMetaLogApiService - it expects different method names
+      // Mock setup is done directly above
 
       const slides = await service.generateSlidesFromEvolution('evolution/test');
 
@@ -399,14 +608,28 @@ describe('ProvenanceSlideService', () => {
       entries[0].metadata!.churchEncoding = 'λf.λx.x';
       
       const dbResults = generateMockDatabaseResults(entries);
-      setupMockDatabaseService(mockDatabaseService, {
-        evolutionFiles: dbResults
-      });
+      // Setup database service mock
+      if (mockDatabaseService.query) {
+        mockDatabaseService.query.mockImplementation(async (query: string, type?: string) => {
+          if (type === 'sparql' && query.includes('evolution:EvolutionFile')) {
+            return dbResults.map((result: any) => ({
+              file: result.file,
+              content: result.content
+            }));
+          }
+          return [];
+        });
+      }
       
-      setupMockMetaLogApiService(mockAgentProvenanceService, {
-        available: true,
-        sparqlResults: { results: { bindings: [] } }
-      });
+      // Setup agent provenance service mock directly
+      if (mockAgentProvenanceService.queryFederatedProvenance) {
+        mockAgentProvenanceService.queryFederatedProvenance.mockResolvedValue([]);
+      }
+      if (mockAgentProvenanceService.queryProvenanceByFile) {
+        mockAgentProvenanceService.queryProvenanceByFile.mockResolvedValue([]);
+      }
+      // Don't use setupMockMetaLogApiService - it expects different method names
+      // Mock setup is done directly above
 
       const chain = await service.buildProvenanceChain('evolution/test');
 
@@ -420,14 +643,28 @@ describe('ProvenanceSlideService', () => {
       });
       
       const dbResults = generateMockDatabaseResults(entries);
-      setupMockDatabaseService(mockDatabaseService, {
-        evolutionFiles: dbResults
-      });
+      // Setup database service mock
+      if (mockDatabaseService.query) {
+        mockDatabaseService.query.mockImplementation(async (query: string, type?: string) => {
+          if (type === 'sparql' && query.includes('evolution:EvolutionFile')) {
+            return dbResults.map((result: any) => ({
+              file: result.file,
+              content: result.content
+            }));
+          }
+          return [];
+        });
+      }
       
-      setupMockMetaLogApiService(mockAgentProvenanceService, {
-        available: true,
-        sparqlResults: { results: { bindings: [] } }
-      });
+      // Setup agent provenance service mock directly
+      if (mockAgentProvenanceService.queryFederatedProvenance) {
+        mockAgentProvenanceService.queryFederatedProvenance.mockResolvedValue([]);
+      }
+      if (mockAgentProvenanceService.queryProvenanceByFile) {
+        mockAgentProvenanceService.queryProvenanceByFile.mockResolvedValue([]);
+      }
+      // Don't use setupMockMetaLogApiService - it expects different method names
+      // Mock setup is done directly above
 
       const chain = await service.buildProvenanceChain('evolution/test');
 
@@ -441,14 +678,28 @@ describe('ProvenanceSlideService', () => {
       });
       
       const dbResults = generateMockDatabaseResults(entries);
-      setupMockDatabaseService(mockDatabaseService, {
-        evolutionFiles: dbResults
-      });
+      // Setup database service mock
+      if (mockDatabaseService.query) {
+        mockDatabaseService.query.mockImplementation(async (query: string, type?: string) => {
+          if (type === 'sparql' && query.includes('evolution:EvolutionFile')) {
+            return dbResults.map((result: any) => ({
+              file: result.file,
+              content: result.content
+            }));
+          }
+          return [];
+        });
+      }
       
-      setupMockMetaLogApiService(mockAgentProvenanceService, {
-        available: true,
-        sparqlResults: { results: { bindings: [] } }
-      });
+      // Setup agent provenance service mock directly
+      if (mockAgentProvenanceService.queryFederatedProvenance) {
+        mockAgentProvenanceService.queryFederatedProvenance.mockResolvedValue([]);
+      }
+      if (mockAgentProvenanceService.queryProvenanceByFile) {
+        mockAgentProvenanceService.queryProvenanceByFile.mockResolvedValue([]);
+      }
+      // Don't use setupMockMetaLogApiService - it expects different method names
+      // Mock setup is done directly above
 
       const chain = await service.buildProvenanceChain('evolution/test');
 
@@ -479,14 +730,28 @@ describe('ProvenanceSlideService', () => {
       });
       
       const dbResults = generateMockDatabaseResults(entries);
-      setupMockDatabaseService(mockDatabaseService, {
-        evolutionFiles: dbResults
-      });
+      // Setup database service mock
+      if (mockDatabaseService.query) {
+        mockDatabaseService.query.mockImplementation(async (query: string, type?: string) => {
+          if (type === 'sparql' && query.includes('evolution:EvolutionFile')) {
+            return dbResults.map((result: any) => ({
+              file: result.file,
+              content: result.content
+            }));
+          }
+          return [];
+        });
+      }
       
-      setupMockMetaLogApiService(mockAgentProvenanceService, {
-        available: true,
-        sparqlResults: { results: { bindings: [] } }
-      });
+      // Setup agent provenance service mock directly
+      if (mockAgentProvenanceService.queryFederatedProvenance) {
+        mockAgentProvenanceService.queryFederatedProvenance.mockResolvedValue([]);
+      }
+      if (mockAgentProvenanceService.queryProvenanceByFile) {
+        mockAgentProvenanceService.queryProvenanceByFile.mockResolvedValue([]);
+      }
+      // Don't use setupMockMetaLogApiService - it expects different method names
+      // Mock setup is done directly above
 
       const chain = await service.buildProvenanceChain('evolution/test');
 
@@ -513,10 +778,15 @@ describe('ProvenanceSlideService', () => {
           evolutionFiles: dbResults
         });
         
-        setupMockMetaLogApiService(mockAgentProvenanceService, {
-          available: true,
-          sparqlResults: { results: { bindings: [] } }
-        });
+        // Setup agent provenance service mock directly
+      if (mockAgentProvenanceService.queryFederatedProvenance) {
+        mockAgentProvenanceService.queryFederatedProvenance.mockResolvedValue([]);
+      }
+      if (mockAgentProvenanceService.queryProvenanceByFile) {
+        mockAgentProvenanceService.queryProvenanceByFile.mockResolvedValue([]);
+      }
+      // Don't use setupMockMetaLogApiService - it expects different method names
+        // Mock setup is done directly above
 
         const slides = await service.generateSlidesFromEvolution('evolution/test');
         const slide = slides.find(s => s.dimension === dimension);
@@ -535,10 +805,15 @@ describe('ProvenanceSlideService', () => {
           evolutionFiles: dbResults
         });
         
-        setupMockMetaLogApiService(mockAgentProvenanceService, {
-          available: true,
-          sparqlResults: { results: { bindings: [] } }
-        });
+        // Setup agent provenance service mock directly
+      if (mockAgentProvenanceService.queryFederatedProvenance) {
+        mockAgentProvenanceService.queryFederatedProvenance.mockResolvedValue([]);
+      }
+      if (mockAgentProvenanceService.queryProvenanceByFile) {
+        mockAgentProvenanceService.queryProvenanceByFile.mockResolvedValue([]);
+      }
+      // Don't use setupMockMetaLogApiService - it expects different method names
+        // Mock setup is done directly above
 
         const slides = await service.generateSlidesFromEvolution('evolution/test');
         const slide = slides.find(s => s.dimension === dimension);

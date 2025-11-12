@@ -95,6 +95,23 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
     worker: {
       format: 'es',
+      // Ensure Three.js is bundled in worker context
+      plugins: () => [react()],
+      rollupOptions: {
+        output: {
+          // Create separate chunk for worker dependencies
+          manualChunks: (id) => {
+            // Bundle Three.js with worker
+            if (id.includes('three')) {
+              return 'worker-three';
+            }
+            // Keep worker code separate
+            if (id.includes('workers/provenance-canvas-worker')) {
+              return 'provenance-worker';
+            }
+          },
+        },
+      },
     },
   },
   optimizeDeps: {

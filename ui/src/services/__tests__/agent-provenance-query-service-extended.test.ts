@@ -4,19 +4,58 @@
  */
 
 import { describe, test, expect, beforeEach, vi } from 'vitest';
-import { agentProvenanceQueryService, QueryType } from '../agent-provenance-query-service';
+import { agentProvenanceQueryService } from '../agent-provenance-query-service';
+import type { QueryType } from '../agent-provenance-query-service';
+
+// Define QueryType constants for tests
+const QueryTypeValues = {
+  PROLOG: 'prolog' as QueryType,
+  DATALOG: 'datalog' as QueryType,
+  SPARQL: 'sparql' as QueryType
+};
 import { generateMockCanvasLEntries } from './utils/mockCanvasLData';
 import { createMockDatabaseService, setupMockDatabaseService } from './utils/mockDatabaseService';
 import { createMockMetaLogApiService, setupMockMetaLogApiService } from './utils/mockMetaLogApiService';
 
-// Mock dependencies
-vi.mock('../database-service', () => ({
-  databaseService: createMockDatabaseService()
-}));
+// Mock dependencies - inline to avoid hoisting issues
+vi.mock('../database-service', () => {
+  return {
+    databaseService: {
+      readJSONL: vi.fn().mockResolvedValue([]),
+      writeJSONL: vi.fn().mockResolvedValue(undefined),
+      queryJSONL: vi.fn().mockResolvedValue([]),
+      readCanvasL: vi.fn().mockResolvedValue([]),
+      writeCanvasL: vi.fn().mockResolvedValue(undefined),
+      queryCanvasL: vi.fn().mockResolvedValue([]),
+      query: vi.fn().mockResolvedValue([]),
+      appendJSONL: vi.fn().mockResolvedValue(undefined),
+      getR5RSFunction: vi.fn().mockResolvedValue(null),
+      listR5RSFunctions: vi.fn().mockResolvedValue([]),
+      invokeR5RSFunction: vi.fn().mockResolvedValue(null),
+      registerR5RSFunction: vi.fn().mockResolvedValue(undefined),
+      create: vi.fn().mockResolvedValue(''),
+      read: vi.fn().mockResolvedValue(null),
+      update: vi.fn().mockResolvedValue(undefined),
+      delete: vi.fn().mockResolvedValue(undefined)
+    }
+  };
+});
 
-vi.mock('../meta-log-api-service', () => ({
-  metaLogApiService: createMockMetaLogApiService()
-}));
+vi.mock('../meta-log-api-service', () => {
+  return {
+    metaLogApiService: {
+      querySPARQL: vi.fn().mockResolvedValue({ results: { bindings: [] } }),
+      queryProlog: vi.fn().mockResolvedValue({ bindings: [] }),
+      queryDatalog: vi.fn().mockResolvedValue({ facts: [] }),
+      executeR5RS: vi.fn().mockResolvedValue(null),
+      isAvailable: vi.fn().mockReturnValue(true),
+      loadCanvas: vi.fn().mockResolvedValue(undefined),
+      prologQuery: vi.fn().mockResolvedValue({ bindings: [] }),
+      datalogQuery: vi.fn().mockResolvedValue({ facts: [] }),
+      sparqlQuery: vi.fn().mockResolvedValue({ results: { bindings: [] } })
+    }
+  };
+});
 
 vi.mock('../agent-history-logging-service', () => ({
   agentHistoryLoggingService: {
@@ -39,8 +78,30 @@ describe('AgentProvenanceQueryService - Extended Methods', () => {
     mockDatabaseService = databaseService as any;
     mockMetaLogApiService = metaLogApiService as any;
     
-    setupMockDatabaseService(mockDatabaseService);
-    setupMockMetaLogApiService(mockMetaLogApiService);
+    // Setup mocks with proper method implementations
+    if (mockDatabaseService.readCanvasL) {
+      mockDatabaseService.readCanvasL.mockResolvedValue([]);
+    }
+    if (mockDatabaseService.queryCanvasL) {
+      mockDatabaseService.queryCanvasL.mockResolvedValue([]);
+    }
+    if (mockDatabaseService.readJSONL) {
+      mockDatabaseService.readJSONL.mockResolvedValue([]);
+    }
+    
+    // Meta-Log API service methods
+    if (mockMetaLogApiService.querySPARQL) {
+      mockMetaLogApiService.querySPARQL.mockResolvedValue({ results: { bindings: [] } });
+    }
+    if (mockMetaLogApiService.queryProlog) {
+      mockMetaLogApiService.queryProlog.mockResolvedValue({ bindings: [] });
+    }
+    if (mockMetaLogApiService.queryDatalog) {
+      mockMetaLogApiService.queryDatalog.mockResolvedValue({ facts: [] });
+    }
+    if (mockMetaLogApiService.isAvailable) {
+      mockMetaLogApiService.isAvailable.mockReturnValue(true);
+    }
   });
 
   describe('queryCanvasLFile', () => {
@@ -50,23 +111,27 @@ describe('AgentProvenanceQueryService - Extended Methods', () => {
         includeProvenanceHistory: true
       });
       
-      setupMockDatabaseService(mockDatabaseService, {
-        canvasLEntries
-      });
+      // Setup database service mock - extractProvenanceFromCanvasL uses readJSONL
+      if (mockDatabaseService.readJSONL) {
+        mockDatabaseService.readJSONL.mockResolvedValue(canvasLEntries);
+      }
       
-      setupMockMetaLogApiService(mockMetaLogApiService, {
-        available: true,
-        prologResults: {
+      // Setup Meta-Log API service mock
+      if (mockMetaLogApiService.isAvailable) {
+        mockMetaLogApiService.isAvailable.mockReturnValue(true);
+      }
+      if (mockMetaLogApiService.prologQuery) {
+        mockMetaLogApiService.prologQuery.mockResolvedValue({
           bindings: [
             { Agent: 'test-agent', Document: 'test.jsonl', Timestamp: Date.now() }
           ]
-        }
-      });
+        });
+      }
 
       const result = await agentProvenanceQueryService.queryCanvasLFile(
         'test.canvasl',
         'consumes(Agent, Document, Timestamp).',
-        QueryType.PROLOG
+        QueryTypeValues.PROLOG
       );
 
       expect(mockMetaLogApiService.loadCanvas).toHaveBeenCalledWith('test.canvasl');
@@ -79,23 +144,27 @@ describe('AgentProvenanceQueryService - Extended Methods', () => {
         includeSelfReference: true
       });
       
-      setupMockDatabaseService(mockDatabaseService, {
-        canvasLEntries
-      });
+      // Setup database service mock - extractProvenanceFromCanvasL uses readJSONL
+      if (mockDatabaseService.readJSONL) {
+        mockDatabaseService.readJSONL.mockResolvedValue(canvasLEntries);
+      }
       
-      setupMockMetaLogApiService(mockMetaLogApiService, {
-        available: true,
-        datalogResults: {
+      // Setup Meta-Log API service mock
+      if (mockMetaLogApiService.isAvailable) {
+        mockMetaLogApiService.isAvailable.mockReturnValue(true);
+      }
+      if (mockMetaLogApiService.datalogQuery) {
+        mockMetaLogApiService.datalogQuery.mockResolvedValue({
           facts: [
             { predicate: 'consumes', args: ['agent', 'doc.jsonl', Date.now()] }
           ]
-        }
-      });
+        });
+      }
 
       const result = await agentProvenanceQueryService.queryCanvasLFile(
         'test.canvasl',
         'consumes(Agent, Document, Timestamp)',
-        QueryType.DATALOG
+        QueryTypeValues.DATALOG
       );
 
       expect(mockMetaLogApiService.loadCanvas).toHaveBeenCalledWith('test.canvasl');
@@ -108,24 +177,23 @@ describe('AgentProvenanceQueryService - Extended Methods', () => {
         includeSelfReference: true
       });
       
-      setupMockDatabaseService(mockDatabaseService, {
-        canvasLEntries
-      });
+      // Setup database service mock - extractProvenanceFromCanvasL uses readJSONL
+      if (mockDatabaseService.readJSONL) {
+        mockDatabaseService.readJSONL.mockResolvedValue(canvasLEntries);
+      }
       
-      setupMockMetaLogApiService(mockMetaLogApiService, {
-        available: true,
-        sparqlResults: {
-          results: {
-            bindings: [
-              {
-                action: { value: 'http://example.org/action1', type: 'uri' },
-                target: { value: 'http://example.org/target1', type: 'uri' },
-                timestamp: { value: Date.now().toString(), type: 'literal' }
-              }
-            ]
-          }
-        }
-      });
+      // Setup Meta-Log API service mock
+      if (mockMetaLogApiService.isAvailable) {
+        mockMetaLogApiService.isAvailable.mockReturnValue(true);
+      }
+      if (mockMetaLogApiService.datalogQuery) {
+        mockMetaLogApiService.datalogQuery.mockResolvedValue({
+          facts: [
+            { predicate: 'consumes', args: ['agent', 'doc.jsonl', Date.now()] }
+          ]
+        });
+      }
+      // Mock setup is done directly above
 
       const query = `
         PREFIX prov: <http://www.w3.org/ns/prov#>
@@ -139,7 +207,7 @@ describe('AgentProvenanceQueryService - Extended Methods', () => {
       const result = await agentProvenanceQueryService.queryCanvasLFile(
         'test.canvasl',
         query,
-        QueryType.SPARQL
+        QueryTypeValues.SPARQL
       );
 
       expect(mockMetaLogApiService.loadCanvas).toHaveBeenCalledWith('test.canvasl');
@@ -153,18 +221,20 @@ describe('AgentProvenanceQueryService - Extended Methods', () => {
         includeProvenanceHistory: true
       });
       
-      setupMockDatabaseService(mockDatabaseService, {
-        canvasLEntries
-      });
+      // Setup database service mock - extractProvenanceFromCanvasL uses readJSONL
+      if (mockDatabaseService.readJSONL) {
+        mockDatabaseService.readJSONL.mockResolvedValue(canvasLEntries);
+      }
       
-      setupMockMetaLogApiService(mockMetaLogApiService, {
-        available: false
-      });
+      // Setup Meta-Log API service mock - unavailable
+      if (mockMetaLogApiService.isAvailable) {
+        mockMetaLogApiService.isAvailable.mockReturnValue(false);
+      }
 
       const result = await agentProvenanceQueryService.queryCanvasLFile(
         'test.canvasl',
         'test query',
-        QueryType.PROLOG
+        QueryTypeValues.PROLOG
       );
 
       expect(result).toBeDefined();
@@ -178,20 +248,34 @@ describe('AgentProvenanceQueryService - Extended Methods', () => {
         includeProvenanceHistory: true
       });
       
-      setupMockDatabaseService(mockDatabaseService, {
-        canvasLEntries
-      });
+      // Setup database service mock - extractProvenanceFromCanvasL uses readJSONL
+      if (mockDatabaseService.readJSONL) {
+        mockDatabaseService.readJSONL.mockResolvedValue(canvasLEntries);
+      }
       
-      setupMockMetaLogApiService(mockMetaLogApiService, {
-        available: true
-      });
-      
-      mockMetaLogApiService.loadCanvas.mockRejectedValue(new Error('API Error'));
+      // Setup Meta-Log API service mock
+      if (mockMetaLogApiService.isAvailable) {
+        mockMetaLogApiService.isAvailable.mockReturnValue(true);
+      }
+      if (mockMetaLogApiService.datalogQuery) {
+        mockMetaLogApiService.datalogQuery.mockResolvedValue({
+          facts: [
+            { predicate: 'consumes', args: ['agent', 'doc.jsonl', Date.now()] }
+          ]
+        });
+      }
+      // Setup Meta-Log API service mock - will fail
+      if (mockMetaLogApiService.isAvailable) {
+        mockMetaLogApiService.isAvailable.mockReturnValue(true);
+      }
+      if (mockMetaLogApiService.loadCanvas) {
+        mockMetaLogApiService.loadCanvas.mockRejectedValue(new Error('API Error'));
+      }
 
       const result = await agentProvenanceQueryService.queryCanvasLFile(
         'test.canvasl',
         'test query',
-        QueryType.PROLOG
+        QueryTypeValues.PROLOG
       );
 
       // Should fallback to provenance extraction
@@ -212,13 +296,21 @@ describe('AgentProvenanceQueryService - Extended Methods', () => {
         includeProvenanceHistory: true
       });
       
-      setupMockDatabaseService(mockDatabaseService, {
-        canvasLEntries: [...canvasLEntries1, ...canvasLEntries2]
-      });
+      // Setup database service mock
+      if (mockDatabaseService.readCanvasL) {
+        mockDatabaseService.readCanvasL.mockImplementation(async (file: string) => {
+          if (file === 'file1.canvasl') return canvasLEntries1;
+          if (file === 'file2.canvasl') return canvasLEntries2;
+          return [];
+        });
+      }
       
-      setupMockMetaLogApiService(mockMetaLogApiService, {
-        available: true,
-        sparqlResults: {
+      // Setup Meta-Log API service mock
+      if (mockMetaLogApiService.isAvailable) {
+        mockMetaLogApiService.isAvailable.mockReturnValue(true);
+      }
+      if (mockMetaLogApiService.sparqlQuery) {
+        mockMetaLogApiService.sparqlQuery.mockResolvedValue({
           results: {
             bindings: [
               {
@@ -226,8 +318,8 @@ describe('AgentProvenanceQueryService - Extended Methods', () => {
               }
             ]
           }
-        }
-      });
+        });
+      }
 
       const query = `
         SELECT ?provenance WHERE {
@@ -238,7 +330,7 @@ describe('AgentProvenanceQueryService - Extended Methods', () => {
       const result = await agentProvenanceQueryService.queryFederatedProvenance({
         files: ['file1.canvasl', 'file2.canvasl'],
         query,
-        queryType: QueryType.SPARQL
+        queryType: QueryTypeValues.SPARQL
       });
 
       expect(mockMetaLogApiService.loadCanvas).toHaveBeenCalledTimes(2);
@@ -251,23 +343,38 @@ describe('AgentProvenanceQueryService - Extended Methods', () => {
         includeSelfReference: true
       });
       
-      setupMockDatabaseService(mockDatabaseService, {
-        canvasLEntries
-      });
+      // Setup database service mock - extractProvenanceFromCanvasL uses readJSONL
+      if (mockDatabaseService.readJSONL) {
+        mockDatabaseService.readJSONL.mockResolvedValue(canvasLEntries);
+      }
       
-      setupMockMetaLogApiService(mockMetaLogApiService, {
-        available: true,
-        prologResults: {
+      // Setup Meta-Log API service mock
+      if (mockMetaLogApiService.isAvailable) {
+        mockMetaLogApiService.isAvailable.mockReturnValue(true);
+      }
+      if (mockMetaLogApiService.datalogQuery) {
+        mockMetaLogApiService.datalogQuery.mockResolvedValue({
+          facts: [
+            { predicate: 'consumes', args: ['agent', 'doc.jsonl', Date.now()] }
+          ]
+        });
+      }
+      // Setup Meta-Log API service mock
+      if (mockMetaLogApiService.isAvailable) {
+        mockMetaLogApiService.isAvailable.mockReturnValue(true);
+      }
+      if (mockMetaLogApiService.prologQuery) {
+        mockMetaLogApiService.prologQuery.mockResolvedValue({
           bindings: [
             { Agent: 'agent1', Document: 'doc1.jsonl' }
           ]
-        }
-      });
+        });
+      }
 
       const result = await agentProvenanceQueryService.queryFederatedProvenance({
         files: ['file1.canvasl'],
         query: 'consumes(Agent, Document).',
-        queryType: QueryType.PROLOG
+        queryType: QueryTypeValues.PROLOG
       });
 
       expect(mockMetaLogApiService.prologQuery).toHaveBeenCalled();
@@ -279,23 +386,38 @@ describe('AgentProvenanceQueryService - Extended Methods', () => {
         includeSelfReference: true
       });
       
-      setupMockDatabaseService(mockDatabaseService, {
-        canvasLEntries
-      });
+      // Setup database service mock - extractProvenanceFromCanvasL uses readJSONL
+      if (mockDatabaseService.readJSONL) {
+        mockDatabaseService.readJSONL.mockResolvedValue(canvasLEntries);
+      }
       
-      setupMockMetaLogApiService(mockMetaLogApiService, {
-        available: true,
-        datalogResults: {
+      // Setup Meta-Log API service mock
+      if (mockMetaLogApiService.isAvailable) {
+        mockMetaLogApiService.isAvailable.mockReturnValue(true);
+      }
+      if (mockMetaLogApiService.datalogQuery) {
+        mockMetaLogApiService.datalogQuery.mockResolvedValue({
+          facts: [
+            { predicate: 'consumes', args: ['agent', 'doc.jsonl', Date.now()] }
+          ]
+        });
+      }
+      // Setup Meta-Log API service mock
+      if (mockMetaLogApiService.isAvailable) {
+        mockMetaLogApiService.isAvailable.mockReturnValue(true);
+      }
+      if (mockMetaLogApiService.datalogQuery) {
+        mockMetaLogApiService.datalogQuery.mockResolvedValue({
           facts: [
             { predicate: 'consumes', args: ['agent', 'doc.jsonl'] }
           ]
-        }
-      });
+        });
+      }
 
       const result = await agentProvenanceQueryService.queryFederatedProvenance({
         files: ['file1.canvasl'],
         query: 'consumes(Agent, Document)',
-        queryType: QueryType.DATALOG
+        queryType: QueryTypeValues.DATALOG
       });
 
       expect(mockMetaLogApiService.datalogQuery).toHaveBeenCalled();
@@ -307,18 +429,33 @@ describe('AgentProvenanceQueryService - Extended Methods', () => {
         includeSelfReference: true
       });
       
-      setupMockDatabaseService(mockDatabaseService, {
-        canvasLEntries
-      });
+      // Setup database service mock - extractProvenanceFromCanvasL uses readJSONL
+      if (mockDatabaseService.readJSONL) {
+        mockDatabaseService.readJSONL.mockResolvedValue(canvasLEntries);
+      }
       
-      setupMockMetaLogApiService(mockMetaLogApiService, {
-        available: true,
-        sparqlResults: {
+      // Setup Meta-Log API service mock
+      if (mockMetaLogApiService.isAvailable) {
+        mockMetaLogApiService.isAvailable.mockReturnValue(true);
+      }
+      if (mockMetaLogApiService.datalogQuery) {
+        mockMetaLogApiService.datalogQuery.mockResolvedValue({
+          facts: [
+            { predicate: 'consumes', args: ['agent', 'doc.jsonl', Date.now()] }
+          ]
+        });
+      }
+      // Setup Meta-Log API service mock
+      if (mockMetaLogApiService.isAvailable) {
+        mockMetaLogApiService.isAvailable.mockReturnValue(true);
+      }
+      if (mockMetaLogApiService.sparqlQuery) {
+        mockMetaLogApiService.sparqlQuery.mockResolvedValue({
           results: {
             bindings: []
           }
-        }
-      });
+        });
+      }
 
       const query = `
         PREFIX prov: <http://www.w3.org/ns/prov#>
@@ -331,7 +468,7 @@ describe('AgentProvenanceQueryService - Extended Methods', () => {
       const result = await agentProvenanceQueryService.queryFederatedProvenance({
         files: ['file1.canvasl', 'file2.canvasl'],
         query,
-        queryType: QueryType.SPARQL
+        queryType: QueryTypeValues.SPARQL
       });
 
       expect(mockMetaLogApiService.sparqlQuery).toHaveBeenCalled();
@@ -349,18 +486,24 @@ describe('AgentProvenanceQueryService - Extended Methods', () => {
         includeProvenanceHistory: true
       });
       
-      setupMockDatabaseService(mockDatabaseService, {
-        canvasLEntries: [...canvasLEntries1, ...canvasLEntries2]
-      });
+      // Setup database service mock
+      if (mockDatabaseService.readCanvasL) {
+        mockDatabaseService.readCanvasL.mockImplementation(async (file: string) => {
+          if (file === 'file1.canvasl') return canvasLEntries1;
+          if (file === 'file2.canvasl') return canvasLEntries2;
+          return [];
+        });
+      }
       
-      setupMockMetaLogApiService(mockMetaLogApiService, {
-        available: false
-      });
+      // Setup Meta-Log API service mock - unavailable
+      if (mockMetaLogApiService.isAvailable) {
+        mockMetaLogApiService.isAvailable.mockReturnValue(false);
+      }
 
       const result = await agentProvenanceQueryService.queryFederatedProvenance({
         files: ['file1.canvasl', 'file2.canvasl'],
         query: 'test query',
-        queryType: QueryType.SPARQL
+        queryType: QueryTypeValues.SPARQL
       });
 
       expect(result).toBeDefined();
@@ -375,20 +518,34 @@ describe('AgentProvenanceQueryService - Extended Methods', () => {
         includeProvenanceHistory: true
       });
       
-      setupMockDatabaseService(mockDatabaseService, {
-        canvasLEntries
-      });
+      // Setup database service mock - extractProvenanceFromCanvasL uses readJSONL
+      if (mockDatabaseService.readJSONL) {
+        mockDatabaseService.readJSONL.mockResolvedValue(canvasLEntries);
+      }
       
-      setupMockMetaLogApiService(mockMetaLogApiService, {
-        available: true
-      });
-      
-      mockMetaLogApiService.loadCanvas.mockRejectedValue(new Error('Load failed'));
+      // Setup Meta-Log API service mock
+      if (mockMetaLogApiService.isAvailable) {
+        mockMetaLogApiService.isAvailable.mockReturnValue(true);
+      }
+      if (mockMetaLogApiService.datalogQuery) {
+        mockMetaLogApiService.datalogQuery.mockResolvedValue({
+          facts: [
+            { predicate: 'consumes', args: ['agent', 'doc.jsonl', Date.now()] }
+          ]
+        });
+      }
+      // Setup Meta-Log API service mock - will fail
+      if (mockMetaLogApiService.isAvailable) {
+        mockMetaLogApiService.isAvailable.mockReturnValue(true);
+      }
+      if (mockMetaLogApiService.loadCanvas) {
+        mockMetaLogApiService.loadCanvas.mockRejectedValue(new Error('Load failed'));
+      }
 
       const result = await agentProvenanceQueryService.queryFederatedProvenance({
         files: ['file1.canvasl'],
         query: 'test query',
-        queryType: QueryType.SPARQL
+        queryType: QueryTypeValues.SPARQL
       });
 
       // Should fallback to extraction
@@ -403,9 +560,10 @@ describe('AgentProvenanceQueryService - Extended Methods', () => {
         includeSelfReference: true
       });
       
-      setupMockDatabaseService(mockDatabaseService, {
-        canvasLEntries
-      });
+      // Setup database service mock - extractProvenanceFromCanvasL uses readJSONL
+      if (mockDatabaseService.readJSONL) {
+        mockDatabaseService.readJSONL.mockResolvedValue(canvasLEntries);
+      }
 
       const result = await agentProvenanceQueryService.extractProvenanceFromCanvasL('test.canvasl');
 
@@ -422,9 +580,10 @@ describe('AgentProvenanceQueryService - Extended Methods', () => {
         includeProvenanceHistory: true
       });
       
-      setupMockDatabaseService(mockDatabaseService, {
-        canvasLEntries
-      });
+      // Setup database service mock - extractProvenanceFromCanvasL uses readJSONL
+      if (mockDatabaseService.readJSONL) {
+        mockDatabaseService.readJSONL.mockResolvedValue(canvasLEntries);
+      }
 
       const result = await agentProvenanceQueryService.extractProvenanceFromCanvasL('test.canvasl');
 
@@ -446,9 +605,10 @@ describe('AgentProvenanceQueryService - Extended Methods', () => {
         { file: 'source3.jsonl', line: 3, pattern: 'pattern3', timestamp: Date.now() }
       ];
       
-      setupMockDatabaseService(mockDatabaseService, {
-        canvasLEntries
-      });
+      // Setup database service mock - extractProvenanceFromCanvasL uses readJSONL
+      if (mockDatabaseService.readJSONL) {
+        mockDatabaseService.readJSONL.mockResolvedValue(canvasLEntries);
+      }
 
       const result = await agentProvenanceQueryService.extractProvenanceFromCanvasL('test.canvasl');
 
@@ -461,9 +621,10 @@ describe('AgentProvenanceQueryService - Extended Methods', () => {
         includeProvenanceHistory: false
       });
       
-      setupMockDatabaseService(mockDatabaseService, {
-        canvasLEntries
-      });
+      // Setup database service mock - extractProvenanceFromCanvasL uses readJSONL
+      if (mockDatabaseService.readJSONL) {
+        mockDatabaseService.readJSONL.mockResolvedValue(canvasLEntries);
+      }
 
       const result = await agentProvenanceQueryService.extractProvenanceFromCanvasL('test.canvasl');
 
@@ -490,9 +651,10 @@ describe('AgentProvenanceQueryService - Extended Methods', () => {
       canvasLEntries[0].selfReference!.timestamp = Date.now();
       canvasLEntries[1].selfReference!.timestamp = Date.now() + 1000;
       
-      setupMockDatabaseService(mockDatabaseService, {
-        canvasLEntries
-      });
+      // Setup database service mock - extractProvenanceFromCanvasL uses readJSONL
+      if (mockDatabaseService.readJSONL) {
+        mockDatabaseService.readJSONL.mockResolvedValue(canvasLEntries);
+      }
 
       const result = await agentProvenanceQueryService.extractProvenanceFromCanvasL('test.canvasl');
 
@@ -510,9 +672,10 @@ describe('AgentProvenanceQueryService - Extended Methods', () => {
         { file: 'source.jsonl', line: 1, pattern: 'pattern', timestamp: Date.now() }
       ];
       
-      setupMockDatabaseService(mockDatabaseService, {
-        canvasLEntries
-      });
+      // Setup database service mock - extractProvenanceFromCanvasL uses readJSONL
+      if (mockDatabaseService.readJSONL) {
+        mockDatabaseService.readJSONL.mockResolvedValue(canvasLEntries);
+      }
 
       const result = await agentProvenanceQueryService.extractProvenanceFromCanvasL('test.canvasl');
 

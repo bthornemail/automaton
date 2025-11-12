@@ -58,22 +58,43 @@ export const UnifiedProvenanceCanvas: React.FC<UnifiedProvenanceCanvasProps> = (
           setSlides(generatedSlides);
         }
         
-        // Initialize offscreen canvas worker
+        // Initialize offscreen canvas worker with error handling
         if (offscreenCanvasRef.current) {
-          const offscreenCanvas = offscreenCanvasRef.current.transferControlToOffscreen();
-          workerService.current = new ProvenanceCanvasWorkerService();
-          await workerService.current.init(offscreenCanvas, {
-            width: offscreenCanvasRef.current.width,
-            height: offscreenCanvasRef.current.height,
-            antialias: true
-          });
-          
-          // Load current slide's provenance chain
-          if (slides.length > 0) {
-            const currentSlide = slides[currentSlideIndex];
-            if (currentSlide.provenanceChain) {
-              workerService.current.loadProvenanceChain(currentSlide.provenanceChain);
+          // Check for OffscreenCanvas support
+          if (!ProvenanceCanvasWorkerService.isSupported()) {
+            console.warn('OffscreenCanvas not supported, falling back to main thread rendering');
+            // Fallback: continue without worker (could render on main thread)
+            setLoading(false);
+            return;
+          }
+
+          try {
+            const offscreenCanvas = offscreenCanvasRef.current.transferControlToOffscreen();
+            workerService.current = new ProvenanceCanvasWorkerService();
+            
+            // Set up error handler
+            workerService.current.onMessage('error', (error: any) => {
+              console.error('Worker error:', error);
+              // Could show user notification here
+            });
+            
+            await workerService.current.init(offscreenCanvas, {
+              width: offscreenCanvasRef.current.width,
+              height: offscreenCanvasRef.current.height,
+              antialias: true
+            });
+            
+            // Load current slide's provenance chain
+            if (slides.length > 0) {
+              const currentSlide = slides[currentSlideIndex];
+              if (currentSlide.provenanceChain) {
+                workerService.current.loadProvenanceChain(currentSlide.provenanceChain);
+              }
             }
+          } catch (workerError) {
+            console.error('Failed to initialize worker:', workerError);
+            // Fallback: continue without worker
+            // Could implement main-thread rendering fallback here
           }
         }
       } catch (error) {

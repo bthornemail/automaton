@@ -39,33 +39,64 @@ export class ProvenanceCanvasWorkerService {
       throw new Error('Worker already initialized');
     }
 
+    // Check OffscreenCanvas support
+    if (!canvas || !canvas.transferControlToOffscreen) {
+      throw new Error('OffscreenCanvas not supported in this browser');
+    }
+
     this.canvas = canvas;
     
-    // Create worker
-    this.worker = new Worker(
-      new URL('../workers/provenance-canvas-worker.ts', import.meta.url),
-      { type: 'module' }
-    );
+    try {
+      // Create worker
+      this.worker = new Worker(
+        new URL('../workers/provenance-canvas-worker.ts', import.meta.url),
+        { type: 'module' }
+      );
 
-    // Set up message handler
-    this.worker.onmessage = (event: MessageEvent) => {
-      const { type, payload } = event.data;
-      const handler = this.messageHandlers.get(type);
-      if (handler) {
-        handler(payload);
+      // Set up error handler
+      this.worker.onerror = (error) => {
+        console.error('Worker error:', error);
+        this.handleWorkerError(error);
+      };
+
+      // Set up message handler
+      this.worker.onmessage = (event: MessageEvent) => {
+        const { type, payload } = event.data;
+        
+        // Handle error messages from worker
+        if (type === 'error') {
+          console.error('Worker reported error:', payload);
+          this.handleWorkerError(new Error(payload.message || 'Unknown worker error'));
+          return;
+        }
+        
+        const handler = this.messageHandlers.get(type);
+        if (handler) {
+          handler(payload);
+        }
+      };
+
+      // Send init message
+      this.sendMessage({
+        type: 'init',
+        payload: { canvas, options }
+      });
+
+      // Wait for initialization with timeout
+      await this.waitForMessage('initialized', 10000);
+      
+      this.initialized = true;
+    } catch (error) {
+      // Clean up on failure
+      if (this.worker) {
+        this.worker.terminate();
+        this.worker = null;
       }
-    };
-
-    // Send init message
-    this.sendMessage({
-      type: 'init',
-      payload: { canvas, options }
-    });
-
-    // Wait for initialization
-    await this.waitForMessage('initialized');
-    
-    this.initialized = true;
+      this.canvas = null;
+      this.initialized = false;
+      
+      throw new Error(`Failed to initialize worker: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   /**
@@ -206,6 +237,40 @@ export class ProvenanceCanvasWorkerService {
    */
   offMessage(type: string): void {
     this.messageHandlers.delete(type);
+  }
+
+  /**
+   * Handle worker errors
+   */
+  private handleWorkerError(error: Error | ErrorEvent): void {
+    console.error('Worker error occurred:', error);
+    
+    // Notify any error handlers
+    const errorHandler = this.messageHandlers.get('error');
+    if (errorHandler) {
+      errorHandler({
+        message: error instanceof Error ? error.message : error.message || 'Unknown worker error',
+        type: 'worker-error'
+      });
+    }
+    
+    // Optionally dispose worker on critical errors
+    // Uncomment if you want automatic cleanup on errors
+    // this.dispose();
+  }
+
+  /**
+   * Check if worker is available and supported
+   */
+  static isSupported(): boolean {
+    return typeof Worker !== 'undefined' && typeof OffscreenCanvas !== 'undefined';
+  }
+
+  /**
+   * Get worker initialization status
+   */
+  isInitialized(): boolean {
+    return this.initialized;
   }
 }
 
