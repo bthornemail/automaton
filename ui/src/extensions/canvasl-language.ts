@@ -328,7 +328,7 @@ export function validateBQF(bqf: BQFObject, dimension?: string): BQFValidationRe
 
   // Validate signature if present
   if (bqf.signature !== undefined) {
-    const validSignatures = ['euclidean', 'lorentz', 'minkowski', 'riemannian'];
+    const validSignatures = ['euclidean', 'lorentz', 'minkowski', 'riemannian', 'consensus', 'intelligence', 'quantum', 'custom'];
     if (!validSignatures.includes(bqf.signature)) {
       errors.push(`BQF signature must be one of: ${validSignatures.join(', ')}`);
     }
@@ -348,11 +348,35 @@ export function validateBQF(bqf: BQFObject, dimension?: string): BQFValidationRe
       if (dimension) {
         const dimMatch = dimension.match(/^(\d)D$/);
         if (dimMatch) {
-          const expectedDim = parseInt(dimMatch[1]);
-          if (bqf.variables.length !== expectedDim && expectedDim > 0) {
-            errors.push(`BQF variables count (${bqf.variables.length}) does not match dimension ${dimension}`);
+          const dimNum = parseInt(dimMatch[1]);
+          // Expected variable counts: 0D=0, 1D=1, 2D=2, 3D=4, 4D=5, 5D+=dimNum
+          const expectedVarCount = dimNum === 0 ? 0 : dimNum === 1 ? 1 : dimNum === 2 ? 2 : dimNum === 3 ? 4 : dimNum === 4 ? 5 : dimNum;
+          if (bqf.variables.length !== expectedVarCount) {
+            errors.push(`BQF variables count (${bqf.variables.length}) does not match dimension ${dimension} (expected ${expectedVarCount})`);
           }
         }
+      }
+    }
+  }
+
+  // Validate BQF form matches dimensional progression if dimension is provided
+  if (dimension && bqf.form) {
+    const EXPECTED_FORMS: Record<string, string> = {
+      '0D': 'Q() = 0',
+      '1D': 'Q(x) = x²',
+      '2D': 'Q(x,y) = x² + y²',
+      '3D': 'Q(x,y,z,t) = x² + y² + z² - t²',
+      '4D': 'Q(w,x,y,z,t) = w² + x² + y² + z² - t²'
+    };
+    
+    const expectedForm = EXPECTED_FORMS[dimension];
+    if (expectedForm && bqf.form !== expectedForm) {
+      // Allow flexible matching for higher dimensions (5D+)
+      const dimNum = parseInt(dimension[0]);
+      if (dimNum < 5) {
+        errors.push(`BQF form for ${dimension} must be: ${expectedForm}`);
+      } else if (!bqf.form.includes('Σ') && !bqf.form.includes('xᵢ')) {
+        errors.push(`BQF form for ${dimension} should match pattern with Σ notation`);
       }
     }
   }

@@ -690,6 +690,106 @@ export class ObsidianFrontmatterKnowledgeModel {
   }
 
   /**
+   * Validate entire bipartite graph structure
+   */
+  public validateBipartiteGraph(): {
+    valid: boolean;
+    errors: Array<{ nodeId: string; errors: string[] }>;
+    structureErrors: Array<{ message: string; details?: any }>;
+  } {
+    const nodeErrors: Array<{ nodeId: string; errors: string[] }> = [];
+    const structureErrors: Array<{ message: string; details?: any }> = [];
+
+    // Validate individual nodes
+    const bqfErrors = this.validateBQFForms();
+    nodeErrors.push(...bqfErrors);
+
+    // Build bipartite graph and validate structure
+    const bipartiteGraph = this.buildBipartiteGraph();
+
+    // Validate horizontal edges
+    for (const edge of bipartiteGraph.horizontalEdges) {
+      const fromNode = this.knowledgeGraph.nodes.get(edge.from);
+      const toNode = this.knowledgeGraph.nodes.get(edge.to);
+
+      if (!fromNode || !toNode) {
+        structureErrors.push({
+          message: `Horizontal edge references missing nodes: ${edge.from} → ${edge.to}`,
+          details: { fromExists: !!fromNode, toExists: !!toNode }
+        });
+        continue;
+      }
+
+      const fromPartition = fromNode.bipartite?.partition;
+      const toPartition = toNode.bipartite?.partition;
+
+      if (fromPartition !== 'topology' && fromPartition !== 'system') {
+        structureErrors.push({
+          message: `Horizontal edge from node ${edge.from} has invalid partition: ${fromPartition}`,
+          details: { nodeId: edge.from, partition: fromPartition }
+        });
+      }
+
+      if (toPartition !== 'topology' && toPartition !== 'system') {
+        structureErrors.push({
+          message: `Horizontal edge to node ${edge.to} has invalid partition: ${toPartition}`,
+          details: { nodeId: edge.to, partition: toPartition }
+        });
+      }
+
+      // Check topology ↔ system connection
+      if ((fromPartition === 'topology' && toPartition !== 'system') ||
+          (fromPartition === 'system' && toPartition !== 'topology')) {
+        structureErrors.push({
+          message: `Horizontal edge must connect topology ↔ system, but connects ${fromPartition} → ${toPartition}`,
+          details: { from: edge.from, to: edge.to, fromPartition, toPartition }
+        });
+      }
+    }
+
+    // Validate vertical edges
+    for (const edge of bipartiteGraph.verticalEdges) {
+      const fromNode = this.knowledgeGraph.nodes.get(edge.from);
+      const toNode = this.knowledgeGraph.nodes.get(edge.to);
+
+      if (!fromNode || !toNode) {
+        structureErrors.push({
+          message: `Vertical edge references missing nodes: ${edge.from} → ${edge.to}`,
+          details: { fromExists: !!fromNode, toExists: !!toNode }
+        });
+        continue;
+      }
+
+      const fromPartition = fromNode.bipartite?.partition;
+      const toPartition = toNode.bipartite?.partition;
+      const fromDim = this.getDimensionNumber(fromNode.bipartite?.dimension);
+      const toDim = this.getDimensionNumber(toNode.bipartite?.dimension);
+
+      // Check same partition
+      if (fromPartition !== toPartition) {
+        structureErrors.push({
+          message: `Vertical edge must connect same partition, but connects ${fromPartition} → ${toPartition}`,
+          details: { from: edge.from, to: edge.to, fromPartition, toPartition }
+        });
+      }
+
+      // Check consecutive dimensions
+      if (fromDim >= 0 && toDim >= 0 && toDim !== fromDim + 1) {
+        structureErrors.push({
+          message: `Vertical edge progression must be consecutive, but ${fromNode.bipartite?.dimension} → ${toNode.bipartite?.dimension}`,
+          details: { from: edge.from, to: edge.to, fromDim, toDim }
+        });
+      }
+    }
+
+    return {
+      valid: nodeErrors.length === 0 && structureErrors.length === 0,
+      errors: nodeErrors,
+      structureErrors
+    };
+  }
+
+  /**
    * Export knowledge graph as JSON
    */
   public exportJSON(): string {

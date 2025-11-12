@@ -211,6 +211,11 @@ export function validateFrontmatter(frontmatter: DocumentFrontmatter): Frontmatt
   // Validate bipartite section
   if (frontmatter.bipartite) {
     errors.push(...validateBipartite(frontmatter.bipartite));
+    
+    // Validate dimensional progression if BQF and dimension are present
+    if (frontmatter.bipartite.bqf && frontmatter.bipartite.dimension) {
+      errors.push(...validateDimensionalProgression(frontmatter.bipartite.bqf, frontmatter.bipartite.dimension));
+    }
   }
 
   return {
@@ -229,13 +234,60 @@ export function validateDimensionalProgression(
 ): FrontmatterValidationError[] {
   const errors: FrontmatterValidationError[] = [];
 
-  const expectedVarCount = parseInt(dimension[0]);
+  // Use expected variable counts from comprehensive validator
+  const EXPECTED_VARIABLE_COUNTS: Record<Dimension, number> = {
+    '0D': 0,
+    '1D': 1,
+    '2D': 2,
+    '3D': 4,
+    '4D': 5,
+    '5D': 5,
+    '6D': 6,
+    '7D': 7
+  };
+
+  const expectedVarCount = EXPECTED_VARIABLE_COUNTS[dimension];
   if (bqf.variables.length !== expectedVarCount) {
     errors.push({
       code: 'BQF_INVALID_PROGRESSION',
       message: `Dimension ${dimension} requires ${expectedVarCount} variables, but found ${bqf.variables.length}`,
-      path: 'bipartite.bqf.variables'
+      path: 'bipartite.bqf.variables',
+      details: { expected: expectedVarCount, actual: bqf.variables.length }
     });
+  }
+
+  // Validate BQF form matches expected pattern
+  const EXPECTED_BQF_FORMS: Record<Dimension, string> = {
+    '0D': 'Q() = 0',
+    '1D': 'Q(x) = x²',
+    '2D': 'Q(x,y) = x² + y²',
+    '3D': 'Q(x,y,z,t) = x² + y² + z² - t²',
+    '4D': 'Q(w,x,y,z,t) = w² + x² + y² + z² - t²',
+    '5D': 'Q(...) = Σᵢ xᵢ² - t²',
+    '6D': 'Q(...) = Σᵢ xᵢ² - t² + higher terms',
+    '7D': 'Q(...) = Σᵢ xᵢ² - t² + quantum terms'
+  };
+
+  const expectedForm = EXPECTED_BQF_FORMS[dimension];
+  if (bqf.form !== expectedForm) {
+    // Allow flexible matching for higher dimensions
+    if (dimension === '5D' || dimension === '6D' || dimension === '7D') {
+      if (!bqf.form.includes('Σ') && !bqf.form.includes('xᵢ')) {
+        errors.push({
+          code: 'BQF_INVALID_PROGRESSION',
+          message: `BQF form for ${dimension} should match pattern: ${expectedForm}`,
+          path: 'bipartite.bqf.form',
+          details: { expected: expectedForm, actual: bqf.form }
+        });
+      }
+    } else {
+      errors.push({
+        code: 'BQF_INVALID_PROGRESSION',
+        message: `BQF form for ${dimension} must be: ${expectedForm}`,
+        path: 'bipartite.bqf.form',
+        details: { expected: expectedForm, actual: bqf.form }
+      });
+    }
   }
 
   return errors;

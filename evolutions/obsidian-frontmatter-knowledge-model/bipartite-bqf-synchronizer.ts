@@ -10,6 +10,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'js-yaml';
 
+// Note: Import would be from meta-log-db package in production
+// import { BipartiteBQFValidator } from 'meta-log-db/src/validation/bipartite-bqf-validator';
+
 /**
  * Bipartite metadata types (mirrored from canvasl-language.ts)
  */
@@ -261,6 +264,86 @@ export class BipartiteBQFSynchronizer {
     }
 
     return null;
+  }
+
+  /**
+   * Validate frontmatter ↔ CanvasL synchronization
+   */
+  validateSync(
+    frontmatter: { frontmatter: any; body: string },
+    canvaslNode: CanvasLASTNode
+  ): Array<{ code: string; message: string; path: string }> {
+    const errors: Array<{ code: string; message: string; path: string }> = [];
+
+    const frontmatterBipartite = frontmatter.frontmatter?.bipartite;
+    const canvaslBipartite = canvaslNode.metadata?.bipartite;
+
+    if (!frontmatterBipartite && !canvaslBipartite) {
+      return errors; // Both missing, no sync needed
+    }
+
+    if (!frontmatterBipartite || !canvaslBipartite) {
+      errors.push({
+        code: 'FRONTMATTER_SYNC_MISMATCH',
+        message: 'Bipartite metadata exists in one but not the other',
+        path: 'bipartite'
+      });
+      return errors;
+    }
+
+    // Compare partition
+    const frontmatterPartition = frontmatterBipartite.partition;
+    const canvaslPartition = canvaslBipartite.partition;
+
+    // Normalize partitions for comparison
+    const normalizedFrontmatter = this.normalizePartition(frontmatterPartition);
+    const normalizedCanvasl = this.normalizePartition(canvaslPartition);
+
+    if (normalizedFrontmatter !== normalizedCanvasl) {
+      errors.push({
+        code: 'FRONTMATTER_SYNC_MISMATCH',
+        message: `Partition mismatch: frontmatter has "${frontmatterPartition}", CanvasL has "${canvaslPartition}"`,
+        path: 'bipartite.partition'
+      });
+    }
+
+    // Compare dimension
+    if (frontmatterBipartite.dimension !== canvaslBipartite.dimension) {
+      errors.push({
+        code: 'FRONTMATTER_SYNC_MISMATCH',
+        message: `Dimension mismatch: frontmatter has "${frontmatterBipartite.dimension}", CanvasL has "${canvaslBipartite.dimension}"`,
+        path: 'bipartite.dimension'
+      });
+    }
+
+    // Compare BQF if present
+    if (frontmatterBipartite.bqf && canvaslBipartite.bqf) {
+      const frontmatterBQF = frontmatterBipartite.bqf;
+      const canvaslBQF = canvaslBipartite.bqf;
+
+      // Handle BQF transformation in CanvasL
+      const canvaslBQFObj = 'from' in canvaslBQF ? canvaslBQF.to : canvaslBQF;
+
+      if (frontmatterBQF.form !== canvaslBQFObj.form) {
+        errors.push({
+          code: 'FRONTMATTER_SYNC_MISMATCH',
+          message: `BQF form mismatch: frontmatter has "${frontmatterBQF.form}", CanvasL has "${canvaslBQFObj.form}"`,
+          path: 'bipartite.bqf.form'
+        });
+      }
+    }
+
+    return errors;
+  }
+
+  /**
+   * Normalize partition for comparison
+   */
+  private normalizePartition(partition?: string): string {
+    if (!partition) return '';
+    if (partition === 'topology' || partition.startsWith('topology')) return 'topology';
+    if (partition === 'system' || partition.startsWith('system')) return 'system';
+    return partition;
   }
 
   /**
