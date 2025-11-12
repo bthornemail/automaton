@@ -300,18 +300,248 @@ This phase successfully integrated the `template-projector` functionality into t
 
 ## Next Steps
 
-### Immediate
-1. Add unit tests for new services
-2. Add integration tests for UnifiedProvenanceCanvas
-3. Verify worker bundling in production build
-4. Add error handling improvements
+### Immediate (Priority: High)
 
-### Future Enhancements
-1. Real-time provenance chain updates
-2. Interactive slide editing
-3. Card detail views
-4. Export provenance chains to various formats
-5. Performance optimizations for large chains
+#### 1. Add Unit Tests for New Services
+**Status**: ⚠️ **PENDING**  
+**Priority**: High  
+**Estimated Effort**: 2-3 days
+
+**Tasks**:
+- [ ] Create test suite for `provenance-slide-service.ts`
+  - Test `buildProvenanceChain()` with mock evolution data
+  - Test `generateSlidesFromEvolution()` with known patterns
+  - Test `generateCardsForDimension()` with sample nodes
+  - Test Church encoding extraction
+  - Test BQF coefficient calculation
+  - Test pattern extraction and grouping
+- [ ] Create test suite for `provenance-canvas-worker-service.ts`
+  - Test worker initialization
+  - Test provenance chain loading
+  - Test camera updates
+  - Test interaction handling (click, hover)
+  - Test worker disposal
+- [ ] Create test suite for `automaton-file-generator-service.ts`
+  - Test `generateKernelCanvasL()` with sample state
+  - Test `generateSeedCanvasL()` with versioning data
+  - Test `generateMetaverseTopologyCanvasL()` with topology data
+  - Test `generateMetaverseSystemCanvasL()` with system data
+  - Test file saving functionality
+- [ ] Create test suite for extended services
+  - Test `agent-provenance-query-service.ts` new methods
+  - Test `canvasl-3d-service.ts` bipartite extensions
+  - Test `bipartite-service.ts` BQF encoding
+
+**Test Framework**: Jest + React Testing Library  
+**Location**: `ui/src/services/__tests__/`
+
+#### 2. Add Integration Tests for UnifiedProvenanceCanvas
+**Status**: ⚠️ **PENDING**  
+**Priority**: High  
+**Estimated Effort**: 2-3 days
+
+**Tasks**:
+- [ ] Create integration test for component initialization
+  - Test component mounting with provenance chain
+  - Test component mounting without provenance chain
+  - Test error handling for invalid data
+- [ ] Create integration test for slide navigation
+  - Test slide generation from evolution directory
+  - Test slide navigation (next/previous)
+  - Test dimension filtering
+- [ ] Create integration test for card display
+  - Test card rendering for each pattern
+  - Test card interaction (click, hover)
+  - Test card detail views
+- [ ] Create integration test for worker communication
+  - Test worker initialization
+  - Test provenance chain loading into worker
+  - Test interaction events (click, hover)
+  - Test camera synchronization
+- [ ] Create E2E test with Playwright
+  - Test full workflow: load evolution → generate slides → render
+  - Test user interactions
+  - Test performance with large provenance chains
+
+**Test Framework**: Jest + React Testing Library + Playwright  
+**Location**: `ui/src/components/UnifiedProvenanceCanvas/__tests__/` and `ui/tests/e2e/`
+
+#### 3. Verify Worker Bundling in Production Build
+**Status**: ⚠️ **PENDING**  
+**Priority**: High  
+**Estimated Effort**: 1-2 days
+
+**Tasks**:
+- [ ] Verify Three.js bundling in worker context
+  - Test worker import of Three.js
+  - Verify OffscreenCanvas support
+  - Test worker initialization in production build
+- [ ] Configure Vite for worker bundling
+  - Update `vite.config.ts` for worker support
+  - Configure Three.js as external or bundled
+  - Test worker bundle size and performance
+- [ ] Test worker in production environment
+  - Build production bundle
+  - Test worker initialization
+  - Test rendering performance
+  - Verify no main thread blocking
+- [ ] Add worker error handling
+  - Handle worker initialization failures
+  - Handle worker message errors
+  - Add fallback rendering if worker fails
+
+**Location**: `ui/vite.config.ts`, `ui/src/workers/`
+
+#### 4. Add Error Handling Improvements
+**Status**: ⚠️ **PENDING**  
+**Priority**: High  
+**Estimated Effort**: 1-2 days
+
+**Tasks**:
+- [ ] Improve error handling in `provenance-slide-service.ts`
+  - Add retry logic for database queries
+  - Add timeout handling for file loading
+  - Add validation for provenance chain data
+  - Add user-friendly error messages
+- [ ] Improve error handling in `provenance-canvas-worker-service.ts`
+  - Handle worker initialization failures gracefully
+  - Add error recovery for worker crashes
+  - Add fallback rendering options
+- [ ] Improve error handling in `automaton-file-generator-service.ts`
+  - Validate input data before generation
+  - Handle file system errors
+  - Add rollback for failed file writes
+- [ ] Add error boundaries in React components
+  - Add error boundary for UnifiedProvenanceCanvas
+  - Add error boundary for worker rendering
+  - Display user-friendly error messages
+- [ ] Add error logging and monitoring
+  - Integrate with error tracking service
+  - Log errors with context
+  - Track error rates and patterns
+
+**Location**: All service files and components
+
+### Short-term (Priority: Medium)
+
+#### 5. Performance Optimizations
+**Status**: ⚠️ **PENDING**  
+**Priority**: Medium  
+**Estimated Effort**: 3-5 days
+
+**Tasks**:
+- [ ] Optimize provenance chain building
+  - Add pagination for large evolution directories
+  - Add caching for frequently accessed chains
+  - Optimize pattern extraction algorithm
+  - Add lazy loading for provenance history
+- [ ] Optimize slide/card generation
+  - Add memoization for slide content
+  - Optimize card aggregation
+  - Add virtual scrolling for large card lists
+  - Add debouncing for rapid dimension changes
+- [ ] Optimize worker rendering
+  - Add instancing for large numbers of nodes
+  - Optimize edge rendering
+  - Add level-of-detail (LOD) for distant nodes
+  - Add frustum culling
+- [ ] Add performance monitoring
+  - Track rendering FPS
+  - Track memory usage
+  - Track worker message latency
+  - Add performance warnings
+
+**Location**: All service files and worker
+
+#### 6. Documentation Improvements
+**Status**: ⚠️ **PENDING**  
+**Priority**: Medium  
+**Estimated Effort**: 1-2 days
+
+**Tasks**:
+- [ ] Add JSDoc comments to all public methods
+- [ ] Create developer guide for extending services
+- [ ] Add troubleshooting guide
+- [ ] Create video tutorials for key workflows
+- [ ] Add code examples for common use cases
+
+**Location**: Service files and `docs/29-Bipartite-BQF-Federated-Offscreen-Workers/`
+
+### Future Enhancements (Priority: Low)
+
+#### 7. Real-time Provenance Chain Updates
+**Status**: 📋 **PLANNED**  
+**Priority**: Low  
+**Estimated Effort**: 5-7 days
+
+**Features**:
+- WebSocket integration for real-time updates
+- Incremental provenance chain updates
+- Live slide/card updates
+- Conflict resolution for concurrent updates
+
+#### 8. Interactive Slide Editing
+**Status**: 📋 **PLANNED**  
+**Priority**: Low  
+**Estimated Effort**: 7-10 days
+
+**Features**:
+- Edit slide content inline
+- Add/remove cards from slides
+- Reorder slides
+- Save edited slides back to evolution directory
+
+#### 9. Card Detail Views
+**Status**: 📋 **PLANNED**  
+**Priority**: Low  
+**Estimated Effort**: 3-5 days
+
+**Features**:
+- Expandable card details
+- JSONL line viewer
+- Provenance history timeline
+- Pattern visualization
+
+#### 10. Export Provenance Chains
+**Status**: 📋 **PLANNED**  
+**Priority**: Low  
+**Estimated Effort**: 2-3 days
+
+**Features**:
+- Export to JSON/JSONL
+- Export to GraphML
+- Export to DOT format
+- Export to PNG/SVG images
+
+#### 11. Advanced Search and Filtering
+**Status**: 📋 **PLANNED**  
+**Priority**: Low  
+**Estimated Effort**: 3-5 days
+
+**Features**:
+- Search provenance chains by pattern, dimension, agent
+- Filter nodes/edges by type, dimension, agent
+- Advanced query builder
+- Save and share filter presets
+
+## Implementation Timeline
+
+### Week 1-2: Testing and Verification
+- Unit tests for new services (2-3 days)
+- Integration tests for UnifiedProvenanceCanvas (2-3 days)
+- Worker bundling verification (1-2 days)
+- Error handling improvements (1-2 days)
+
+### Week 3-4: Performance and Documentation
+- Performance optimizations (3-5 days)
+- Documentation improvements (1-2 days)
+
+### Week 5+: Future Enhancements
+- Real-time updates (5-7 days)
+- Interactive editing (7-10 days)
+- Card detail views (3-5 days)
+- Export functionality (2-3 days)
+- Search and filtering (3-5 days)
 
 ## Success Criteria Status
 
