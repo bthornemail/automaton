@@ -32,27 +32,27 @@ test.describe('MetaLogDbBrowser E2E Tests', () => {
     await page.waitForFunction(() => {
       return window.projector && 
              window.projector.metaLog && 
-             window.projector.metaLog.adapter &&
-             window.projector.metaLog.adapter.initialized === true;
+             window.projector.metaLog.browser &&
+             window.projector.metaLog.browser.isInitialized() === true;
     }, { timeout: 15000 });
     
-    // Verify adapter is ready
-    const adapterReady = await page.evaluate(() => {
+    // Verify browser is ready
+    const browserReady = await page.evaluate(() => {
       return window.projector && 
              window.projector.metaLog && 
-             window.projector.metaLog.adapter &&
-             window.projector.metaLog.adapter.initialized === true;
+             window.projector.metaLog.browser &&
+             window.projector.metaLog.browser.isInitialized() === true;
     });
     
-    expect(adapterReady).toBe(true);
+    expect(browserReady).toBe(true);
   });
 
   test('should initialize MetaLogDbBrowser', async () => {
     const initialized = await page.evaluate(() => {
-      return window.projector && 
-             window.projector.metaLog && 
-             window.projector.metaLog.adapter &&
-             window.projector.metaLog.adapter.initialized === true;
+      return window.projector &&
+             window.projector.metaLog &&
+             window.projector.metaLog.browser &&
+             window.projector.metaLog.browser.isInitialized() === true;
     });
     
     expect(initialized).toBe(true);
@@ -61,9 +61,9 @@ test.describe('MetaLogDbBrowser E2E Tests', () => {
   test('should load canvas from URL', async () => {
     const result = await page.evaluate(async () => {
       try {
-        const adapter = window.projector.metaLog.adapter;
-        // Load a test canvas file
-        await adapter.loadCanvas(
+        const browser = window.projector.metaLog.browser;
+        // Load a test canvas file (path, url order)
+        await browser.loadCanvas(
           'automaton-kernel.jsonl',
           '/jsonl/automaton-kernel.jsonl'
         );
@@ -79,8 +79,8 @@ test.describe('MetaLogDbBrowser E2E Tests', () => {
 
   test('should extract facts from loaded canvas', async () => {
     await page.evaluate(async () => {
-      const adapter = window.projector.metaLog.adapter;
-      await adapter.loadCanvas(
+      const browser = window.projector.metaLog.browser;
+      await browser.loadCanvas(
         'automaton-kernel.jsonl',
         '/jsonl/automaton-kernel.jsonl'
       );
@@ -490,30 +490,34 @@ test.describe('MetaLogDbBrowser E2E Tests', () => {
   test('should support different cache strategies', async () => {
     // Test memory-only cache
     await page.evaluate(async () => {
-      const { MetaLogBrowserAdapter } = await import('/src/projector/MetaLogBrowserAdapter.js');
-      window.memoryAdapter = new MetaLogBrowserAdapter({
+      const { CanvasLMetaverseBrowser } = await import('meta-log-db/browser');
+      window.memoryAdapter = new CanvasLMetaverseBrowser({
         cacheStrategy: 'memory'
       });
       await window.memoryAdapter.init();
     });
     
     const memoryOnly = await page.evaluate(() => {
-      return window.memoryAdapter.config.cacheStrategy === 'memory';
+      // CanvasLMetaverseBrowser doesn't expose config directly, check via getDb()
+      const db = window.memoryAdapter.getDb();
+      return db && db.getConfig().cacheStrategy === 'memory';
     });
     
     expect(memoryOnly).toBe(true);
     
     // Test IndexedDB-only cache
     await page.evaluate(async () => {
-      const { MetaLogBrowserAdapter } = await import('/src/projector/MetaLogBrowserAdapter.js');
-      window.indexedDBAdapter = new MetaLogBrowserAdapter({
+      const { CanvasLMetaverseBrowser } = await import('meta-log-db/browser');
+      window.indexedDBAdapter = new CanvasLMetaverseBrowser({
         cacheStrategy: 'indexeddb'
       });
       await window.indexedDBAdapter.init();
     });
     
     const indexedDBOnly = await page.evaluate(() => {
-      return window.indexedDBAdapter.config.cacheStrategy === 'indexeddb';
+      // CanvasLMetaverseBrowser doesn't expose config directly, check via getDb()
+      const db = window.indexedDBAdapter.getDb();
+      return db && db.getConfig().cacheStrategy === 'indexeddb';
     });
     
     expect(indexedDBOnly).toBe(true);

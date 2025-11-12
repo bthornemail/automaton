@@ -1,12 +1,13 @@
 /**
  * MetaLogBridge - Browser-side Meta-Log integration
  * 
- * Uses meta-log-db package via MetaLogBrowserAdapter for:
+ * Uses meta-log-db package via CanvasLMetaverseBrowser for:
  * - ProLog query execution (full engine with unification)
  * - DataLog materialization (fixpoint computation)
  * - SPARQL query execution (local triple store + remote endpoints)
  * - SHACL validation (full validator)
  * - R5RS Scheme evaluation (via BiwaScheme, fallback)
+ * - CanvasL object execution (unified execution interface)
  */
 
 import BiwaScheme from 'biwascheme';
@@ -20,6 +21,14 @@ export class MetaLogBridge {
     this.r5rsInterpreter = new BiwaScheme.Interpreter(); // Fallback for R5RS
     this.sparqlCache = new Map();
     this.initialized = false;
+  }
+
+  /**
+   * Backward compatibility: adapter property points to browser
+   * @deprecated Use browser property directly
+   */
+  get adapter() {
+    return this.browser;
   }
 
   /**
