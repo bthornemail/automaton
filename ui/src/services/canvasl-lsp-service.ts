@@ -5,7 +5,14 @@
  * Includes AST parsing, hover information, definition finding, and references
  */
 
-import { parseCanvasLAST, CanvasLASTNode, getASTNodeAtPosition, findReferences } from '../extensions/canvasl-language';
+import { 
+  parseCanvasLAST, 
+  CanvasLASTNode, 
+  getASTNodeAtPosition, 
+  findReferences,
+  validateAST,
+  getNodeValidationErrors
+} from '../extensions/canvasl-language';
 import { jsonlCanvasService, CanvasGraph } from './jsonl-canvas-service';
 import { databaseService } from './database-service';
 
@@ -87,6 +94,30 @@ class CanvasLLSPServiceImpl implements CanvasLLSPService {
 
     if (node.metadata?.toNode) {
       contents += `**To**: ${node.metadata.toNode}\n`;
+    }
+
+    // Add bipartite metadata to hover
+    if (node.metadata?.bipartite) {
+      contents += `\n**Bipartite Metadata**:\n`;
+      if (node.metadata.bipartite.partition) {
+        contents += `- **Partition**: ${node.metadata.bipartite.partition}\n`;
+      }
+      if (node.metadata.bipartite.bqf) {
+        if ('from' in node.metadata.bipartite.bqf) {
+          contents += `- **BQF Transformation**: ${node.metadata.bipartite.bqf.from.form} → ${node.metadata.bipartite.bqf.to.form}\n`;
+        } else {
+          contents += `- **BQF**: ${node.metadata.bipartite.bqf.form}\n`;
+        }
+      }
+      if (node.metadata.bipartite.polynomial) {
+        contents += `- **Polynomial**: monad[${node.metadata.bipartite.polynomial.monad.length}], functor[${node.metadata.bipartite.polynomial.functor.length}], perceptron[${node.metadata.bipartite.polynomial.perceptron.length}]\n`;
+      }
+      if (node.metadata.bipartite.progression) {
+        contents += `- **Progression**: ${node.metadata.bipartite.progression}\n`;
+      }
+      if (node.metadata.bipartite.mapping) {
+        contents += `- **Mapping**: ${node.metadata.bipartite.mapping}\n`;
+      }
     }
 
     return {
@@ -181,6 +212,12 @@ class CanvasLLSPServiceImpl implements CanvasLLSPService {
     // Add edge types
     suggestions.push('vertical', 'horizontal', 'transition', 'self-ref', 'r5rs-call');
 
+    // Add bipartite partition values
+    suggestions.push('topology', 'system', 'topology-system', 'topology-topology', 'system-system');
+
+    // Add BQF signatures
+    suggestions.push('euclidean', 'lorentz', 'minkowski', 'riemannian');
+
     return [...new Set(suggestions)]; // Remove duplicates
   }
 
@@ -191,6 +228,7 @@ class CanvasLLSPServiceImpl implements CanvasLLSPService {
     const errors: Array<{ line: number; message: string }> = [];
     const lines = content.split('\n');
 
+    // First, validate JSON structure
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       if (!line.trim()) continue;
@@ -211,6 +249,21 @@ class CanvasLLSPServiceImpl implements CanvasLLSPService {
           message: `Invalid JSON: ${e instanceof Error ? e.message : 'Unknown error'}`,
         });
       }
+    }
+
+    // Then, validate bipartite metadata using AST validation
+    try {
+      const ast = this.parseAST(content);
+      const validationErrors = validateAST(ast);
+      
+      for (const validationError of validationErrors) {
+        errors.push({
+          line: validationError.line,
+          message: validationError.message,
+        });
+      }
+    } catch (e) {
+      // If AST parsing fails, we already have JSON errors above
     }
 
     return { errors };

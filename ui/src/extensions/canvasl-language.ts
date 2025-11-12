@@ -240,6 +240,42 @@ export function canvaslLanguage(): Extension[] {
 }
 
 /**
+ * Bipartite-BQF Types
+ * 
+ * Types for Bipartite Binary Quadratic Polynomial Form extension
+ */
+export interface BQFObject {
+  form: string;
+  coefficients?: number[];
+  signature?: string;
+  variables?: string[];
+  polynomial?: string;
+  symbol?: string;
+  procedure?: string;
+}
+
+export interface BQFTransformation {
+  from: BQFObject;
+  to: BQFObject;
+  transformation?: string;
+  polynomial?: string;
+}
+
+export interface PolynomialObject {
+  monad: number[];
+  functor: number[];
+  perceptron: number[];
+}
+
+export interface BipartiteMetadata {
+  partition?: 'topology' | 'system' | 'topology-system' | 'topology-topology' | 'system-system';
+  bqf?: BQFObject | BQFTransformation;
+  polynomial?: PolynomialObject;
+  progression?: string;
+  mapping?: string;
+}
+
+/**
  * CanvasL AST Node Types
  * 
  * These types represent the AST structure for LSP support
@@ -256,7 +292,281 @@ export interface CanvasLASTNode {
     r5rsFunction?: string;
     fromNode?: string;
     toNode?: string;
+    bipartite?: BipartiteMetadata;
   };
+}
+
+/**
+ * BQF Validation
+ * 
+ * Validates Binary Quadratic Form objects according to specification
+ */
+export interface BQFValidationResult {
+  valid: boolean;
+  errors: string[];
+}
+
+export function validateBQF(bqf: BQFObject, dimension?: string): BQFValidationResult {
+  const errors: string[] = [];
+
+  // Validate form is present
+  if (!bqf.form || typeof bqf.form !== 'string') {
+    errors.push('BQF form is required and must be a string');
+  }
+
+  // Validate coefficients if present
+  if (bqf.coefficients !== undefined) {
+    if (!Array.isArray(bqf.coefficients)) {
+      errors.push('BQF coefficients must be an array');
+    } else {
+      const invalidCoeffs = bqf.coefficients.filter(c => typeof c !== 'number' || isNaN(c));
+      if (invalidCoeffs.length > 0) {
+        errors.push('BQF coefficients must be valid numbers');
+      }
+    }
+  }
+
+  // Validate signature if present
+  if (bqf.signature !== undefined) {
+    const validSignatures = ['euclidean', 'lorentz', 'minkowski', 'riemannian'];
+    if (!validSignatures.includes(bqf.signature)) {
+      errors.push(`BQF signature must be one of: ${validSignatures.join(', ')}`);
+    }
+  }
+
+  // Validate variables if present
+  if (bqf.variables !== undefined) {
+    if (!Array.isArray(bqf.variables)) {
+      errors.push('BQF variables must be an array');
+    } else {
+      const invalidVars = bqf.variables.filter(v => typeof v !== 'string');
+      if (invalidVars.length > 0) {
+        errors.push('BQF variables must be strings');
+      }
+      
+      // Validate variable count matches dimension if dimension is provided
+      if (dimension) {
+        const dimMatch = dimension.match(/^(\d)D$/);
+        if (dimMatch) {
+          const expectedDim = parseInt(dimMatch[1]);
+          if (bqf.variables.length !== expectedDim && expectedDim > 0) {
+            errors.push(`BQF variables count (${bqf.variables.length}) does not match dimension ${dimension}`);
+          }
+        }
+      }
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
+
+export function validateBQFTransformation(transformation: BQFTransformation): BQFValidationResult {
+  const errors: string[] = [];
+
+  // Validate from BQF
+  if (!transformation.from) {
+    errors.push('BQF transformation "from" is required');
+  } else {
+    const fromResult = validateBQF(transformation.from);
+    if (!fromResult.valid) {
+      errors.push(...fromResult.errors.map(e => `from: ${e}`));
+    }
+  }
+
+  // Validate to BQF
+  if (!transformation.to) {
+    errors.push('BQF transformation "to" is required');
+  } else {
+    const toResult = validateBQF(transformation.to);
+    if (!toResult.valid) {
+      errors.push(...toResult.errors.map(e => `to: ${e}`));
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
+
+/**
+ * Polynomial Validation
+ * 
+ * Validates polynomial objects according to specification
+ */
+export interface PolynomialValidationResult {
+  valid: boolean;
+  errors: string[];
+}
+
+export function validatePolynomial(poly: PolynomialObject): PolynomialValidationResult {
+  const errors: string[] = [];
+
+  // Validate monad array
+  if (!Array.isArray(poly.monad)) {
+    errors.push('Polynomial monad must be an array');
+  } else if (poly.monad.length !== 8) {
+    errors.push(`Polynomial monad must have exactly 8 components, got ${poly.monad.length}`);
+  } else {
+    const invalidMonad = poly.monad.filter(m => typeof m !== 'number' || isNaN(m));
+    if (invalidMonad.length > 0) {
+      errors.push('Polynomial monad components must be valid numbers');
+    }
+  }
+
+  // Validate functor array
+  if (!Array.isArray(poly.functor)) {
+    errors.push('Polynomial functor must be an array');
+  } else if (poly.functor.length !== 8) {
+    errors.push(`Polynomial functor must have exactly 8 components, got ${poly.functor.length}`);
+  } else {
+    const invalidFunctor = poly.functor.filter(f => typeof f !== 'number' || isNaN(f));
+    if (invalidFunctor.length > 0) {
+      errors.push('Polynomial functor components must be valid numbers');
+    }
+  }
+
+  // Validate perceptron array
+  if (!Array.isArray(poly.perceptron)) {
+    errors.push('Polynomial perceptron must be an array');
+  } else if (poly.perceptron.length !== 8) {
+    errors.push(`Polynomial perceptron must have exactly 8 components, got ${poly.perceptron.length}`);
+  } else {
+    const invalidPerceptron = poly.perceptron.filter(p => typeof p !== 'number' || isNaN(p));
+    if (invalidPerceptron.length > 0) {
+      errors.push('Polynomial perceptron components must be valid numbers');
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
+
+/**
+ * Bipartite Validation
+ * 
+ * Validates bipartite metadata according to specification
+ */
+export interface BipartiteValidationResult {
+  valid: boolean;
+  errors: string[];
+}
+
+export function validateBipartite(
+  bipartite: BipartiteMetadata,
+  nodeType: 'node' | 'edge',
+  fromNode?: string,
+  toNode?: string
+): BipartiteValidationResult {
+  const errors: string[] = [];
+
+  // Validate partition
+  if (bipartite.partition !== undefined) {
+    const validPartitions = ['topology', 'system', 'topology-system', 'topology-topology', 'system-system'];
+    if (!validPartitions.includes(bipartite.partition)) {
+      errors.push(`Partition must be one of: ${validPartitions.join(', ')}`);
+    }
+
+    // Validate edge partition consistency
+    if (nodeType === 'edge') {
+      if (bipartite.partition === 'topology-system' || bipartite.partition === 'system-topology') {
+        // Horizontal edge: topology ↔ system
+        // This is valid
+      } else if (bipartite.partition === 'topology-topology' || bipartite.partition === 'system-system') {
+        // Vertical edge: same partition
+        // This is valid
+      } else {
+        errors.push(`Edge partition "${bipartite.partition}" is not valid for edges`);
+      }
+    }
+  }
+
+  // Validate BQF
+  if (bipartite.bqf !== undefined) {
+    if ('from' in bipartite.bqf && 'to' in bipartite.bqf) {
+      // BQF Transformation (for edges)
+      const result = validateBQFTransformation(bipartite.bqf as BQFTransformation);
+      if (!result.valid) {
+        errors.push(...result.errors);
+      }
+    } else {
+      // BQF Object (for nodes)
+      const result = validateBQF(bipartite.bqf as BQFObject, bipartite.partition?.includes('topology') ? undefined : undefined);
+      if (!result.valid) {
+        errors.push(...result.errors);
+      }
+    }
+  }
+
+  // Validate polynomial
+  if (bipartite.polynomial !== undefined) {
+    const result = validatePolynomial(bipartite.polynomial);
+    if (!result.valid) {
+      errors.push(...result.errors);
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+}
+
+/**
+ * Parse bipartite metadata from entry
+ */
+function parseBipartiteMetadata(entry: any): BipartiteMetadata | undefined {
+  if (!entry.bipartite || typeof entry.bipartite !== 'object') {
+    return undefined;
+  }
+
+  const bipartite: BipartiteMetadata = {};
+
+  // Parse partition
+  if (entry.bipartite.partition) {
+    const validPartitions = ['topology', 'system', 'topology-system', 'topology-topology', 'system-system'];
+    if (validPartitions.includes(entry.bipartite.partition)) {
+      bipartite.partition = entry.bipartite.partition as BipartiteMetadata['partition'];
+    }
+  }
+
+  // Parse BQF
+  if (entry.bipartite.bqf) {
+    if (entry.bipartite.bqf.from && entry.bipartite.bqf.to) {
+      // BQF Transformation
+      bipartite.bqf = {
+        from: entry.bipartite.bqf.from as BQFObject,
+        to: entry.bipartite.bqf.to as BQFObject,
+        transformation: entry.bipartite.bqf.transformation,
+        polynomial: entry.bipartite.bqf.polynomial
+      } as BQFTransformation;
+    } else {
+      // BQF Object
+      bipartite.bqf = entry.bipartite.bqf as BQFObject;
+    }
+  }
+
+  // Parse polynomial
+  if (entry.bipartite.polynomial) {
+    bipartite.polynomial = entry.bipartite.polynomial as PolynomialObject;
+  }
+
+  // Parse progression
+  if (entry.bipartite.progression) {
+    bipartite.progression = entry.bipartite.progression;
+  }
+
+  // Parse mapping
+  if (entry.bipartite.mapping) {
+    bipartite.mapping = entry.bipartite.mapping;
+  }
+
+  return Object.keys(bipartite).length > 0 ? bipartite : undefined;
 }
 
 /**
@@ -306,6 +616,30 @@ export function parseCanvasLAST(content: string): CanvasLASTNode[] {
           node.metadata!.toNode = entry.to || entry.toNode;
         }
 
+        // Extract and parse bipartite metadata
+        const bipartite = parseBipartiteMetadata(entry);
+        if (bipartite) {
+          node.metadata!.bipartite = bipartite;
+          
+          // Validate bipartite metadata
+          const validationResult = validateBipartite(
+            bipartite,
+            node.type,
+            node.metadata!.fromNode,
+            node.metadata!.toNode
+          );
+          
+          if (!validationResult.valid) {
+            // Store validation errors in metadata for LSP error reporting
+            if (!node.metadata!.bipartite) {
+              node.metadata!.bipartite = bipartite;
+            }
+            // Note: Validation errors can be accessed via separate validation function
+            // For now, we parse but don't block on validation errors
+            console.warn(`Bipartite validation errors for ${entry.id} at line ${i + 1}:`, validationResult.errors);
+          }
+        }
+
         ast.push(node);
       }
     } catch (e) {
@@ -336,4 +670,74 @@ export function findReferences(ast: CanvasLASTNode[], nodeId: string): CanvasLAS
     node.metadata?.toNode === nodeId ||
     node.id === nodeId
   );
+}
+
+/**
+ * Validation Error for LSP
+ */
+export interface ValidationError {
+  line: number;
+  column: number;
+  message: string;
+  severity: 'error' | 'warning';
+}
+
+/**
+ * Validate entire AST and return errors
+ */
+export function validateAST(ast: CanvasLASTNode[]): ValidationError[] {
+  const errors: ValidationError[] = [];
+
+  for (const node of ast) {
+    if (node.metadata?.bipartite) {
+      const validationResult = validateBipartite(
+        node.metadata.bipartite,
+        node.type,
+        node.metadata.fromNode,
+        node.metadata.toNode
+      );
+
+      if (!validationResult.valid) {
+        for (const errorMsg of validationResult.errors) {
+          errors.push({
+            line: node.line,
+            column: node.column,
+            message: `Bipartite validation: ${errorMsg}`,
+            severity: 'error'
+          });
+        }
+      }
+    }
+  }
+
+  return errors;
+}
+
+/**
+ * Get validation errors for a specific node
+ */
+export function getNodeValidationErrors(node: CanvasLASTNode): ValidationError[] {
+  const errors: ValidationError[] = [];
+
+  if (node.metadata?.bipartite) {
+    const validationResult = validateBipartite(
+      node.metadata.bipartite,
+      node.type,
+      node.metadata.fromNode,
+      node.metadata.toNode
+    );
+
+    if (!validationResult.valid) {
+      for (const errorMsg of validationResult.errors) {
+        errors.push({
+          line: node.line,
+          column: node.column,
+          message: `Bipartite validation: ${errorMsg}`,
+          severity: 'error'
+        });
+      }
+    }
+  }
+
+  return errors;
 }
