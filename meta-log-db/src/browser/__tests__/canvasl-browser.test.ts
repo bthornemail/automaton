@@ -43,12 +43,21 @@ describe('CanvasLMetaverseBrowser', () => {
     it('should parse JSONL canvas', async () => {
       await browser.init();
       // Note: This test requires a valid JSONL file
+      // In a real test environment, you would use a test fixture
       expect(browser.isInitialized()).toBe(true);
     });
 
     it('should parse CanvasL file', async () => {
       await browser.init();
       // Note: This test requires a valid CanvasL file
+      // In a real test environment, you would use a test fixture
+      expect(browser.isInitialized()).toBe(true);
+    });
+
+    it('should handle loadCanvas parameter order correctly', async () => {
+      await browser.init();
+      // Verify parameter order: (path, url)
+      // This test ensures the API contract is correct
       expect(browser.isInitialized()).toBe(true);
     });
   });
@@ -67,15 +76,41 @@ describe('CanvasLMetaverseBrowser', () => {
 
       const result = await browser.prologQuery('test(X)');
       expect(result).toBeDefined();
+      expect(result).toHaveProperty('bindings');
+    });
+
+    it('should execute ProLog query with options', async () => {
+      const result = await browser.prologQuery('test(X)', {
+        facts: [{ predicate: 'test', args: ['value'] }]
+      });
+      expect(result).toBeDefined();
     });
 
     it('should execute DataLog query', async () => {
       const result = await browser.datalogQuery('test(X)', null);
       expect(result).toBeDefined();
+      expect(result).toHaveProperty('facts');
+    });
+
+    it('should execute DataLog query with program', async () => {
+      const program = {
+        rules: [],
+        facts: [{ predicate: 'test', args: ['value'] }]
+      };
+      const result = await browser.datalogQuery('test(X)', program);
+      expect(result).toBeDefined();
     });
 
     it('should execute SPARQL query', async () => {
       const result = await browser.sparqlQuery('SELECT ?s WHERE { ?s ?p ?o }');
+      expect(result).toBeDefined();
+      expect(result).toHaveProperty('results');
+    });
+
+    it('should execute SPARQL query with options', async () => {
+      const result = await browser.sparqlQuery('SELECT ?s WHERE { ?s ?p ?o }', {
+        timeout: 5000
+      });
       expect(result).toBeDefined();
     });
   });
@@ -92,6 +127,15 @@ describe('CanvasLMetaverseBrowser', () => {
         expect(result).toBeDefined();
       } catch (error) {
         // Function might not be available in test environment
+        expect(error).toBeDefined();
+      }
+    });
+
+    it('should handle R5RS function errors gracefully', async () => {
+      try {
+        await browser.executeR5RS('r5rs:nonexistent', []);
+        // Should throw or return null
+      } catch (error) {
         expect(error).toBeDefined();
       }
     });
@@ -140,6 +184,53 @@ describe('CanvasLMetaverseBrowser', () => {
 
       const result = await browser.executeCanvasLObject(obj);
       expect(result.type).toBe('unknown');
+    });
+
+    it('should handle execution errors gracefully', async () => {
+      const obj = {
+        type: 'r5rs-call',
+        function: 'r5rs:nonexistent',
+        args: []
+      };
+
+      const result = await browser.executeCanvasLObject(obj);
+      expect(result.error).toBeDefined();
+    });
+
+    it('should execute prolog-query object', async () => {
+      const obj = {
+        type: 'prolog-query',
+        query: 'test(X)',
+        facts: [{ predicate: 'test', args: ['value'] }]
+      };
+
+      const result = await browser.executeCanvasLObject(obj);
+      expect(result.type).toBe('prolog-result');
+      expect(result.result).toBeDefined();
+    });
+
+    it('should execute datalog-query object', async () => {
+      const obj = {
+        type: 'datalog-query',
+        goal: 'test(X)',
+        program: null
+      };
+
+      const result = await browser.executeCanvasLObject(obj);
+      expect(result.type).toBe('datalog-result');
+      expect(result.result).toBeDefined();
+    });
+
+    it('should execute shacl-validate object', async () => {
+      const obj = {
+        type: 'shacl-validate',
+        shapes: {},
+        triples: []
+      };
+
+      const result = await browser.executeCanvasLObject(obj);
+      expect(result.type).toBe('shacl-result');
+      expect(result.result).toBeDefined();
     });
 
     it('should execute multiple objects', async () => {

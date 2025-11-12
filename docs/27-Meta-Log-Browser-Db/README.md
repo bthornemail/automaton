@@ -40,7 +40,39 @@ Browser-native implementation of Meta-Log Database with BIP32/39/44 cryptographi
 
 ## Overview
 
-The Meta-Log Browser Database (`MetaLogDbBrowser`) provides a complete browser-native implementation of the Meta-Log Database system, enabling:
+The Meta-Log Browser Database provides browser-native implementations of the Meta-Log Database system:
+
+- **`MetaLogDbBrowser`**: Core browser database implementation
+- **`CanvasLMetaverseBrowser`**: Unified browser API for CanvasL operations (recommended)
+
+### CanvasLMetaverseBrowser (Recommended)
+
+For new projects, use `CanvasLMetaverseBrowser` which provides a unified API:
+
+```typescript
+import { CanvasLMetaverseBrowser } from 'meta-log-db/browser';
+
+const browser = new CanvasLMetaverseBrowser({
+  indexedDBName: 'my-app',
+  cacheStrategy: 'both'
+});
+
+await browser.init();
+await browser.loadCanvas('file.jsonl', '/url/file.jsonl');
+
+// Execute CanvasL objects
+const result = await browser.executeCanvasLObject({
+  type: 'r5rs-call',
+  function: 'r5rs:church-add',
+  args: [2, 3]
+});
+```
+
+See [CanvasL Metaverse Browser API Reference](../../meta-log-db/docs/CANVASL_METAVERSE_BROWSER_API.md) for complete documentation.
+
+### MetaLogDbBrowser (Core Implementation)
+
+The `MetaLogDbBrowser` class provides a complete browser-native implementation of the Meta-Log Database system, enabling:
 
 - **Browser File I/O**: Load files from URLs/public directories using fetch API
 - **IndexedDB Persistence**: Cache and persist data in browser storage
