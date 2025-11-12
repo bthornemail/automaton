@@ -92,12 +92,13 @@ describe('ProvenanceCanvasWorkerService', () => {
         terminate = vi.fn();
         
         constructor(url: URL | string, options?: WorkerOptions) {
-          // Don't set up message handler to respond
+          // Don't set up message handler to respond - this will cause timeout
         }
       }
       
       vi.stubGlobal('Worker', TimeoutWorkerConstructor);
 
+      // The service waits 10 seconds for initialization, so we expect it to timeout
       await expect(
         timeoutService.init(mockCanvas, { width: 800, height: 600 })
       ).rejects.toThrow('Timeout waiting for message: initialized');
@@ -119,7 +120,7 @@ describe('ProvenanceCanvasWorkerService', () => {
         }
       }
       vi.stubGlobal('Worker', MockWorkerConstructor);
-    }, 10000); // Increase timeout for this test
+    }, 15000); // Increase timeout to 15 seconds to allow for the 10 second service timeout
   });
 
   describe('Provenance Chain Loading', () => {

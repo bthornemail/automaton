@@ -45,7 +45,8 @@ export function createMockOffscreenCanvas(
   width: number = 800,
   height: number = 600
 ): OffscreenCanvas {
-  const canvas = {
+  // Create a mock OffscreenCanvas that will be returned by transferControlToOffscreen
+  const mockOffscreenCanvas = {
     width,
     height,
     getContext: vi.fn(),
@@ -53,7 +54,18 @@ export function createMockOffscreenCanvas(
     transferToImageBitmap: vi.fn()
   } as unknown as OffscreenCanvas;
 
-  return canvas;
+  // Create the main canvas with transferControlToOffscreen method
+  const canvas = {
+    width,
+    height,
+    getContext: vi.fn(),
+    convertToBlob: vi.fn(),
+    transferToImageBitmap: vi.fn(),
+    // Add transferControlToOffscreen method that returns the mock OffscreenCanvas
+    transferControlToOffscreen: vi.fn(() => mockOffscreenCanvas)
+  } as unknown as OffscreenCanvas & { transferControlToOffscreen: () => OffscreenCanvas };
+
+  return canvas as OffscreenCanvas;
 }
 
 /**
