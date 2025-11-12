@@ -57,10 +57,34 @@ src/
 │   └── useExecutionHistory.ts # History tracking
 ├── services/
 │   ├── api.ts              # REST API client
-│   └── websocket.ts        # WebSocket client
+│   ├── websocket.ts        # WebSocket client
+│   └── meta-log-browser-adapter.ts  # CanvasL browser integration
 └── types/
     └── index.ts            # TypeScript definitions
 ```
+
+### Meta-Log Browser Integration
+
+The UI package uses `CanvasLMetaverseBrowser` via the `MetaLogBrowserAdapter` wrapper for browser-native CanvasL operations:
+
+```typescript
+import { getMetaLogBrowserAdapter } from './services/meta-log-browser-adapter';
+
+const adapter = getMetaLogBrowserAdapter({
+  indexedDBName: 'automaton-ui',
+  cacheStrategy: 'both'
+});
+
+await adapter.init();
+await adapter.loadCanvas('file.jsonl', '/url/file.jsonl');
+
+// Execute queries
+const results = await adapter.prologQuery('(node ?Id ?Type)');
+```
+
+**Note**: The `MetaLogBrowserAdapter` is a backward-compatible wrapper around `CanvasLMetaverseBrowser`. For new code, consider using `CanvasLMetaverseBrowser` directly from `meta-log-db/browser`.
+
+See [CanvasL Metaverse Browser API Reference](../../meta-log-db/docs/CANVASL_METAVERSE_BROWSER_API.md) for complete documentation.
 
 ### Technology Stack
 - **React 18** with TypeScript

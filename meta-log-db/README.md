@@ -59,7 +59,10 @@ const validation = await db.validateShacl();
 
 ## API Reference
 
-See [API.md](./API.md) for complete API documentation.
+- [CanvasL Metaverse Browser API](./docs/CANVASL_METAVERSE_BROWSER_API.md) - Complete browser API documentation
+- [Real-World Examples](./docs/EXAMPLES.md) - Practical usage examples
+- [Migration Guide](./docs/MIGRATION_GUIDE.md) - Migrating from MetaLogBrowserAdapter
+- [API.md](./API.md) - Node.js API documentation (if available)
 
 ## Development
 

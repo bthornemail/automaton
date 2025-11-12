@@ -608,4 +608,5 @@ await browser.loadCanvas(path, url);  // Note: parameter order changed
 - [Meta-Log Database README](../README.md) - Main package documentation
 - [Browser Database Documentation](../../docs/27-Meta-Log-Browser-Db/README.md) - Browser implementation details
 - [CanvasL Specification](../../docs/04-CanvasL/CANVASL-RFC2119-SPEC.md) - CanvasL format specification
+- [Real-World Examples](./EXAMPLES.md) - Practical usage examples
 

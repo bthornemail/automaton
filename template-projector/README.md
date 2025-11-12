@@ -27,6 +27,29 @@ npm run dev
 npm run build
 ```
 
+## Meta-Log Integration
+
+The project uses the unified `CanvasLMetaverseBrowser` from `meta-log-db/browser` for browser-native CanvasL operations:
+
+```javascript
+import { CanvasLMetaverseBrowser } from 'meta-log-db/browser';
+
+const browser = new CanvasLMetaverseBrowser({
+  indexedDBName: 'template-projector',
+  cacheStrategy: 'both'
+});
+
+await browser.init();
+await browser.loadCanvas('file.jsonl', '/url/file.jsonl');
+
+// Execute CanvasL objects
+const results = await browser.executeCanvasLObjects(canvaslObjects);
+```
+
+See [Meta-Log Integration Documentation](./META_LOG_INTEGRATION.md) for details.
+
+**Migration Note**: The project has been migrated from `MetaLogBrowserAdapter` to `CanvasLMetaverseBrowser`. See [Phase 2 Migration Summary](./PHASE_2_MIGRATION_SUMMARY.md) for migration details.
+
 ## Project Structure
 
 ```
