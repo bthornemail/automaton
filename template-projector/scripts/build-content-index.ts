@@ -344,6 +344,30 @@ async function buildContentIndex(): Promise<void> {
   console.log(`   Relationships: ${relCount}`);
   console.log(`   RDF Triples: ${rdfCount}`);
   console.log(`   Total entries: ${allEntries.length}`);
+  
+  // Validate the built content index
+  console.log('\n🔍 Validating content index...');
+  try {
+    const { validateContentIndex } = await import('./validate-content-index.js');
+    const validationResult = validateContentIndex(outputPath);
+    
+    if (validationResult.valid) {
+      console.log('✅ Content index validation passed!');
+    } else {
+      console.warn(`⚠️  Content index has ${validationResult.errors.length} validation errors`);
+      if (validationResult.errors.length > 0) {
+        console.warn('   First few errors:');
+        for (const error of validationResult.errors.slice(0, 5)) {
+          console.warn(`     [${error.code}] ${error.message}`);
+        }
+      }
+      if (validationResult.warnings.length > 0) {
+        console.warn(`   Warnings: ${validationResult.warnings.length}`);
+      }
+    }
+  } catch (error) {
+    console.warn('⚠️  Validation skipped (validator not available):', error instanceof Error ? error.message : String(error));
+  }
 }
 
 // Run if executed directly

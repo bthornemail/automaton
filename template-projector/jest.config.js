@@ -1,36 +1,40 @@
-/** @type {import('jest').Config} */
 export default {
-  // Use ESM support
-  preset: 'default',
-  extensionsToTreatAsEsm: ['.js'],
   testEnvironment: 'node',
-  
-  // Exclude Playwright tests - they should be run via 'npx playwright test'
-  testPathIgnorePatterns: [
-    '/node_modules/',
-    '/tests/', // Exclude all Playwright tests
-    '/dist/',
-    '/build/',
-  ],
-  
-  // Only look for Jest tests in specific directories, excluding Playwright tests
-  testMatch: [
-    '**/__tests__/**/*.js',
-    '**/?(*.)+(spec|test).js',
-  ],
-  
-  // Module name mapping for ESM
+  preset: 'ts-jest/presets/default-esm',
+  extensionsToTreatAsEsm: ['.ts'],
+  globals: {
+    'ts-jest': {
+      useESM: true,
+      tsconfig: {
+        module: 'esnext',
+        moduleResolution: 'node'
+      }
+    }
+  },
+  transform: {
+    '^.+\\.ts$': ['ts-jest', {
+      useESM: true,
+      tsconfig: {
+        module: 'esnext',
+        moduleResolution: 'node'
+      }
+    }]
+  },
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
-  
-  // Transform configuration
-  transform: {},
-  
-  // Coverage configuration (if needed)
+  testMatch: ['**/tests/unit/**/*.test.js'],
   collectCoverageFrom: [
-    'src/**/*.js',
-    '!src/**/*.spec.js',
-    '!src/**/*.test.js',
+    'src/agents/**/*.js',
+    'scripts/**/*.ts',
+    '!**/*.spec.js',
+    '!**/node_modules/**'
   ],
+  coverageDirectory: 'coverage',
+  coverageReporters: ['text', 'lcov', 'html'],
+  verbose: true,
+  testTimeout: 30000, // Increased timeout for async operations
+  transformIgnorePatterns: [
+    'node_modules/(?!(.*\\.mjs$))'
+  ]
 };
