@@ -23,3 +23,7 @@ export * from '../types/index.js';
 // Re-export validation utilities
 export * from '../validation/frontmatter-validator.js';
 
+// Export CanvasL Metaverse Browser
+export { CanvasLMetaverseBrowser } from './canvasl-browser.js';
+export type { CanvasLBrowserConfig, CanvasLQueryOptions, CanvasLExecutionResult } from './canvasl-browser.js';
+

@@ -85,12 +85,12 @@ npm test
 
 ## Browser Usage
 
-For browser environments, use the browser-specific build:
+For browser environments, use the unified `CanvasLMetaverseBrowser`:
 
 ```typescript
-import { MetaLogDbBrowser } from 'meta-log-db/browser';
+import { CanvasLMetaverseBrowser } from 'meta-log-db/browser';
 
-const db = new MetaLogDbBrowser({
+const browser = new CanvasLMetaverseBrowser({
   enableProlog: true,
   enableDatalog: true,
   enableRdf: true,
@@ -100,14 +100,63 @@ const db = new MetaLogDbBrowser({
 });
 
 // Initialize (sets up IndexedDB, file I/O, etc.)
-await db.init();
+await browser.init();
 
-// Load canvas from URL
-await db.loadCanvas('automaton-kernel.jsonl', '/jsonl/automaton-kernel.jsonl');
+// Load canvas from URL (path is identifier, url is fetch location)
+await browser.loadCanvas('automaton-kernel.jsonl', '/jsonl/automaton-kernel.jsonl');
 
 // Use same API as Node.js version
-const facts = db.extractFacts();
-const results = await db.prologQuery('(node ?Id ?Type)');
+const facts = browser.extractFacts();
+const results = await browser.prologQuery('(node ?Id ?Type)');
+
+// Execute CanvasL objects
+const canvaslResult = await browser.executeCanvasLObject({
+  type: 'r5rs-call',
+  function: 'r5rs:church-add',
+  args: [2, 3]
+});
+```
+
+### CanvasL Object Execution
+
+`CanvasLMetaverseBrowser` provides unified CanvasL object execution:
+
+```typescript
+// Execute single CanvasL object
+const result = await browser.executeCanvasLObject({
+  type: 'rdf-triple',
+  subject: 'http://example.org/s',
+  predicate: 'http://example.org/p',
+  object: 'http://example.org/o'
+});
+
+// Execute multiple CanvasL objects
+const results = await browser.executeCanvasLObjects([
+  { type: 'rdf-triple', subject: '...', predicate: '...', object: '...' },
+  { type: 'slide', id: 'slide-1', dimension: '0D' },
+  { type: 'r5rs-call', function: 'r5rs:church-add', args: [2, 3] }
+]);
+```
+
+Supported CanvasL object types:
+- `rdf-triple` - Add RDF triple to store
+- `r5rs-call` - Execute R5RS function
+- `sparql-construct` - Execute SPARQL CONSTRUCT query
+- `prolog-query` - Execute ProLog query
+- `datalog-query` - Execute DataLog query
+- `shacl-validate` - Validate with SHACL
+- `slide` - Return slide object as-is
+
+### Legacy Browser API
+
+For backward compatibility, `MetaLogDbBrowser` is still available:
+
+```typescript
+import { MetaLogDbBrowser } from 'meta-log-db/browser';
+
+const db = new MetaLogDbBrowser({ /* config */ });
+await db.init();
+await db.loadCanvas('path', 'url');
 ```
 
 ## Linking to Plugins

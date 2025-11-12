@@ -171,6 +171,7 @@ export abstract class BaseMetaLogPlugin extends EventEmitter {
 
   /**
    * Load canvas file
+   * Uses Node.js MetaLogDb in server environments, CanvasLMetaverseBrowser in browser
    */
   async loadCanvas(canvasPath?: string): Promise<void> {
     const path = canvasPath || this.config.canvasPath;
@@ -181,7 +182,12 @@ export abstract class BaseMetaLogPlugin extends EventEmitter {
     }
 
     try {
-      await this.db.loadCanvas(path);
+      // Use browser version if in browser environment
+      if (typeof window !== 'undefined') {
+        await this.loadCanvasBrowser(path);
+      } else {
+        await this.db.loadCanvas(path);
+      }
       await this.onCanvasUpdate(path);
     } catch (error) {
       const canvasError = new CanvasError(
@@ -195,6 +201,36 @@ export abstract class BaseMetaLogPlugin extends EventEmitter {
       if (!recovered) {
         throw canvasError;
       }
+    }
+  }
+
+  /**
+   * Load canvas file using browser implementation
+   * Uses CanvasLMetaverseBrowser for browser environments
+   */
+  async loadCanvasBrowser(canvasPath: string, url?: string): Promise<void> {
+    if (typeof window === 'undefined') {
+      throw new Error('loadCanvasBrowser can only be used in browser environments');
+    }
+
+    try {
+      const { CanvasLMetaverseBrowser } = await import('meta-log-db/browser');
+      
+      // Create or reuse browser instance
+      if (!(this as any).browser) {
+        (this as any).browser = new CanvasLMetaverseBrowser({
+          enableProlog: this.config.enableProlog,
+          enableDatalog: this.config.enableDatalog,
+          enableRdf: this.config.enableRdf,
+          enableShacl: this.config.enableShacl,
+          indexedDBName: 'meta-log-plugin'
+        });
+      }
+
+      await (this as any).browser.init();
+      await (this as any).browser.loadCanvas(canvasPath, url);
+    } catch (error) {
+      throw new Error(`Failed to load canvas in browser: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 

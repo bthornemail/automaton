@@ -1,6 +1,22 @@
 /**
  * MetaLogBrowserAdapter - Browser-compatible adapter for meta-log-db
  * 
+ * @deprecated Use CanvasLMetaverseBrowser from 'meta-log-db/browser' instead.
+ * This class is kept for backward compatibility but will be removed in a future version.
+ * 
+ * Migration:
+ * ```javascript
+ * // Old:
+ * import { MetaLogBrowserAdapter } from './MetaLogBrowserAdapter.js';
+ * const adapter = new MetaLogBrowserAdapter();
+ * await adapter.loadCanvas(url, path);
+ * 
+ * // New:
+ * import { CanvasLMetaverseBrowser } from 'meta-log-db/browser';
+ * const browser = new CanvasLMetaverseBrowser();
+ * await browser.loadCanvas(path, url); // Note: parameter order changed
+ * ```
+ * 
  * Uses browser-native MetaLogDbBrowser implementation:
  * - Native browser file I/O with fetch API
  * - IndexedDB caching for performance

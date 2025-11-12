@@ -1,6 +1,7 @@
 /**
  * CanvasLExecutor - Executes CanvasL objects with Meta-Log integration
  * 
+ * Uses CanvasLMetaverseBrowser from meta-log-db for unified execution.
  * Handles execution of different CanvasL object types:
  * - rdf-triple: Add to RDF store
  * - r5rs-call: Execute R5RS function
@@ -13,14 +14,35 @@
 export class CanvasLExecutor {
   constructor(metaLogBridge) {
     this.metaLog = metaLogBridge;
+    // Access browser from bridge
+    this.browser = metaLogBridge.browser;
   }
 
   /**
    * Execute a CanvasL object
+   * Uses unified CanvasLMetaverseBrowser.executeCanvasLObject if available
    * @param {Object} obj - CanvasL object
    * @returns {Promise<*>} Execution result
    */
   async execute(obj) {
+    // Use unified browser execution if available
+    if (this.browser && typeof this.browser.executeCanvasLObject === 'function') {
+      try {
+        const result = await this.browser.executeCanvasLObject(obj);
+        // Convert unified result format to legacy format
+        if (result.type === 'r5rs-result' || result.type === 'prolog-result' || 
+            result.type === 'datalog-result' || result.type === 'sparql-result' || 
+            result.type === 'shacl-result') {
+          return { type: result.type, result: result.result };
+        }
+        return result.result || result;
+      } catch (error) {
+        console.warn('Unified execution failed, falling back to legacy:', error);
+        // Fall through to legacy implementation
+      }
+    }
+
+    // Legacy implementation (fallback)
     switch (obj.type) {
       case 'rdf-triple':
         return await this.executeRdfTriple(obj);
@@ -126,10 +148,22 @@ export class CanvasLExecutor {
 
   /**
    * Execute multiple objects
+   * Uses unified CanvasLMetaverseBrowser.executeCanvasLObjects if available
    * @param {Array} objects - CanvasL objects
    * @returns {Promise<Object>} Execution results
    */
   async executeAll(objects) {
+    // Use unified browser execution if available
+    if (this.browser && typeof this.browser.executeCanvasLObjects === 'function') {
+      try {
+        return await this.browser.executeCanvasLObjects(objects);
+      } catch (error) {
+        console.warn('Unified batch execution failed, falling back to legacy:', error);
+        // Fall through to legacy implementation
+      }
+    }
+
+    // Legacy implementation (fallback)
     const results = {
       triples: [],
       slides: [],

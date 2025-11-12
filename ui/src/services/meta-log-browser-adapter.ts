@@ -1,17 +1,17 @@
 /**
  * MetaLogBrowserAdapter - Browser-compatible adapter for meta-log-db
  * 
- * TypeScript wrapper for browser-native MetaLogDbBrowser implementation:
- * - Native browser file I/O with fetch API
- * - IndexedDB caching for performance
- * - Built-in encryption support (optional)
- * - No Node.js polyfills required
+ * Wrapper around CanvasLMetaverseBrowser for backward compatibility.
+ * This adapter maintains the existing API while using the unified CanvasLMetaverseBrowser internally.
  * 
  * Provides a clean TypeScript interface for the UI package to use
  * Meta-Log database functionality directly in the browser.
+ * 
+ * @deprecated Consider using CanvasLMetaverseBrowser directly for new code.
  */
 
-import type { MetaLogDbBrowser, BrowserConfig, Fact, Canvas } from 'meta-log-db/browser';
+import { CanvasLMetaverseBrowser, type CanvasLBrowserConfig } from 'meta-log-db/browser';
+import type { Fact, Canvas } from 'meta-log-db/browser';
 
 export interface MetaLogBrowserAdapterConfig {
   enableProlog?: boolean;
@@ -26,10 +26,8 @@ export interface MetaLogBrowserAdapterConfig {
 }
 
 export class MetaLogBrowserAdapter {
-  private db: MetaLogDbBrowser | null = null;
-  private initialized: boolean = false;
-  private initPromise: Promise<void> | null = null;
-  private config: BrowserConfig;
+  private browser: CanvasLMetaverseBrowser;
+  private config: CanvasLBrowserConfig;
 
   constructor(config: MetaLogBrowserAdapterConfig = {}) {
     this.config = {
@@ -42,6 +40,9 @@ export class MetaLogBrowserAdapter {
       indexedDBName: 'meta-log-db-ui',
       ...config
     };
+    
+    // Create unified browser instance
+    this.browser = new CanvasLMetaverseBrowser(this.config);
   }
 
   /**
@@ -49,38 +50,7 @@ export class MetaLogBrowserAdapter {
    * Uses lazy initialization - only initializes when first needed
    */
   async init(): Promise<void> {
-    if (this.initialized) {
-      return;
-    }
-
-    // If initialization is already in progress, wait for it
-    if (this.initPromise) {
-      return this.initPromise;
-    }
-
-    this.initPromise = this._doInit();
-    return this.initPromise;
-  }
-
-  private async _doInit(): Promise<void> {
-    try {
-      // Dynamic import to avoid bundling issues
-      const { MetaLogDbBrowser } = await import('meta-log-db/browser');
-      
-      // Create browser-native database instance
-      this.db = new MetaLogDbBrowser(this.config);
-      
-      // Initialize (sets up IndexedDB, file I/O, etc.)
-      await this.db.init();
-
-      this.initialized = true;
-      console.log('✓ MetaLogBrowserAdapter initialized with MetaLogDbBrowser');
-    } catch (error) {
-      console.error('Failed to initialize MetaLogDbBrowser:', error);
-      throw new Error(`Meta-log-db browser initialization failed: ${error instanceof Error ? error.message : String(error)}`);
-    } finally {
-      this.initPromise = null;
-    }
+    await this.browser.init();
   }
 
   /**
@@ -89,232 +59,112 @@ export class MetaLogBrowserAdapter {
    * @param url - URL to CanvasL/JSONL file (optional, uses path if not provided)
    */
   async loadCanvas(path: string, url?: string): Promise<void> {
-    await this.init();
-    
-    if (!this.db) {
-      throw new Error('MetaLogDbBrowser not initialized');
-    }
-
-    try {
-      // Use path as identifier, url as the actual URL to fetch
-      // If url is not provided, use path as both
-      const fileUrl = url || path;
-      await this.db.loadCanvas(path, fileUrl);
-    } catch (error) {
-      throw new Error(`Failed to load canvas from ${url || path}: ${error instanceof Error ? error.message : String(error)}`);
-    }
+    await this.browser.loadCanvas(path, url);
   }
 
   /**
    * Parse JSONL canvas from URL
    */
   async parseJsonlCanvas(path: string, url?: string): Promise<Canvas> {
-    await this.init();
-    
-    if (!this.db) {
-      throw new Error('MetaLogDbBrowser not initialized');
-    }
-
-    return await this.db.parseJsonlCanvas(path, url);
+    return await this.browser.parseJsonlCanvas(path, url);
   }
 
   /**
    * Parse CanvasL file from URL
    */
   async parseCanvasL(path: string, url?: string): Promise<Canvas> {
-    await this.init();
-    
-    if (!this.db) {
-      throw new Error('MetaLogDbBrowser not initialized');
-    }
-
-    return await this.db.parseCanvasL(path, url);
+    return await this.browser.parseCanvasL(path, url);
   }
 
   /**
    * Extract facts from loaded canvas
    */
   extractFacts(): Fact[] {
-    if (!this.db) {
-      throw new Error('MetaLogDbBrowser not initialized');
-    }
-
-    return this.db.extractFacts();
+    return this.browser.extractFacts();
   }
 
   /**
    * Execute ProLog query
    */
   async prologQuery(query: string): Promise<any> {
-    await this.init();
-    
-    if (!this.db) {
-      throw new Error('MetaLogDbBrowser not initialized');
-    }
-
-    return await this.db.prologQuery(query);
+    return await this.browser.prologQuery(query);
   }
 
   /**
    * Execute DataLog query
    */
   async datalogQuery(goal: string, program?: any): Promise<any> {
-    await this.init();
-    
-    if (!this.db) {
-      throw new Error('MetaLogDbBrowser not initialized');
-    }
-
-    return await this.db.datalogQuery(goal, program);
+    return await this.browser.datalogQuery(goal, program);
   }
 
   /**
    * Execute SPARQL query
    */
   async sparqlQuery(query: string): Promise<any> {
-    await this.init();
-    
-    if (!this.db) {
-      throw new Error('MetaLogDbBrowser not initialized');
-    }
-
-    return await this.db.sparqlQuery(query);
+    return await this.browser.sparqlQuery(query);
   }
 
   /**
    * Validate with SHACL
    */
   async validateShacl(shapes?: any, triples?: any[]): Promise<any> {
-    await this.init();
-    
-    if (!this.db) {
-      throw new Error('MetaLogDbBrowser not initialized');
-    }
-
-    return await this.db.validateShacl(shapes, triples);
+    return await this.browser.validateShacl(shapes, triples);
   }
 
   /**
    * Add ProLog rule
    */
   addPrologRule(rule: string): void {
-    if (!this.db) {
-      throw new Error('MetaLogDbBrowser not initialized');
-    }
-    this.db.addPrologRule(rule);
+    this.browser.addPrologRule(rule);
   }
 
   /**
    * Add DataLog rule
    */
   addDatalogRule(rule: string): void {
-    if (!this.db) {
-      throw new Error('MetaLogDbBrowser not initialized');
-    }
-    // MetaLogDbBrowser uses buildDatalogProgram instead of addDatalogRule
-    // Build program from single rule
-    const db = this.db as any;
-    if (db.datalog) {
-      const program = db.buildDatalogProgram([rule]);
-      // Note: The program is built but not automatically applied
-      // For immediate effect, we'd need to add facts/rules directly
-    }
+    this.browser.addDatalogRule(rule);
   }
 
   /**
-   * Execute R5RS function (MetaLogDbBrowser uses executeR5RS)
+   * Execute R5RS function
    */
   async executeR5RS(functionName: string, args: any[]): Promise<any> {
-    await this.init();
-    
-    if (!this.db) {
-      throw new Error('MetaLogDbBrowser not initialized');
-    }
-
-    return await this.db.executeR5RS(functionName, args);
+    return await this.browser.executeR5RS(functionName, args);
   }
 
   /**
    * Get R5RS function
-   * Note: MetaLogDbBrowser doesn't expose function definitions directly
-   * We return a placeholder object indicating the function can be executed
    */
   async getR5RSFunction(name: string): Promise<any> {
-    await this.init();
-    
-    if (!this.db) {
-      throw new Error('MetaLogDbBrowser not initialized');
-    }
-
-    // Try to access R5RS registry through the database instance
-    // If available, check if function exists
-    const db = this.db as any;
-    if (db.r5rs) {
-      const fn = db.r5rs.getFunction(name);
-      if (fn) {
-        return { name, function: fn, available: true };
-      }
-    }
-    
-    // Return null to indicate we can't determine if function exists
-    // The function might still be available through executeR5RS
-    return null;
+    return await this.browser.getR5RSFunction(name);
   }
 
   /**
    * List R5RS functions
    */
   async listR5RSFunctions(pattern?: string): Promise<string[]> {
-    await this.init();
-    
-    if (!this.db) {
-      throw new Error('MetaLogDbBrowser not initialized');
-    }
-
-    // Try to access R5RS registry through the database instance
-    const db = this.db as any;
-    if (db.r5rs) {
-      let functions = db.r5rs.getFunctionNames();
-      
-      // Filter by pattern if provided
-      if (pattern) {
-        const regex = new RegExp(pattern, 'i');
-        functions = functions.filter((name: string) => regex.test(name));
-      }
-      
-      return functions;
-    }
-    
-    // Return empty array if R5RS registry not available
-    return [];
+    return await this.browser.listR5RSFunctions(pattern);
   }
 
   /**
    * Invoke R5RS function (alias for executeR5RS)
    */
   async invokeR5RSFunction(name: string, args: any[], context?: any): Promise<any> {
-    await this.init();
-    
-    if (!this.db) {
-      throw new Error('MetaLogDbBrowser not initialized');
-    }
-
-    // MetaLogDbBrowser doesn't support context parameter
-    return await this.db.executeR5RS(name, args);
+    return await this.browser.invokeR5RSFunction(name, args, context);
   }
 
   /**
    * Check if adapter is initialized
    */
   isInitialized(): boolean {
-    return this.initialized && this.db !== null;
+    return this.browser.isInitialized();
   }
 
   /**
    * Get the underlying database instance (for advanced usage)
    */
-  getDb(): MetaLogDbBrowser | null {
-    return this.db;
+  getDb() {
+    return this.browser.getDb();
   }
 }
 

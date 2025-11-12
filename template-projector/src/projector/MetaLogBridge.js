@@ -10,12 +10,12 @@
  */
 
 import BiwaScheme from 'biwascheme';
-import { MetaLogBrowserAdapter } from './MetaLogBrowserAdapter.js';
+import { CanvasLMetaverseBrowser } from 'meta-log-db/browser';
 import { SparqlFederation } from '../utils/SparqlFederation.js';
 
 export class MetaLogBridge {
   constructor() {
-    this.adapter = new MetaLogBrowserAdapter();
+    this.browser = new CanvasLMetaverseBrowser();
     // BiwaScheme exports Interpreter as a property of the default export
     this.r5rsInterpreter = new BiwaScheme.Interpreter(); // Fallback for R5RS
     this.sparqlCache = new Map();
@@ -31,11 +31,11 @@ export class MetaLogBridge {
     }
 
     try {
-      await this.adapter.init();
+      await this.browser.init();
       this.initialized = true;
-      console.log('MetaLogBridge initialized with meta-log-db');
+      console.log('MetaLogBridge initialized with CanvasLMetaverseBrowser');
     } catch (error) {
-      console.warn('Failed to initialize meta-log-db adapter, using fallback:', error);
+      console.warn('Failed to initialize CanvasLMetaverseBrowser, using fallback:', error);
       // Continue with fallback implementations
       this.initialized = false;
     }
@@ -81,18 +81,10 @@ export class MetaLogBridge {
   async prologQuery(query, facts = []) {
     await this.init();
     
-    if (this.initialized && this.adapter) {
+    if (this.initialized && this.browser) {
       // Use meta-log-db ProLog engine
       try {
-        // Add facts if provided
-        if (facts.length > 0) {
-          const prologEngine = this.adapter.getProlog();
-          if (prologEngine) {
-            prologEngine.addFacts(facts);
-          }
-        }
-        
-        const result = await this.adapter.prologQuery(query);
+        const result = await this.browser.prologQuery(query, { facts });
         return result.bindings || [];
       } catch (error) {
         console.error('ProLog query error:', error);
@@ -109,21 +101,18 @@ export class MetaLogBridge {
    * @param {string|Object} fact - ProLog fact (string or Fact object)
    */
   addPrologFact(fact) {
-    if (!this.initialized) {
+    if (!this.initialized || !this.browser) {
       return;
     }
     
-    const prologEngine = this.adapter.getProlog();
-    if (prologEngine) {
-      if (typeof fact === 'string') {
-        // Parse string fact
-        const parsed = this.parsePrologFact(fact);
-        if (parsed) {
-          prologEngine.addFacts([parsed]);
-        }
-      } else {
-        prologEngine.addFacts([fact]);
+    if (typeof fact === 'string') {
+      // Parse string fact
+      const parsed = this.parsePrologFact(fact);
+      if (parsed) {
+        this.browser.addPrologFacts([parsed]);
       }
+    } else {
+      this.browser.addPrologFacts([fact]);
     }
   }
 
@@ -156,7 +145,7 @@ export class MetaLogBridge {
   async datalogQuery(goal, program = null) {
     await this.init();
     
-    if (this.initialized && this.adapter) {
+    if (this.initialized && this.browser) {
       // Use meta-log-db DataLog engine
       try {
         let programObj = program;
@@ -166,7 +155,7 @@ export class MetaLogBridge {
           programObj = this.parseDatalogProgram(program);
         }
         
-        const result = await this.adapter.datalogQuery(goal, programObj);
+        const result = await this.browser.datalogQuery(goal, programObj);
         return result.facts || [];
       } catch (error) {
         console.error('DataLog query error:', error);
@@ -297,9 +286,9 @@ export class MetaLogBridge {
       }
     } else {
       // Local SPARQL query over RDF triples using meta-log-db
-      if (this.initialized && this.adapter) {
+      if (this.initialized && this.browser) {
         try {
-          const result = await this.adapter.sparqlQuery(query);
+          const result = await this.browser.sparqlQuery(query);
           
           // Cache result
           this.sparqlCache.set(cacheKey, {
@@ -326,11 +315,8 @@ export class MetaLogBridge {
    * @param {string} object - Object
    */
   addTriple(subject, predicate, object) {
-    if (this.initialized && this.adapter) {
-      const rdfStore = this.adapter.getRdf();
-      if (rdfStore) {
-        rdfStore.addTriples([{ subject, predicate, object }]);
-      }
+    if (this.initialized && this.browser) {
+      this.browser.storeTriples([{ subject, predicate, object }]);
     }
   }
 
@@ -343,7 +329,7 @@ export class MetaLogBridge {
   async shaclValidate(shapes, focus = null) {
     await this.init();
     
-    if (this.initialized && this.adapter) {
+    if (this.initialized && this.browser) {
       try {
         // If shapes is a string (Turtle), parse it
         let shapesObj = shapes;
@@ -352,7 +338,9 @@ export class MetaLogBridge {
           shapesObj = this.parseShaclShapes(shapes);
         }
         
-        return await this.adapter.shaclValidate(shapesObj, focus);
+        // Convert focus to triples if needed
+        const triples = Array.isArray(focus) ? focus : (focus ? [focus] : null);
+        return await this.browser.validateShacl(shapesObj, triples);
       } catch (error) {
         console.error('SHACL validation error:', error);
         return {
@@ -395,8 +383,8 @@ export class MetaLogBridge {
    * Clear all data
    */
   clear() {
-    if (this.adapter) {
-      this.adapter.clear();
+    if (this.browser) {
+      this.browser.clear();
     }
     this.sparqlCache.clear();
   }
