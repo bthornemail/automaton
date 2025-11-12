@@ -2,6 +2,9 @@
  * Type definitions for Meta-Log Database
  */
 
+// Export frontmatter types
+export * from './frontmatter.js';
+
 export interface MetaLogDbConfig {
   r5rsEnginePath?: string;
   enableProlog?: boolean;

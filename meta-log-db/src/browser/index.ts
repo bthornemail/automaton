@@ -19,3 +19,6 @@ export * from './crypto/storage-encryption.js';
 // Re-export types
 export * from '../types/index.js';
 
+// Re-export validation utilities
+export * from '../validation/frontmatter-validator.js';
+

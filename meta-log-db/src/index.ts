@@ -17,3 +17,6 @@ export { IndexedDBStorage } from './browser/indexeddb-storage.js';
 
 // Export types
 export * from './types/index.js';
+
+// Export validation utilities
+export * from './validation/frontmatter-validator.js';

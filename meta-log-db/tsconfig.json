@@ -14,8 +14,16 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "moduleResolution": "node",
-    "types": ["node", "jest"]
+    "types": ["node", "jest"],
+    "paths": {
+      "@types/frontmatter": ["./src/types/frontmatter"],
+      "@types/canvasl": ["./src/types/index"]
+    },
+    "typeRoots": ["./node_modules/@types", "./src/types"]
   },
-  "include": ["src/**/*"],
+  "include": [
+    "src/**/*",
+    "docs/28-Canvasl-Frontmatter-Knowledge-Model/**/*.md"
+  ],
   "exclude": ["node_modules", "dist"]
 }
