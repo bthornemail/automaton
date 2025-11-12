@@ -2,11 +2,13 @@
  * Database Service - Frontend
  * 
  * Database-agnostic service layer for frontend
- * Works with any backend database adapter
+ * Uses MetaLogDbBrowser for read operations and queries (with IndexedDB caching)
+ * Falls back to API for write operations (for persistence)
  */
 
 import { apiService } from './api';
 import { localFileService } from './local-file-service';
+import { getMetaLogBrowserAdapter } from './meta-log-browser-adapter';
 
 export interface DatabaseService {
   // JSONL operations
@@ -37,14 +39,38 @@ export interface QueryOptions {
 }
 
 class DatabaseServiceImpl implements DatabaseService {
+  private metaLogAdapter = getMetaLogBrowserAdapter();
+
   /**
-   * Read JSONL or CanvasL file - tries local browser first, then falls back to API
+   * Read JSONL or CanvasL file - uses MetaLogDbBrowser with IndexedDB cache
+   * Falls back to local file service, then API
    * Supports both .jsonl and .canvasl extensions
    */
   async readJSONL(file: string): Promise<any[]> {
-    // Normalize file extension - support both .jsonl and .canvasl
-    const normalizedFile = file.endsWith('.canvasl') ? file : file;
-    // Try local file first (from public/jsonl/ directory)
+    // Try MetaLogDbBrowser first (with IndexedDB caching)
+    try {
+      const adapter = this.metaLogAdapter;
+      
+      // Determine URL - try public/jsonl/ first, then use file path
+      const url = file.startsWith('http://') || file.startsWith('https://') || file.startsWith('/')
+        ? file
+        : `/jsonl/${file}`;
+      
+      // Load canvas into MetaLogDbBrowser
+      await adapter.loadCanvas(file, url);
+      
+      // Extract facts from loaded canvas
+      const facts = adapter.extractFacts();
+      
+      if (facts.length > 0) {
+        console.log(`✓ Loaded ${facts.length} items from MetaLogDbBrowser: ${file}`);
+        return facts;
+      }
+    } catch (metaLogError) {
+      console.log(`MetaLogDbBrowser not available for ${file}, trying fallbacks...`, metaLogError);
+    }
+
+    // Fallback: Try local file (from public/jsonl/ directory)
     try {
       const data = await localFileService.loadFromPublic(file);
       // Ensure we always return an array of objects
@@ -177,11 +203,45 @@ class DatabaseServiceImpl implements DatabaseService {
   }
 
   async getR5RSFunction(name: string): Promise<any> {
+    // Try MetaLogDbBrowser first
+    try {
+      const adapter = this.metaLogAdapter;
+      await adapter.init(); // Ensure initialized
+      const func = await adapter.getR5RSFunction(name);
+      // If function exists in browser (even if definition is null), try to use it
+      // The function might be available through executeR5RS even if getR5RSFunction returns null
+      if (func !== null) {
+        return func;
+      }
+      // If null, function might still exist - check by trying to list functions
+      const functions = await adapter.listR5RSFunctions();
+      if (functions.includes(name)) {
+        // Function exists but definition not available
+        return { name, available: true, source: 'browser' };
+      }
+    } catch (error) {
+      console.log(`MetaLogDbBrowser R5RS function not available, trying API...`, error);
+    }
+
+    // Fallback to API
     const response = await apiService.request(`/r5rs/functions/${name}`);
     return response.success ? response.data : null;
   }
 
   async listR5RSFunctions(pattern?: string): Promise<string[]> {
+    // Try MetaLogDbBrowser first
+    try {
+      const adapter = this.metaLogAdapter;
+      await adapter.init(); // Ensure initialized
+      const functions = await adapter.listR5RSFunctions(pattern);
+      if (functions.length > 0) {
+        return functions;
+      }
+    } catch (error) {
+      console.log(`MetaLogDbBrowser R5RS functions not available, trying API...`, error);
+    }
+
+    // Fallback to API
     const url = pattern 
       ? `/r5rs/functions?pattern=${encodeURIComponent(pattern)}`
       : '/r5rs/functions';
@@ -190,6 +250,20 @@ class DatabaseServiceImpl implements DatabaseService {
   }
 
   async invokeR5RSFunction(name: string, args: any[], context?: any): Promise<any> {
+    // Try MetaLogDbBrowser first
+    try {
+      const adapter = this.metaLogAdapter;
+      await adapter.init(); // Ensure initialized
+      const result = await adapter.invokeR5RSFunction(name, args, context);
+      // Browser implementation doesn't support context, but result should be valid
+      if (result !== null && result !== undefined) {
+        return result;
+      }
+    } catch (error) {
+      console.log(`MetaLogDbBrowser R5RS invocation not available, trying API...`, error);
+    }
+
+    // Fallback to API
     const response = await apiService.request(`/r5rs/functions/${name}/invoke`, {
       method: 'POST',
       body: JSON.stringify({ args, context })

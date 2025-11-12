@@ -25,6 +25,11 @@
   canvaslEdgeType { "vertical" | "horizontal" | "transition" | "self-ref" | "r5rs-call" }
   canvaslR5RSFunction { "r5rs:" [a-zA-Z_][a-zA-Z0-9_-]* }
   canvaslSchemeExpression { "(" [^)]* ")" }
+  
+  // Bipartite-BQF tokens
+  // Note: These match string values within JSON strings
+  // The actual JSON will have: "partition": "topology" where jsonString matches "topology"
+  // We use jsonString in rules and validate content separately
 }
 
 @skip {
@@ -57,6 +62,9 @@ JSONLValue {
   canvaslReference | canvaslDimension | canvaslR5RSFunction | canvaslSchemeExpression | jsonValue
 }
 
+// Note: BipartiteMetadata is recognized via JSONLProperty when key is "bipartite"
+// BipartiteObject is a JSONLObject, so it's already parseable as JSONLValue
+
 JSONLArray {
   jsonArrayStart JSONLValue (jsonComma JSONLValue)* jsonArrayEnd
 }
@@ -80,4 +88,56 @@ CanvasLR5RSCall {
   "function" jsonColon canvaslR5RSFunction jsonComma
   "args" jsonColon JSONLArray jsonComma
   JSONLProperty*
+}
+
+// Bipartite-BQF structures
+BipartiteMetadata {
+  "bipartite" jsonColon BipartiteObject
+}
+
+BipartiteObject {
+  jsonObjectStart
+  ("partition" jsonColon BipartitePartition (jsonComma)?)?
+  ("bqf" jsonColon (BQFObject | BQFTransformation) (jsonComma)?)?
+  ("polynomial" jsonColon PolynomialObject (jsonComma)?)?
+  ("progression" jsonColon jsonString (jsonComma)?)?
+  ("mapping" jsonColon jsonString (jsonComma)?)?
+  jsonObjectEnd
+}
+
+BipartitePartition {
+  jsonString
+  // Validates: "topology" | "system" | "topology-system" | "topology-topology" | "system-system"
+  // Actual validation happens in parser/AST layer
+}
+
+BQFObject {
+  jsonObjectStart
+  "form" jsonColon jsonString (jsonComma)?
+  ("coefficients" jsonColon JSONLArray (jsonComma)?)?
+  ("signature" jsonColon jsonString (jsonComma)?)?
+  // Validates: "euclidean" | "lorentz" | "minkowski" | "riemannian"
+  // Actual validation happens in parser/AST layer
+  ("variables" jsonColon JSONLArray (jsonComma)?)?
+  ("polynomial" jsonColon jsonString (jsonComma)?)?
+  ("symbol" jsonColon jsonString (jsonComma)?)?
+  ("procedure" jsonColon jsonString (jsonComma)?)?
+  jsonObjectEnd
+}
+
+BQFTransformation {
+  jsonObjectStart
+  "from" jsonColon BQFObject (jsonComma)?
+  "to" jsonColon BQFObject (jsonComma)?
+  ("transformation" jsonColon jsonString (jsonComma)?)?
+  ("polynomial" jsonColon jsonString (jsonComma)?)?
+  jsonObjectEnd
+}
+
+PolynomialObject {
+  jsonObjectStart
+  "monad" jsonColon JSONLArray jsonComma
+  "functor" jsonColon JSONLArray jsonComma
+  "perceptron" jsonColon JSONLArray
+  jsonObjectEnd
 }

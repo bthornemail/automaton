@@ -7,6 +7,10 @@ import { existsSync } from 'fs'
 const gpuJsPath = resolve(__dirname, 'node_modules/gpu.js');
 const gpuJsInstalled = existsSync(gpuJsPath);
 
+// Check meta-log-db browser bundle paths
+const metaLogDbBuiltPath = resolve(__dirname, 'node_modules/meta-log-db/dist/browser/index.js');
+const metaLogDbSourcePath = resolve(__dirname, 'node_modules/meta-log-db/src/browser/index.ts');
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
@@ -20,6 +24,19 @@ export default defineConfig({
       ...(gpuJsInstalled ? {} : {
         'gpu.js': resolve(__dirname, 'src/utils/gpu-stub.ts'),
       }),
+      // Handle meta-log-db/browser import
+      'meta-log-db/browser': existsSync(metaLogDbBuiltPath) 
+        ? metaLogDbBuiltPath 
+        : (existsSync(metaLogDbSourcePath) 
+          ? metaLogDbSourcePath 
+          : (() => {
+            throw new Error(
+              `meta-log-db/browser not found. ` +
+              `Built path: ${metaLogDbBuiltPath} (exists: ${existsSync(metaLogDbBuiltPath)}), ` +
+              `Source path: ${metaLogDbSourcePath} (exists: ${existsSync(metaLogDbSourcePath)}). ` +
+              `Run: cd ../meta-log-db && npm run build:browser`
+            );
+          })()),
     },
     dedupe: [
       '@codemirror/state',
@@ -90,7 +107,8 @@ export default defineConfig({
       '@codemirror/commands',
       '@codemirror/lang-javascript',
       '@codemirror/lang-markdown',
-      '@codemirror/theme-one-dark'
+      '@codemirror/theme-one-dark',
+      'meta-log-db'
     ],
     exclude: ['gpu.js'], // Exclude optional dependency from optimization
   },

@@ -4,7 +4,8 @@
  * Browser entry point for Meta-Log Database package
  */
 
-export { MetaLogDbBrowser, BrowserConfig } from './database.js';
+export { MetaLogDbBrowser } from './database.js';
+export type { BrowserConfig } from './database.js';
 export { BrowserFileIO } from './io.js';
 export { IndexedDBStorage } from './indexeddb-storage.js';
 export { BrowserJsonlParser } from './jsonl/browser-parser.js';
