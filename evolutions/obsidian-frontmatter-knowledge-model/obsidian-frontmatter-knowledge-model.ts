@@ -52,6 +52,28 @@ interface DocumentFrontmatter {
     };
     [key: string]: any;
   };
+  bipartite?: {
+    partition?: 'topology' | 'system';
+    dimension?: '0D' | '1D' | '2D' | '3D' | '4D' | '5D' | '6D' | '7D';
+    bqf?: {
+      form: string;
+      coefficients?: number[];
+      signature?: string;
+      variables?: string[];
+      polynomial?: string;
+      symbol?: string;
+      procedure?: string;
+    };
+    polynomial?: {
+      monad?: number[];
+      functor?: number[];
+      perceptron?: number[];
+    };
+    relationships?: {
+      topology?: string | null;
+      system?: string | null;
+    };
+  };
   [key: string]: any;
 }
 
@@ -75,6 +97,7 @@ interface KnowledgeNode {
     related: string[];
   };
   blackboard: DocumentFrontmatter['blackboard'];
+  bipartite?: DocumentFrontmatter['bipartite'];
   understanding: {
     completeness: number; // 0-1 score
     missingFields: string[];
@@ -293,6 +316,7 @@ export class ObsidianFrontmatterKnowledgeModel {
           related: parsed.frontmatter.related || []
         },
         blackboard: parsed.frontmatter.blackboard,
+        bipartite: parsed.frontmatter.bipartite,
         understanding
       };
 
@@ -474,7 +498,195 @@ export class ObsidianFrontmatterKnowledgeModel {
     report += `- Enables: ${this.knowledgeGraph.edges.filter(e => e.type === 'enables').length}\n`;
     report += `- Related: ${this.knowledgeGraph.edges.filter(e => e.type === 'related').length}\n`;
 
+    // Add bipartite graph statistics if available
+    const bipartiteStats = this.getBipartiteStatistics();
+    if (bipartiteStats.totalNodes > 0) {
+      report += '\n## Bipartite Graph Statistics\n\n';
+      report += `- **Total Bipartite Nodes**: ${bipartiteStats.totalNodes}\n`;
+      report += `- **Topology Nodes**: ${bipartiteStats.topologyNodes}\n`;
+      report += `- **System Nodes**: ${bipartiteStats.systemNodes}\n`;
+      report += `- **Horizontal Edges**: ${bipartiteStats.horizontalEdges}\n`;
+      report += `- **Vertical Edges**: ${bipartiteStats.verticalEdges}\n`;
+      report += `- **Dimensions Covered**: ${bipartiteStats.dimensions.join(', ')}\n`;
+    }
+
     return report;
+  }
+
+  /**
+   * Build bipartite graph structure from knowledge graph
+   */
+  public buildBipartiteGraph(): {
+    topologyNodes: KnowledgeNode[];
+    systemNodes: KnowledgeNode[];
+    horizontalEdges: Array<{ from: string; to: string; mapping?: string }>;
+    verticalEdges: Array<{ from: string; to: string; progression?: string }>;
+  } {
+    const topologyNodes: KnowledgeNode[] = [];
+    const systemNodes: KnowledgeNode[] = [];
+    const horizontalEdges: Array<{ from: string; to: string; mapping?: string }> = [];
+    const verticalEdges: Array<{ from: string; to: string; progression?: string }> = [];
+
+    // Separate nodes by partition
+    for (const node of this.knowledgeGraph.nodes.values()) {
+      if (node.bipartite?.partition === 'topology') {
+        topologyNodes.push(node);
+      } else if (node.bipartite?.partition === 'system') {
+        systemNodes.push(node);
+      }
+    }
+
+    // Build horizontal edges (topology ↔ system)
+    for (const topologyNode of topologyNodes) {
+      if (topologyNode.bipartite?.relationships?.system) {
+        const systemId = topologyNode.bipartite.relationships.system;
+        const systemNode = systemNodes.find(n => n.id === systemId);
+        if (systemNode) {
+          horizontalEdges.push({
+            from: topologyNode.id,
+            to: systemId,
+            mapping: `h:${topologyNode.id}→${systemId}`
+          });
+        }
+      }
+    }
+
+    // Build vertical edges (dimensional progression)
+    // Sort nodes by dimension for progression detection
+    const allBipartiteNodes = [...topologyNodes, ...systemNodes].sort((a, b) => {
+      const dimA = this.getDimensionNumber(a.bipartite?.dimension);
+      const dimB = this.getDimensionNumber(b.bipartite?.dimension);
+      return dimA - dimB;
+    });
+
+    for (let i = 0; i < allBipartiteNodes.length - 1; i++) {
+      const current = allBipartiteNodes[i];
+      const next = allBipartiteNodes[i + 1];
+      
+      if (current.bipartite?.dimension && next.bipartite?.dimension) {
+        const currentDim = this.getDimensionNumber(current.bipartite.dimension);
+        const nextDim = this.getDimensionNumber(next.bipartite.dimension);
+        
+        // Check if they're in the same partition and consecutive dimensions
+        if (current.bipartite.partition === next.bipartite.partition && 
+            nextDim === currentDim + 1) {
+          verticalEdges.push({
+            from: current.id,
+            to: next.id,
+            progression: `${current.bipartite.dimension} → ${next.bipartite.dimension}`
+          });
+        }
+      }
+    }
+
+    return {
+      topologyNodes,
+      systemNodes,
+      horizontalEdges,
+      verticalEdges
+    };
+  }
+
+  /**
+   * Get bipartite statistics
+   */
+  public getBipartiteStatistics(): {
+    totalNodes: number;
+    topologyNodes: number;
+    systemNodes: number;
+    horizontalEdges: number;
+    verticalEdges: number;
+    dimensions: string[];
+  } {
+    const bipartiteGraph = this.buildBipartiteGraph();
+    const dimensions = new Set<string>();
+    
+    for (const node of this.knowledgeGraph.nodes.values()) {
+      if (node.bipartite?.dimension) {
+        dimensions.add(node.bipartite.dimension);
+      }
+    }
+
+    return {
+      totalNodes: bipartiteGraph.topologyNodes.length + bipartiteGraph.systemNodes.length,
+      topologyNodes: bipartiteGraph.topologyNodes.length,
+      systemNodes: bipartiteGraph.systemNodes.length,
+      horizontalEdges: bipartiteGraph.horizontalEdges.length,
+      verticalEdges: bipartiteGraph.verticalEdges.length,
+      dimensions: Array.from(dimensions).sort()
+    };
+  }
+
+  /**
+   * Helper to convert dimension string to number
+   */
+  private getDimensionNumber(dimension?: string): number {
+    if (!dimension) return -1;
+    const match = dimension.match(/^(\d)D$/);
+    return match ? parseInt(match[1]) : -1;
+  }
+
+  /**
+   * Validate BQF forms in bipartite metadata
+   */
+  public validateBQFForms(): Array<{
+    nodeId: string;
+    errors: string[];
+  }> {
+    const errors: Array<{ nodeId: string; errors: string[] }> = [];
+
+    for (const node of this.knowledgeGraph.nodes.values()) {
+      if (!node.bipartite?.bqf) continue;
+
+      const bqf = node.bipartite.bqf;
+      const nodeErrors: string[] = [];
+
+      // Validate form
+      if (!bqf.form || typeof bqf.form !== 'string') {
+        nodeErrors.push('BQF form is required and must be a string');
+      }
+
+      // Validate coefficients
+      if (bqf.coefficients && !Array.isArray(bqf.coefficients)) {
+        nodeErrors.push('BQF coefficients must be an array');
+      }
+
+      // Validate signature
+      if (bqf.signature) {
+        const validSignatures = ['euclidean', 'lorentz', 'minkowski', 'riemannian'];
+        if (!validSignatures.includes(bqf.signature)) {
+          nodeErrors.push(`BQF signature must be one of: ${validSignatures.join(', ')}`);
+        }
+      }
+
+      // Validate variables match dimension
+      if (bqf.variables && node.bipartite.dimension) {
+        const expectedDim = this.getDimensionNumber(node.bipartite.dimension);
+        if (expectedDim >= 0 && bqf.variables.length !== expectedDim) {
+          nodeErrors.push(`BQF variables count (${bqf.variables.length}) does not match dimension ${node.bipartite.dimension}`);
+        }
+      }
+
+      // Validate polynomial arrays
+      if (node.bipartite.polynomial) {
+        const poly = node.bipartite.polynomial;
+        if (poly.monad && poly.monad.length !== 8) {
+          nodeErrors.push(`Polynomial monad must have exactly 8 components, got ${poly.monad.length}`);
+        }
+        if (poly.functor && poly.functor.length !== 8) {
+          nodeErrors.push(`Polynomial functor must have exactly 8 components, got ${poly.functor.length}`);
+        }
+        if (poly.perceptron && poly.perceptron.length !== 8) {
+          nodeErrors.push(`Polynomial perceptron must have exactly 8 components, got ${poly.perceptron.length}`);
+        }
+      }
+
+      if (nodeErrors.length > 0) {
+        errors.push({ nodeId: node.id, errors: nodeErrors });
+      }
+    }
+
+    return errors;
   }
 
   /**
