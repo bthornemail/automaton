@@ -3,8 +3,8 @@ id: provenance-canvas-renderer-docs-readme
 title: "Provenance Canvas Renderer Documentation"
 level: foundational
 type: documentation
-tags: [provenance-canvas-renderer, performance-optimization, rendering, worker, documentation, webgl, gltf, svg, avatars, computational-manifold, a-frame]
-keywords: [provenance-canvas-renderer, performance-optimization, pagination, caching, memoization, virtual-scrolling, worker-rendering, lod, frustum-culling, performance-monitoring, webgl, gltf-avatars, svg-textures, computational-manifold, a-frame, networked-aframe]
+tags: [provenance-canvas-renderer, performance-optimization, rendering, worker, documentation, webgl, gltf, svg, avatars, computational-manifold, a-frame, slide-editing, search-filtering, export, testing]
+keywords: [provenance-canvas-renderer, performance-optimization, pagination, caching, memoization, virtual-scrolling, worker-rendering, lod, frustum-culling, performance-monitoring, webgl, gltf-avatars, svg-textures, computational-manifold, a-frame, networked-aframe, slide-editing, card-details, search-filtering, export-formats, testing]
 prerequisites: [federated-provenance-canvas-integration-docs, canvasl-rfc2119-spec, federated-provenance-meta-log-spec, webgl-glft-svg-avatars-analysis]
 enables: [provenance-canvas-renderer-meta-specification-rfc2119, provenance-canvas-renderer-rfc2119-spec, provenance-canvas-renderer-protocol-specification-rfc2119, rendering-evolution-documentation]
 related: [federated-provenance-canvas-integration-docs, canvasl-rfc2119-spec, federated-provenance-meta-log-spec, bipartite-bqf-extension-rfc2119-spec, webgl-glft-svg-avatars-analysis, webgl-computational-manifold-architecture]
@@ -23,11 +23,11 @@ blackboard:
 
 **Status**: ✅ **COMPLETED**  
 **Date**: 2025-01-07  
-**Version**: 1.0.0
+**Version**: 1.1.0
 
 ## Overview
 
-The Provenance Canvas Renderer provides high-performance rendering of federated provenance chains with comprehensive performance optimizations. The system enables efficient visualization of large-scale evolution directories with real-time performance metrics, supporting pagination, caching, memoization, virtual scrolling, worker rendering optimizations, and performance monitoring.
+The Provenance Canvas Renderer provides high-performance rendering of federated provenance chains with comprehensive performance optimizations. The system enables efficient visualization of large-scale evolution directories with real-time performance metrics, supporting pagination, caching, memoization, virtual scrolling, worker rendering optimizations, and performance monitoring. The system also includes interactive slide editing, comprehensive card detail views, powerful search and filtering capabilities, and multi-format export functionality.
 
 ## Documentation Structure
 
@@ -42,6 +42,9 @@ Protocol for renderer operations, message formats, performance monitoring, and e
 
 ### 4. [Rendering Evolution](./03-RENDERING-EVOLUTION.md)
 Evolution documentation tracking the progression from basic rendering to full WebGL/GLTF/SVG system.
+
+### 5. [Testing Documentation](./04-TESTING.md)
+Comprehensive testing documentation covering unit tests, integration tests, and test coverage.
 
 ## Key Features
 
@@ -109,6 +112,117 @@ const kgCard = knowledgeGraphCardService.buildKnowledgeGraph(slide, agentId);
 
 // Render as SVG
 const svg = knowledgeGraphCardService.renderKnowledgeGraph(kgCard);
+```
+
+### ✅ Interactive Slide Editing
+
+The system supports interactive editing of slides with full persistence:
+
+- **Inline Editing**: Edit slide title, description, and content inline
+- **Card Management**: Add and remove cards from slides
+- **Slide Reordering**: Reorder slides with drag-and-drop interface
+- **Save to Evolution**: Save edited slides back to evolution directory
+- **Edit History**: Track all modifications with undo capability
+
+**Usage**:
+```typescript
+import { slideEditingService } from '@/services/slide-editing-service';
+
+// Initialize slides for editing
+slideEditingService.initializeSlides(slides);
+
+// Edit slide
+const updated = slideEditingService.editSlide('slide-1', {
+  title: 'Updated Title',
+  description: 'Updated description'
+});
+
+// Add card
+const newCard: Card = { id: 'card-1', pattern: 'identity', jsonlLines: [], metadata: {} };
+slideEditingService.addCardToSlide('slide-1', newCard);
+
+// Save to evolution directory
+await slideEditingService.saveSlidesToEvolution('/evolutions/advanced-automaton');
+```
+
+### ✅ Card Detail Views
+
+The system provides comprehensive card detail views with expandable sections:
+
+- **Expandable Details**: Collapsible sections for card details, JSONL lines, provenance history, and pattern visualization
+- **JSONL Line Viewer**: Formatted JSON display with syntax highlighting and line numbers
+- **Provenance History Timeline**: Chronological timeline of provenance entries with file, line, pattern, and agent information
+- **Pattern Visualization**: Visual representation of patterns with Church encoding and BQF forms
+
+**Usage**:
+```typescript
+// Card detail view opens automatically when clicking a card
+// No code needed - UI component handles display
+```
+
+### ✅ Provenance Chain Search and Filtering
+
+The system provides powerful search and filtering capabilities:
+
+- **Multi-Criteria Search**: Search by pattern, dimension, agent ID, node type, edge type, and file
+- **Advanced Query Builder**: Combine multiple queries with AND/OR logic
+- **Filter Presets**: Save, load, share, and delete filter presets
+- **Real-time Filtering**: Apply filters in real-time to provenance chains
+- **Results Summary**: Display filtered vs. total node/edge counts
+
+**Usage**:
+```typescript
+import { provenanceSearchService } from '@/services/provenance-search-service';
+
+// Search chain
+const results = provenanceSearchService.searchChain(chain, {
+  pattern: 'identity',
+  dimension: '0D',
+  agentId: '0D-Topology-Agent'
+});
+
+// Save filter preset
+const presetId = provenanceSearchService.savePreset('0D Identity Nodes', {
+  pattern: 'identity',
+  dimension: '0D'
+});
+
+// Load preset
+const preset = provenanceSearchService.getPreset(presetId);
+const filtered = provenanceSearchService.searchChain(chain, preset.query);
+```
+
+### ✅ Export Provenance Chains
+
+The system supports exporting provenance chains in multiple formats:
+
+- **JSON**: Structured JSON format with nodes, edges, and metadata
+- **JSONL**: JSON Lines format (one object per line)
+- **GraphML**: XML format for graph visualization tools (yEd, Gephi)
+- **DOT**: Graphviz DOT format for graph rendering
+- **PNG**: Raster image export with customizable dimensions and background
+- **SVG**: Vector image export with customizable dimensions and background
+
+**Usage**:
+```typescript
+import { provenanceExportService } from '@/services/provenance-export-service';
+
+// Export to JSON
+await provenanceExportService.exportChain(chain, {
+  format: 'json',
+  filename: 'provenance-chain.json',
+  includeMetadata: true
+});
+
+// Export to PNG
+await provenanceExportService.exportChain(chain, {
+  format: 'png',
+  imageOptions: {
+    width: 1920,
+    height: 1080,
+    backgroundColor: '#1f2937'
+  }
+});
 ```
 
 ### ✅ 3D Rendering Capabilities
@@ -239,15 +353,25 @@ ui/src/
 ├── services/
 │   ├── provenance-slide-service.ts          ✅ Optimized with pagination, caching, memoization
 │   ├── provenance-canvas-worker-service.ts  ✅ Integrated with performance monitoring
-│   ├── performance-monitoring-service.ts   ✅ NEW: Performance monitoring
-│   └── provenance-chain-cache.ts            ✅ NEW: LRU cache for chains
+│   ├── performance-monitoring-service.ts   ✅ Performance monitoring
+│   ├── provenance-chain-cache.ts            ✅ LRU cache for chains
+│   ├── slide-editing-service.ts             ✅ NEW: Interactive slide editing
+│   ├── provenance-search-service.ts         ✅ NEW: Search and filtering
+│   └── provenance-export-service.ts        ✅ NEW: Export functionality
 ├── hooks/
-│   └── useDebounce.ts                       ✅ NEW: Debounce hook
+│   └── useDebounce.ts                       ✅ Debounce hook
 ├── utils/
-│   └── memoization.ts                       ✅ NEW: Memoization utilities
+│   └── memoization.ts                       ✅ Memoization utilities
 └── components/
-    └── shared/
-        └── VirtualizedCardList.tsx          ✅ NEW: Virtual scrolling component
+    ├── shared/
+    │   └── VirtualizedCardList.tsx          ✅ Virtual scrolling component
+    └── UnifiedProvenanceCanvas/
+        ├── SlideEditor.tsx                  ✅ NEW: Slide editing UI
+        ├── CardManager.tsx                  ✅ NEW: Card management UI
+        ├── SlideReorderer.tsx               ✅ NEW: Slide reordering UI
+        ├── CardDetailView.tsx               ✅ NEW: Card detail view
+        ├── ProvenanceSearchFilter.tsx       ✅ NEW: Search/filter UI
+        └── ExportDialog.tsx                 ✅ NEW: Export dialog
 ```
 
 ## Performance Optimizations Summary
@@ -290,12 +414,16 @@ ui/src/
 
 ## Success Criteria
 
-All performance optimizations from the plan are implemented:
+All features from the plan are implemented:
 
 1. ✅ Provenance chain building optimizations (pagination, caching, pattern extraction, lazy loading)
 2. ✅ Slide/card generation optimizations (memoization, card aggregation, virtual scrolling, debouncing)
 3. ✅ Worker rendering optimizations (instancing, edge optimization, LOD, frustum culling)
 4. ✅ Performance monitoring (FPS tracking, memory usage, worker message latency, performance warnings)
+5. ✅ Interactive slide editing (edit content, add/remove cards, reorder slides, save to evolution)
+6. ✅ Card detail views (expandable details, JSONL viewer, provenance timeline, pattern visualization)
+7. ✅ Provenance chain search and filtering (multi-criteria search, advanced queries, filter presets)
+8. ✅ Export functionality (JSON, JSONL, GraphML, DOT, PNG, SVG formats)
 
 ## Related Documentation
 

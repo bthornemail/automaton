@@ -10,11 +10,15 @@ import { rateLimiters } from '../middleware/rate-limit';
 import { validate, schemas } from '../middleware/validation';
 import Joi from 'joi';
 import agentApiRoutes from './agent-api';
+import slidesRoutes from '../server/routes/slides';
 
 const router = Router();
 
 // Agent API routes (agentApiRoutes already defines /agents paths)
 router.use('/', agentApiRoutes);
+
+// Slides routes
+router.use('/slides', slidesRoutes);
 
 /**
  * GET /api/status

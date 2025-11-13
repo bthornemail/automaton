@@ -16,7 +16,7 @@ import { canvasl3DService, Canvas3D } from '../../services/canvasl-3d-service';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from '../shared/Card';
 import { Button } from '../shared/Button';
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, Info } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw, Info, Edit2, Filter, Download } from 'lucide-react';
 import { WorkerErrorBoundary } from '../shared/WorkerErrorBoundary';
 import { errorLoggingService } from '../../services/error-logging-service';
 import { useDebounce } from '../../hooks/useDebounce';
@@ -34,6 +34,13 @@ import { conflictResolutionService } from '../../services/conflict-resolution-se
 import { updateHistoryService } from '../../services/update-history-service';
 import type { ChainUpdate, SlideUpdate, CardUpdate, Conflict } from '../../types/provenance-updates';
 import { ConflictResolutionDialog } from './ConflictResolutionDialog';
+import { SlideEditor } from './SlideEditor';
+import { CardManager } from './CardManager';
+import { SlideReorderer } from './SlideReorderer';
+import { slideEditingService } from '../../services/slide-editing-service';
+import { CardDetailView } from './CardDetailView';
+import { ProvenanceSearchFilter } from './ProvenanceSearchFilter';
+import { ExportDialog } from './ExportDialog';
 
 interface UnifiedProvenanceCanvasProps {
   evolutionPath?: string;
@@ -61,6 +68,14 @@ export const UnifiedProvenanceCanvas: React.FC<UnifiedProvenanceCanvasProps> = (
   const [showKnowledgeGraphCards, setShowKnowledgeGraphCards] = useState(true);
   const [selectedKnowledgeGraphCard, setSelectedKnowledgeGraphCard] = useState<string | null>(null);
   const [conflictDialog, setConflictDialog] = useState<Conflict | null>(null);
+  const [editingSlide, setEditingSlide] = useState<Slide | null>(null);
+  const [managingCards, setManagingCards] = useState<Slide | null>(null);
+  const [reorderingSlides, setReorderingSlides] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [selectedCardDetail, setSelectedCardDetail] = useState<Card | null>(null);
+  const [showSearchFilter, setShowSearchFilter] = useState(false);
+  const [filteredChain, setFilteredChain] = useState<ProvenanceChain | null>(null);
+  const [showExportDialog, setShowExportDialog] = useState(false);
   
   // Debounce dimension changes for performance
   const debouncedDimension = useDebounce(currentDimension, 300);
@@ -166,8 +181,8 @@ export const UnifiedProvenanceCanvas: React.FC<UnifiedProvenanceCanvasProps> = (
                 
                 // Update node/edge counts for monitoring
                 performanceMonitoringService.updateNodeEdgeCounts(
-                  currentSlide.provenanceChain.nodes.length,
-                  currentSlide.provenanceChain.edges.length
+                  chainToLoad.nodes.length,
+                  chainToLoad.edges.length
                 );
               }
             }
@@ -203,16 +218,17 @@ export const UnifiedProvenanceCanvas: React.FC<UnifiedProvenanceCanvasProps> = (
     };
   }, [evolutionPath]);
 
-  // Update worker when slide changes
+  // Update worker when slide changes or filter changes
   useEffect(() => {
     if (workerService.current && slides.length > 0) {
       const currentSlide = slides[currentSlideIndex];
-      if (currentSlide.provenanceChain) {
-        workerService.current.loadProvenanceChain(currentSlide.provenanceChain);
+      const chainToLoad = filteredChain || currentSlide.provenanceChain;
+      if (chainToLoad) {
+        workerService.current.loadProvenanceChain(chainToLoad);
         setCurrentDimension(currentSlide.dimension || '0D');
       }
     }
-  }, [currentSlideIndex, slides]);
+  }, [currentSlideIndex, slides, filteredChain]);
 
   // Subscribe to real-time provenance chain updates
   useEffect(() => {
@@ -422,6 +438,48 @@ export const UnifiedProvenanceCanvas: React.FC<UnifiedProvenanceCanvasProps> = (
     }
   };
 
+  const handleSaveSlides = async () => {
+    if (!evolutionPath) {
+      console.error('Cannot save: no evolution path');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const result = await slideEditingService.saveSlidesToEvolution(evolutionPath);
+      if (result.success) {
+        console.log(`Saved ${result.savedFiles.length} files`);
+        // Reload slides to reflect saved changes
+        const updatedSlides = await provenanceService.current.generateSlidesFromEvolution(evolutionPath);
+        setSlides(updatedSlides);
+        slideEditingService.initializeSlides(updatedSlides);
+      } else {
+        console.error('Failed to save slides:', result.errors);
+      }
+    } catch (error) {
+      console.error('Error saving slides:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSlideUpdate = (updatedSlide: Slide) => {
+    const updatedSlides = [...slides];
+    const index = updatedSlides.findIndex(s => s.id === updatedSlide.id);
+    if (index >= 0) {
+      updatedSlides[index] = updatedSlide;
+      setSlides(updatedSlides);
+      
+      // Update editing service
+      slideEditingService.initializeSlides(updatedSlides);
+      
+      // Update current slide if it's the one being edited
+      if (index === currentSlideIndex) {
+        setCurrentSlideIndex(index);
+      }
+    }
+  };
+
   // Handle canvas click
   const handleCanvasClick = async (event: React.MouseEvent<HTMLCanvasElement>) => {
     if (!workerService.current || !offscreenCanvasRef.current) return;
@@ -519,6 +577,54 @@ export const UnifiedProvenanceCanvas: React.FC<UnifiedProvenanceCanvasProps> = (
         </div>
         
         <div className="flex items-center gap-2">
+          {!readOnly && (
+            <>
+              <Button
+                onClick={() => setEditingSlide(slides[currentSlideIndex])}
+                variant="outline"
+                size="sm"
+              >
+                <Edit2 className="w-4 h-4 mr-1" />
+                Edit Slide
+              </Button>
+              <Button
+                onClick={() => setManagingCards(slides[currentSlideIndex])}
+                variant="outline"
+                size="sm"
+              >
+                Manage Cards
+              </Button>
+              <Button
+                onClick={() => setReorderingSlides(true)}
+                variant="outline"
+                size="sm"
+              >
+                Reorder
+              </Button>
+              {slideEditingService.hasModifications() && (
+                <Button
+                  onClick={handleSaveSlides}
+                  variant="primary"
+                  size="sm"
+                  disabled={saving}
+                >
+                  {saving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              )}
+            </>
+          )}
+          
+          {currentSlide?.provenanceChain && (
+            <Button
+              onClick={() => setShowExportDialog(true)}
+              variant="outline"
+              size="sm"
+            >
+              <Download className="w-4 h-4 mr-1" />
+              Export
+            </Button>
+          )}
+          
           <select
             value={viewMode}
             onChange={(e) => setViewMode(e.target.value as '3d' | '2d' | 'combined')}
@@ -758,7 +864,11 @@ export const UnifiedProvenanceCanvas: React.FC<UnifiedProvenanceCanvasProps> = (
               ) : (
                 <div className="grid grid-cols-3 gap-2">
                   {currentSlide.cards.map((card) => (
-                    <Card key={card.id} className="p-2 bg-gray-700">
+                    <Card
+                      key={card.id}
+                      className="p-2 bg-gray-700 cursor-pointer hover:bg-gray-600 transition-colors"
+                      onClick={() => setSelectedCardDetail(card)}
+                    >
                       <div className="text-xs text-gray-300">
                         <div className="font-semibold">{card.pattern}</div>
                         <div className="text-gray-500">{card.jsonlLines.length} lines</div>
@@ -839,6 +949,87 @@ export const UnifiedProvenanceCanvas: React.FC<UnifiedProvenanceCanvasProps> = (
             setConflictDialog(null);
           }}
           onDismiss={() => setConflictDialog(null)}
+        />
+      )}
+
+      {/* Slide Editor */}
+      {editingSlide && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <SlideEditor
+              slide={editingSlide}
+              onSave={(updatedSlide) => {
+                handleSlideUpdate(updatedSlide);
+                setEditingSlide(null);
+              }}
+              onCancel={() => setEditingSlide(null)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Card Manager */}
+      {managingCards && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <CardManager
+              slide={managingCards}
+              onUpdate={(updatedSlide) => {
+                handleSlideUpdate(updatedSlide);
+                setManagingCards(null);
+              }}
+              onClose={() => setManagingCards(null)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Slide Reorderer */}
+      {reorderingSlides && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <SlideReorderer
+              slides={slides}
+              onSave={(reorderedSlides) => {
+                setSlides(reorderedSlides);
+                slideEditingService.initializeSlides(reorderedSlides);
+                setReorderingSlides(false);
+              }}
+              onCancel={() => setReorderingSlides(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Card Detail View */}
+      {selectedCardDetail && (
+        <CardDetailView
+          card={selectedCardDetail}
+          onClose={() => setSelectedCardDetail(null)}
+        />
+      )}
+
+      {/* Search & Filter Panel */}
+      {showSearchFilter && currentSlide?.provenanceChain && (
+        <div className="fixed right-4 top-20 w-96 z-40">
+          <ProvenanceSearchFilter
+            chain={currentSlide.provenanceChain}
+            onFilterChange={(filtered) => {
+              setFilteredChain(filtered);
+            }}
+            onClose={() => {
+              setShowSearchFilter(false);
+              setFilteredChain(null);
+            }}
+          />
+        </div>
+      )}
+
+      {/* Export Dialog */}
+      {showExportDialog && currentSlide?.provenanceChain && (
+        <ExportDialog
+          chain={filteredChain || currentSlide.provenanceChain}
+          onClose={() => setShowExportDialog(false)}
         />
       )}
     </div>

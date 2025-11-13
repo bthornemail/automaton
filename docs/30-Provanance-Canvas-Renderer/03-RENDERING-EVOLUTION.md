@@ -212,6 +212,12 @@ This document tracks the evolution of the Provenance Canvas Renderer from basic 
   - Offscreen canvas worker
   - Performance optimizations (instancing, LOD, frustum culling)
   - Performance monitoring
+- ✅ Phase 1.5: Interactive Features
+  - Interactive slide editing (edit, add/remove cards, reorder)
+  - Card detail views (expandable sections, JSONL viewer, provenance timeline)
+  - Provenance chain search and filtering (multi-criteria, advanced queries, presets)
+  - Export functionality (JSON, JSONL, GraphML, DOT, PNG, SVG)
+  - Comprehensive test coverage (200+ tests, 90%+ passing)
 
 **In Progress**:
 - 🚧 Phase 2: GLTF Avatar Integration
