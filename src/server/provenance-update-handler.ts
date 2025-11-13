@@ -10,6 +10,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { watch, FSWatcher } from 'chokidar';
 import { ChainUpdate, SlideUpdate, CardUpdate, Conflict } from '../../ui/src/types/provenance-updates';
+import { IncrementalDiffService } from '../../ui/src/services/incremental-diff-service';
 
 interface FileContent {
   path: string;
@@ -28,9 +29,11 @@ export class ProvenanceUpdateHandler {
   private io: SocketIOServer;
   private watchers: Map<string, EvolutionWatcher> = new Map();
   private pendingUpdates: Map<string, NodeJS.Timeout> = new Map();
+  private diffService: IncrementalDiffService;
 
   constructor(io: SocketIOServer) {
     this.io = io;
+    this.diffService = new IncrementalDiffService();
   }
 
   /**
@@ -303,25 +306,7 @@ export class ProvenanceUpdateHandler {
     newContent: string,
     event: 'add' | 'change' | 'unlink'
   ): Promise<ChainUpdate | null> {
-    // Parse JSONL/CanvasL files
-    const oldLines = oldContent ? oldContent.split('\n').filter(line => line.trim()) : [];
-    const newLines = newContent ? newContent.split('\n').filter(line => line.trim()) : [];
-
-    // Simple diff: for now, we'll send a chain:rebuilt event
-    // In a full implementation, we'd parse the JSONL and generate specific node/edge updates
-    if (event === 'add' || event === 'change') {
-      // For now, send a rebuild signal
-      // TODO: Implement proper incremental diff
-      return {
-        type: 'chain:rebuilt',
-        evolutionPath,
-        timestamp: Date.now(),
-        clientId: 'server',
-        data: {
-          chain: undefined // Will be rebuilt by client
-        }
-      };
-    } else if (event === 'unlink') {
+    if (event === 'unlink') {
       // File deleted - signal rebuild
       return {
         type: 'chain:rebuilt',
@@ -334,7 +319,48 @@ export class ProvenanceUpdateHandler {
       };
     }
 
-    return null;
+    // Use incremental diff service to generate specific updates
+    try {
+      const updates = this.diffService.generateIncrementalUpdates(
+        evolutionPath,
+        filePath,
+        oldContent,
+        newContent,
+        'server'
+      );
+
+      // If we have specific updates, use the first one (or combine them)
+      // For now, if there are multiple updates, we'll send a rebuild signal
+      if (updates.length === 0) {
+        return null; // No changes detected
+      } else if (updates.length === 1) {
+        return updates[0];
+      } else {
+        // Multiple updates - send rebuild signal for now
+        // In a full implementation, we could batch multiple updates
+        return {
+          type: 'chain:rebuilt',
+          evolutionPath,
+          timestamp: Date.now(),
+          clientId: 'server',
+          data: {
+            chain: undefined
+          }
+        };
+      }
+    } catch (error) {
+      console.error(`Failed to generate incremental diff for ${filePath}:`, error);
+      // Fallback to rebuild signal
+      return {
+        type: 'chain:rebuilt',
+        evolutionPath,
+        timestamp: Date.now(),
+        clientId: 'server',
+        data: {
+          chain: undefined
+        }
+      };
+    }
   }
 
   /**

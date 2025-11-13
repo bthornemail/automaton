@@ -31,7 +31,9 @@ import { thoughtCardService } from '../../services/thought-card-service';
 import { knowledgeGraphCardService } from '../../services/knowledge-graph-card-service';
 import { provenanceWebSocketService } from '../../services/provenance-websocket-service';
 import { conflictResolutionService } from '../../services/conflict-resolution-service';
+import { updateHistoryService } from '../../services/update-history-service';
 import type { ChainUpdate, SlideUpdate, CardUpdate, Conflict } from '../../types/provenance-updates';
+import { ConflictResolutionDialog } from './ConflictResolutionDialog';
 
 interface UnifiedProvenanceCanvasProps {
   evolutionPath?: string;
@@ -58,6 +60,7 @@ export const UnifiedProvenanceCanvas: React.FC<UnifiedProvenanceCanvasProps> = (
   const [showThoughtCards, setShowThoughtCards] = useState(true);
   const [showKnowledgeGraphCards, setShowKnowledgeGraphCards] = useState(true);
   const [selectedKnowledgeGraphCard, setSelectedKnowledgeGraphCard] = useState<string | null>(null);
+  const [conflictDialog, setConflictDialog] = useState<Conflict | null>(null);
   
   // Debounce dimension changes for performance
   const debouncedDimension = useDebounce(currentDimension, 300);
@@ -340,9 +343,8 @@ export const UnifiedProvenanceCanvas: React.FC<UnifiedProvenanceCanvasProps> = (
                 }
               }
             } else if (resolution.requiresManualResolution) {
-              // Show conflict resolution UI (placeholder)
-              console.warn('Manual conflict resolution required:', conflict);
-              // TODO: Show conflict resolution dialog
+              // Show conflict resolution dialog
+              setConflictDialog(conflict);
             }
           },
           onError: (error: Error) => {
@@ -798,6 +800,47 @@ export const UnifiedProvenanceCanvas: React.FC<UnifiedProvenanceCanvasProps> = (
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Conflict Resolution Dialog */}
+      {conflictDialog && (
+        <ConflictResolutionDialog
+          conflict={conflictDialog}
+          onResolve={async (resolution) => {
+            // Apply resolved update
+            if ('type' in resolution) {
+              const currentSlide = slides[currentSlideIndex];
+              if (currentSlide?.provenanceChain) {
+                const updatedChain = provenanceService.current.applyIncrementalUpdate(
+                  currentSlide.provenanceChain,
+                  resolution as ChainUpdate
+                );
+                
+                const updatedSlides = [...slides];
+                updatedSlides[currentSlideIndex] = {
+                  ...currentSlide,
+                  provenanceChain: updatedChain
+                };
+                setSlides(updatedSlides);
+                
+                if (workerService.current) {
+                  workerService.current.loadProvenanceChain(updatedChain);
+                }
+              }
+            }
+            
+            // Record resolution in history
+            updateHistoryService.recordUpdate(
+              conflictDialog.evolutionPath,
+              resolution,
+              true,
+              { reason: 'Manual conflict resolution' }
+            );
+            
+            setConflictDialog(null);
+          }}
+          onDismiss={() => setConflictDialog(null)}
+        />
+      )}
     </div>
   );
 };
