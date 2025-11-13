@@ -29,6 +29,9 @@ import { ThoughtCard3D } from './ThoughtCard3D';
 import { KnowledgeGraphCard2D } from './KnowledgeGraphCard2D';
 import { thoughtCardService } from '../../services/thought-card-service';
 import { knowledgeGraphCardService } from '../../services/knowledge-graph-card-service';
+import { provenanceWebSocketService } from '../../services/provenance-websocket-service';
+import { conflictResolutionService } from '../../services/conflict-resolution-service';
+import type { ChainUpdate, SlideUpdate, CardUpdate, Conflict } from '../../types/provenance-updates';
 
 interface UnifiedProvenanceCanvasProps {
   evolutionPath?: string;
@@ -207,6 +210,174 @@ export const UnifiedProvenanceCanvas: React.FC<UnifiedProvenanceCanvasProps> = (
       }
     }
   }, [currentSlideIndex, slides]);
+
+  // Subscribe to real-time provenance chain updates
+  useEffect(() => {
+    if (!evolutionPath) {
+      return;
+    }
+
+    let isSubscribed = false;
+
+    const subscribeToUpdates = async () => {
+      try {
+        // Connect to WebSocket if not already connected
+        await provenanceWebSocketService.connect();
+
+        // Subscribe to chain updates
+        await provenanceWebSocketService.subscribeToChain(evolutionPath, {
+          onChainUpdate: async (update: ChainUpdate) => {
+            // Handle chain update
+            if (update.type === 'chain:rebuilt') {
+              // Rebuild chain from scratch
+              const newChain = await provenanceService.current.buildProvenanceChain(evolutionPath);
+              
+              // Update slides with new chain
+              const updatedSlides = await provenanceService.current.generateSlidesFromEvolution(evolutionPath);
+              setSlides(updatedSlides);
+              
+              // Update worker with new chain
+              if (workerService.current && updatedSlides.length > 0) {
+                const currentSlide = updatedSlides[currentSlideIndex] || updatedSlides[0];
+                if (currentSlide.provenanceChain) {
+                  workerService.current.loadProvenanceChain(currentSlide.provenanceChain);
+                }
+              }
+            } else {
+              // Apply incremental update
+              const currentSlide = slides[currentSlideIndex];
+              if (currentSlide?.provenanceChain) {
+                const updatedChain = provenanceService.current.applyIncrementalUpdate(
+                  currentSlide.provenanceChain,
+                  update
+                );
+                
+                // Update slide with new chain
+                const updatedSlides = [...slides];
+                updatedSlides[currentSlideIndex] = {
+                  ...currentSlide,
+                  provenanceChain: updatedChain
+                };
+                setSlides(updatedSlides);
+                
+                // Update worker
+                if (workerService.current) {
+                  workerService.current.loadProvenanceChain(updatedChain);
+                }
+              }
+            }
+          },
+          onSlideUpdate: (update: SlideUpdate) => {
+            // Handle slide update
+            const slideIndex = slides.findIndex(s => s.id === update.slideId);
+            if (slideIndex >= 0) {
+              const updatedSlides = [...slides];
+              updatedSlides[slideIndex] = {
+                ...updatedSlides[slideIndex],
+                ...update.updates
+              };
+              setSlides(updatedSlides);
+              
+              // Update worker if this is the current slide
+              if (slideIndex === currentSlideIndex && workerService.current) {
+                const updatedSlide = updatedSlides[slideIndex];
+                if (updatedSlide.provenanceChain) {
+                  workerService.current.loadProvenanceChain(updatedSlide.provenanceChain);
+                }
+              }
+            }
+          },
+          onCardUpdate: (update: CardUpdate) => {
+            // Handle card update
+            const slideIndex = slides.findIndex(s => s.id === update.slideId);
+            if (slideIndex >= 0) {
+              const slide = slides[slideIndex];
+              const cardIndex = slide.cards?.findIndex(c => c.id === update.cardId);
+              if (cardIndex !== undefined && cardIndex >= 0 && slide.cards) {
+                const updatedCards = [...slide.cards];
+                updatedCards[cardIndex] = {
+                  ...updatedCards[cardIndex],
+                  ...update.updates
+                };
+                
+                const updatedSlides = [...slides];
+                updatedSlides[slideIndex] = {
+                  ...slide,
+                  cards: updatedCards
+                };
+                setSlides(updatedSlides);
+              }
+            }
+          },
+          onConflict: async (conflict: Conflict) => {
+            // Handle conflict
+            console.warn('Conflict detected:', conflict);
+            
+            // Try to resolve automatically using last-write-wins
+            const resolution = await conflictResolutionService.resolveConflict(conflict, 'last-write-wins');
+            
+            if (resolution.resolved && resolution.update) {
+              // Apply resolved update
+              if ('type' in resolution.update) {
+                // Chain update
+                const currentSlide = slides[currentSlideIndex];
+                if (currentSlide?.provenanceChain) {
+                  const updatedChain = provenanceService.current.applyIncrementalUpdate(
+                    currentSlide.provenanceChain,
+                    resolution.update as ChainUpdate
+                  );
+                  
+                  const updatedSlides = [...slides];
+                  updatedSlides[currentSlideIndex] = {
+                    ...currentSlide,
+                    provenanceChain: updatedChain
+                  };
+                  setSlides(updatedSlides);
+                  
+                  if (workerService.current) {
+                    workerService.current.loadProvenanceChain(updatedChain);
+                  }
+                }
+              }
+            } else if (resolution.requiresManualResolution) {
+              // Show conflict resolution UI (placeholder)
+              console.warn('Manual conflict resolution required:', conflict);
+              // TODO: Show conflict resolution dialog
+            }
+          },
+          onError: (error: Error) => {
+            console.error('Provenance update error:', error);
+            errorLoggingService.logError(error, {
+              component: 'UnifiedProvenanceCanvas',
+              service: 'ProvenanceWebSocketService',
+              action: 'update-handler',
+              severity: 'error'
+            });
+          }
+        });
+
+        isSubscribed = true;
+      } catch (error) {
+        console.error('Failed to subscribe to provenance updates:', error);
+        const errorObj = error instanceof Error ? error : new Error(String(error));
+        errorLoggingService.logError(errorObj, {
+          component: 'UnifiedProvenanceCanvas',
+          service: 'ProvenanceWebSocketService',
+          action: 'subscribe',
+          severity: 'error'
+        });
+      }
+    };
+
+    subscribeToUpdates();
+
+    // Cleanup: unsubscribe on unmount
+    return () => {
+      if (isSubscribed && evolutionPath) {
+        provenanceWebSocketService.unsubscribeFromChain(evolutionPath);
+      }
+    };
+  }, [evolutionPath, currentSlideIndex, slides]);
 
   // Handle canvas resize
   useEffect(() => {

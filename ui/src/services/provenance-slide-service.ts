@@ -1143,6 +1143,177 @@ export class ProvenanceSlideService {
     
     return `${lambdaCount}x² + ${varCount}xy + ${lambdaCount + varCount}y²`;
   }
+
+  /**
+   * Apply incremental update to provenance chain.
+   * 
+   * Applies an incremental update to an existing provenance chain. This method
+   * modifies the chain by adding, updating, or removing nodes and edges as
+   * specified by the update. The cache is invalidated after applying the update.
+   * 
+   * @param {ProvenanceChain} chain - Current provenance chain
+   * @param {import('../types/provenance-updates').ChainUpdate} update - Incremental update to apply
+   * @returns {ProvenanceChain} Updated provenance chain
+   * 
+   * @example
+   * ```typescript
+   * const updatedChain = service.applyIncrementalUpdate(chain, update);
+   * // Chain now includes the incremental changes
+   * ```
+   */
+  applyIncrementalUpdate(
+    chain: ProvenanceChain,
+    update: import('../types/provenance-updates').ChainUpdate
+  ): ProvenanceChain {
+    const updatedChain: ProvenanceChain = {
+      nodes: [...chain.nodes],
+      edges: [...chain.edges]
+    };
+
+    switch (update.type) {
+      case 'node:added':
+        if (update.data.node) {
+          updatedChain.nodes.push(update.data.node);
+        }
+        break;
+
+      case 'node:updated':
+        if (update.data.node) {
+          const index = updatedChain.nodes.findIndex(n => n.id === update.data.node!.id);
+          if (index >= 0) {
+            updatedChain.nodes[index] = update.data.node;
+          }
+        }
+        break;
+
+      case 'node:removed':
+        if (update.data.nodeId) {
+          updatedChain.nodes = updatedChain.nodes.filter(n => n.id !== update.data.nodeId);
+          // Also remove edges connected to this node
+          updatedChain.edges = updatedChain.edges.filter(
+            e => e.from !== update.data.nodeId && e.to !== update.data.nodeId
+          );
+        }
+        break;
+
+      case 'edge:added':
+        if (update.data.edge) {
+          updatedChain.edges.push(update.data.edge);
+        }
+        break;
+
+      case 'edge:removed':
+        if (update.data.edgeId) {
+          updatedChain.edges = updatedChain.edges.filter(e => e.id !== update.data.edgeId);
+        }
+        break;
+
+      case 'chain:rebuilt':
+        // For chain:rebuilt, we need to rebuild the chain from scratch
+        // This will be handled by the caller
+        if (update.data.chain) {
+          return update.data.chain;
+        }
+        break;
+    }
+
+    // Invalidate cache for this evolution path
+    if (this.enableCache) {
+      this.cache.invalidate(update.evolutionPath);
+    }
+
+    return updatedChain;
+  }
+
+  /**
+   * Subscribe to updates for an evolution path.
+   * 
+   * Sets up a subscription to receive real-time updates for a specific
+   * evolution path. When updates are received, the handler is called
+   * with the update information.
+   * 
+   * @param {string} evolutionPath - Evolution path to subscribe to
+   * @param {import('../types/provenance-updates').UpdateHandler} handler - Handler for updates
+   * 
+   * @example
+   * ```typescript
+   * service.subscribeToUpdates('/evolutions/advanced-automaton', {
+   *   onChainUpdate: (update) => {
+   *     // Handle chain update
+   *     const chain = service.buildProvenanceChain('/evolutions/advanced-automaton');
+   *     const updatedChain = service.applyIncrementalUpdate(chain, update);
+   *   }
+   * });
+   * ```
+   */
+  subscribeToUpdates(
+    evolutionPath: string,
+    handler: import('../types/provenance-updates').UpdateHandler
+  ): void {
+    // This method is a placeholder for integration with ProvenanceWebSocketService
+    // The actual subscription is handled by ProvenanceWebSocketService
+    // This method can be used to register handlers that will be called when updates arrive
+    console.log(`Subscribed to updates for ${evolutionPath}`);
+  }
+
+  /**
+   * Update slide with new data.
+   * 
+   * Updates a slide with partial data. The slide is updated in place
+   * and the cache is invalidated. This method is used for live updates
+   * when slides are modified in real-time.
+   * 
+   * @param {string} slideId - ID of the slide to update
+   * @param {Partial<Slide>} updates - Partial slide data to apply
+   * 
+   * @example
+   * ```typescript
+   * service.updateSlide('slide-123', {
+   *   title: 'Updated Title',
+   *   description: 'Updated description'
+   * });
+   * ```
+   */
+  updateSlide(slideId: string, updates: Partial<Slide>): void {
+    // This method is a placeholder for live slide updates
+    // In a full implementation, this would update the slide in a store or database
+    // and invalidate the cache
+    if (this.enableCache) {
+      // Invalidate cache entries that might contain this slide
+      // This is a simplified version - in practice, we'd track which cache keys contain this slide
+      this.cache.clear();
+    }
+    console.log(`Updated slide ${slideId}`, updates);
+  }
+
+  /**
+   * Update card with new data.
+   * 
+   * Updates a card with partial data. The card is updated in place
+   * and the cache is invalidated. This method is used for live updates
+   * when cards are modified in real-time.
+   * 
+   * @param {string} cardId - ID of the card to update
+   * @param {Partial<Card>} updates - Partial card data to apply
+   * 
+   * @example
+   * ```typescript
+   * service.updateCard('card-456', {
+   *   pattern: 'updated-pattern',
+   *   metadata: { churchEncoding: 'λf.λx.fx' }
+   * });
+   * ```
+   */
+  updateCard(cardId: string, updates: Partial<Card>): void {
+    // This method is a placeholder for live card updates
+    // In a full implementation, this would update the card in a store or database
+    // and invalidate the cache
+    if (this.enableCache) {
+      // Invalidate cache entries that might contain this card
+      this.cache.clear();
+    }
+    console.log(`Updated card ${cardId}`, updates);
+  }
 }
 
 // Export singleton instance

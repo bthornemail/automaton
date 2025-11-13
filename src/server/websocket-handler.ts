@@ -11,6 +11,7 @@ import { AutomatonController } from './automaton-controller';
 import WordNetIntegration from '../services/wordnet';
 import { simpleOpenCodeService } from '../services/simple-opencode';
 import OpenCodeIntegration from '../../opencode-integration';
+import { ProvenanceUpdateHandler } from './provenance-update-handler';
 
 interface ChatParticipant {
   userId: string;
@@ -24,6 +25,7 @@ export class WebSocketHandler {
   private automatonController: AutomatonController;
   private wordNet: WordNetIntegration;
   private chatParticipants: Map<string, ChatParticipant>;
+  private provenanceUpdateHandler: ProvenanceUpdateHandler;
 
   constructor(
     io: SocketIOServer,
@@ -34,6 +36,7 @@ export class WebSocketHandler {
     this.automatonController = automatonController;
     this.wordNet = wordNet;
     this.chatParticipants = new Map();
+    this.provenanceUpdateHandler = new ProvenanceUpdateHandler(io);
     this.setupSocketHandlers();
   }
 
@@ -74,6 +77,19 @@ export class WebSocketHandler {
 
       socket.on('chat:agent', (data: any) => {
         this.handleChatAgent(socket, data);
+      });
+
+      // Handle provenance chain events
+      socket.on('command', async (data: any) => {
+        if (data.command === 'provenance:subscribe') {
+          await this.handleProvenanceSubscribe(socket, data.params);
+        } else if (data.command === 'provenance:unsubscribe') {
+          this.handleProvenanceUnsubscribe(socket, data.params);
+        } else if (data.command === 'provenance:update') {
+          await this.handleProvenanceUpdate(socket, data.params);
+        } else {
+          await this.handleCommand(socket, data);
+        }
       });
 
       // Handle disconnect
@@ -175,5 +191,68 @@ export class WebSocketHandler {
    */
   getChatParticipants(): ChatParticipant[] {
     return Array.from(this.chatParticipants.values());
+  }
+
+  /**
+   * Handle provenance chain subscription.
+   */
+  private async handleProvenanceSubscribe(socket: Socket, params: any): Promise<void> {
+    const { evolutionPath } = params;
+    if (!evolutionPath) {
+      socket.emit('provenance:subscription-error', { message: 'Missing evolutionPath' });
+      return;
+    }
+
+    try {
+      // Start watching if not already watching
+      await this.provenanceUpdateHandler.watchEvolutionDirectory(evolutionPath);
+      
+      // Subscribe client
+      this.provenanceUpdateHandler.subscribeClient(evolutionPath, socket.id);
+      
+      // Send confirmation
+      socket.emit('provenance:subscribed', { evolutionPath });
+      console.log(`📁 Client ${socket.id} subscribed to ${evolutionPath}`);
+    } catch (error) {
+      socket.emit('provenance:subscription-error', {
+        message: error instanceof Error ? error.message : String(error)
+      });
+      console.error(`Failed to subscribe client ${socket.id} to ${evolutionPath}:`, error);
+    }
+  }
+
+  /**
+   * Handle provenance chain unsubscription.
+   */
+  private handleProvenanceUnsubscribe(socket: Socket, params: any): void {
+    const { evolutionPath } = params;
+    if (!evolutionPath) {
+      return;
+    }
+
+    this.provenanceUpdateHandler.unsubscribeClient(evolutionPath, socket.id);
+    console.log(`📁 Client ${socket.id} unsubscribed from ${evolutionPath}`);
+  }
+
+  /**
+   * Handle provenance chain update from client.
+   */
+  private async handleProvenanceUpdate(socket: Socket, update: any): Promise<void> {
+    const { evolutionPath, clientId, type } = update;
+    if (!evolutionPath || !clientId || !type) {
+      return;
+    }
+
+    // Broadcast to other clients (conflict resolution)
+    // TODO: Implement conflict detection and resolution
+    this.provenanceUpdateHandler.broadcastUpdate(evolutionPath, update);
+    console.log(`📤 Client ${clientId} sent update for ${evolutionPath}: ${type}`);
+  }
+
+  /**
+   * Get provenance update handler.
+   */
+  getProvenanceUpdateHandler(): ProvenanceUpdateHandler {
+    return this.provenanceUpdateHandler;
   }
 }
