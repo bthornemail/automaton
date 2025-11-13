@@ -15,7 +15,7 @@
     },
     "./browser": {
       "browser": "./dist/browser/index.js",
-      "default": "./src/browser/index.ts"
+      "default": "./dist/browser/index.js"
     },
     "./package.json": "./package.json"
   },
@@ -26,7 +26,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "build:browser": "tsc -p tsconfig.browser.json && rollup -c rollup.config.js && node scripts/verify-browser-build.js",
+    "build:browser": "tsc -p tsconfig.browser.json && rollup -c rollup.config.js --bundleConfigAsCjs && node scripts/verify-browser-build.js",
     "build:all": "npm run build && npm run build:browser",
     "watch": "tsc --watch",
     "clean": "rm -rf dist",

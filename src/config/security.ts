@@ -12,7 +12,9 @@ export const securityConfig = {
       'https://universallifeprotocol.com',
       'https://www.universallifeprotocol.com',
       'http://localhost:5173', // Vite dev server
+      'http://127.0.0.1:5173', // Vite dev server (127.0.0.1)
       'http://localhost:3000', // Production build
+      'http://127.0.0.1:3000', // Production build (127.0.0.1)
       'http://localhost:5555', // PM2 backend
     ],
     credentials: true,

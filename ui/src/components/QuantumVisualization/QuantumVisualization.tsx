@@ -55,12 +55,51 @@ const QuantumVisualization: React.FC<QuantumVisualizationProps> = ({ className =
     camera.position.set(5, 5, 5);
     cameraRef.current = camera;
 
-    // Renderer setup
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    mountRef.current.appendChild(renderer.domElement);
-    rendererRef.current = renderer;
+    // Renderer setup with error handling
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ 
+        antialias: true,
+        powerPreference: 'high-performance',
+        failIfMajorPerformanceCaveat: false
+      });
+    } catch (error) {
+      console.error('Failed to create WebGL renderer:', error);
+      // Fallback to Canvas renderer or show error message
+      if (mountRef.current) {
+        mountRef.current.innerHTML = `
+          <div class="flex items-center justify-center h-full bg-gray-900 text-gray-400 p-4">
+            <div class="text-center">
+              <p class="text-lg mb-2">WebGL Not Available</p>
+              <p class="text-sm">Your browser or GPU does not support WebGL rendering.</p>
+              <p class="text-xs mt-2">Error: ${error instanceof Error ? error.message : String(error)}</p>
+            </div>
+          </div>
+        `;
+      }
+      return;
+    }
+    
+    try {
+      renderer.setSize(mountRef.current.clientWidth, mountRef.current.clientHeight);
+      renderer.setPixelRatio(window.devicePixelRatio);
+      mountRef.current.appendChild(renderer.domElement);
+      rendererRef.current = renderer;
+    } catch (error) {
+      console.error('Failed to setup WebGL renderer:', error);
+      if (mountRef.current) {
+        mountRef.current.innerHTML = `
+          <div class="flex items-center justify-center h-full bg-gray-900 text-gray-400 p-4">
+            <div class="text-center">
+              <p class="text-lg mb-2">WebGL Setup Failed</p>
+              <p class="text-sm">Unable to initialize WebGL context.</p>
+              <p class="text-xs mt-2">Error: ${error instanceof Error ? error.message : String(error)}</p>
+            </div>
+          </div>
+        `;
+      }
+      return;
+    }
 
     // Controls setup
     // const controls = new OrbitControls(camera, renderer.domElement);

@@ -64,17 +64,56 @@ export class BrowserJsonlParser {
     }
 
     // Parse JSONL content
-    const lines = content.split('\n').filter(line => line.trim());
+    // Handle multiline JSON objects by accumulating lines until we have valid JSON
+    const lines = content.split('\n');
     const objects: any[] = [];
+    let currentLine = '';
+    let braceDepth = 0;
 
-    for (const line of lines) {
-      if (line.trim()) {
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      currentLine += (currentLine ? '\n' : '') + line;
+      
+      // Count braces to detect complete JSON objects
+      for (const char of line) {
+        if (char === '{') braceDepth++;
+        if (char === '}') braceDepth--;
+      }
+      
+      // If we have a complete JSON object (balanced braces), try to parse it
+      if (braceDepth === 0 && currentLine.trim()) {
         try {
-          const obj = JSON.parse(line);
+          const obj = JSON.parse(currentLine.trim());
           objects.push(obj);
+          currentLine = '';
         } catch (error) {
-          console.warn(`Failed to parse line: ${line}`, error);
+          // If parsing fails, try to extract valid JSON from the line
+          // This handles cases where there might be trailing content
+          const trimmed = currentLine.trim();
+          const jsonMatch = trimmed.match(/^(\{.*\})/s);
+          if (jsonMatch) {
+            try {
+              const obj = JSON.parse(jsonMatch[1]);
+              objects.push(obj);
+            } catch (e) {
+              // If still fails, log and skip
+              console.warn(`Failed to parse JSONL line ${i + 1}: ${trimmed.substring(0, 200)}...`, error);
+            }
+          } else {
+            console.warn(`Failed to parse JSONL line ${i + 1}: ${trimmed.substring(0, 200)}...`, error);
+          }
+          currentLine = '';
         }
+      }
+    }
+    
+    // Handle any remaining content
+    if (currentLine.trim() && braceDepth === 0) {
+      try {
+        const obj = JSON.parse(currentLine.trim());
+        objects.push(obj);
+      } catch (error) {
+        console.warn(`Failed to parse final JSONL line: ${currentLine.substring(0, 200)}...`, error);
       }
     }
 
@@ -109,12 +148,30 @@ export class BrowserJsonlParser {
     const lines = content.split('\n');
     const objects: any[] = [];
     let currentDirective: string | null = null;
+    let currentLine = '';
+    let braceDepth = 0;
+    let i = 0;
 
-    for (const line of lines) {
+    while (i < lines.length) {
+      const line = lines[i];
       const trimmed = line.trim();
       
       // Handle directives
       if (trimmed.startsWith('@')) {
+        // If we have accumulated content, try to parse it first
+        if (currentLine.trim() && braceDepth === 0) {
+          try {
+            const obj = JSON.parse(currentLine.trim());
+            if (currentDirective) {
+              obj._directive = `@${currentDirective}`;
+            }
+            objects.push(obj);
+          } catch (error) {
+            console.warn(`Failed to parse accumulated CanvasL line: ${currentLine.substring(0, 200)}...`, error);
+          }
+          currentLine = '';
+        }
+        
         const match = trimmed.match(/^@(\w+)\s*(.*)$/);
         if (match) {
           currentDirective = match[1];
@@ -122,20 +179,86 @@ export class BrowserJsonlParser {
             objects.push({ type: `@${currentDirective}`, value: match[2] });
           }
         }
+        i++;
         continue;
       }
 
-      // Parse JSONL lines
+      // Accumulate lines for JSON objects
       if (trimmed && trimmed.startsWith('{')) {
-        try {
-          const obj = JSON.parse(trimmed);
-          if (currentDirective) {
-            obj._directive = `@${currentDirective}`;
-          }
-          objects.push(obj);
-        } catch (error) {
-          console.warn(`Failed to parse CanvasL line: ${trimmed}`, error);
+        currentLine += (currentLine ? '\n' : '') + line;
+        
+        // Count braces
+        for (const char of line) {
+          if (char === '{') braceDepth++;
+          if (char === '}') braceDepth--;
         }
+        
+        // If we have a complete JSON object, parse it
+        if (braceDepth === 0 && currentLine.trim()) {
+          try {
+            const obj = JSON.parse(currentLine.trim());
+            if (currentDirective) {
+              obj._directive = `@${currentDirective}`;
+            }
+            objects.push(obj);
+            currentLine = '';
+          } catch (error) {
+            // Try to extract valid JSON from the line
+            const trimmedLine = currentLine.trim();
+            const jsonMatch = trimmedLine.match(/^(\{.*\})/s);
+            if (jsonMatch) {
+              try {
+                const obj = JSON.parse(jsonMatch[1]);
+                if (currentDirective) {
+                  obj._directive = `@${currentDirective}`;
+                }
+                objects.push(obj);
+              } catch (e) {
+                console.warn(`Failed to parse CanvasL line ${i + 1}: ${trimmedLine.substring(0, 200)}...`, error);
+              }
+            } else {
+              console.warn(`Failed to parse CanvasL line ${i + 1}: ${trimmedLine.substring(0, 200)}...`, error);
+            }
+            currentLine = '';
+          }
+        }
+      } else if (currentLine.trim() && braceDepth > 0) {
+        // Continue accumulating if we're in the middle of a JSON object
+        currentLine += '\n' + line;
+        for (const char of line) {
+          if (char === '{') braceDepth++;
+          if (char === '}') braceDepth--;
+        }
+        
+        // Check if we've completed the object
+        if (braceDepth === 0 && currentLine.trim()) {
+          try {
+            const obj = JSON.parse(currentLine.trim());
+            if (currentDirective) {
+              obj._directive = `@${currentDirective}`;
+            }
+            objects.push(obj);
+            currentLine = '';
+          } catch (error) {
+            console.warn(`Failed to parse accumulated CanvasL line ${i + 1}: ${currentLine.substring(0, 200)}...`, error);
+            currentLine = '';
+          }
+        }
+      }
+      
+      i++;
+    }
+    
+    // Handle any remaining content
+    if (currentLine.trim() && braceDepth === 0) {
+      try {
+        const obj = JSON.parse(currentLine.trim());
+        if (currentDirective) {
+          obj._directive = `@${currentDirective}`;
+        }
+        objects.push(obj);
+      } catch (error) {
+        console.warn(`Failed to parse final CanvasL line: ${currentLine.substring(0, 200)}...`, error);
       }
     }
 

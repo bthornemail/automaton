@@ -130,8 +130,11 @@ export default defineConfig({
       '@codemirror/lang-javascript',
       '@codemirror/lang-markdown',
       '@codemirror/theme-one-dark',
-      'meta-log-db'
+      'meta-log-db',
+      'meta-log-db/browser'
     ],
     exclude: ['gpu.js'], // Exclude optional dependency from optimization
+    // Force re-optimization of meta-log-db
+    force: process.env.FORCE_OPTIMIZE === 'true',
   },
 })

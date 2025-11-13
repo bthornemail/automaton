@@ -74,6 +74,12 @@ class JSONLCanvasServiceImpl implements JSONLCanvasService {
     const edges = new Map<string, JSONLEdge>();
 
     for (const entry of entries) {
+      // Skip arrays - they're not valid entries
+      if (Array.isArray(entry)) {
+        console.warn('Invalid entry: Array detected, skipping:', entry);
+        continue;
+      }
+      
       // Validate entry
       const validation = this.validateEntry(entry);
       if (!validation.valid) {

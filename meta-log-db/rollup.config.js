@@ -6,11 +6,11 @@
  * in build:browser is mainly for type checking and declarations.
  */
 
-const { nodeResolve } = require('@rollup/plugin-node-resolve');
-const commonjs = require('@rollup/plugin-commonjs');
-const typescript = require('@rollup/plugin-typescript');
+import { nodeResolve } from '@rollup/plugin-node-resolve';
+import commonjs from '@rollup/plugin-commonjs';
+import typescript from '@rollup/plugin-typescript';
 
-module.exports = {
+export default {
   input: 'src/browser/index.ts',
   output: [
     {
