@@ -27,3 +27,6 @@ export * from '../validation/frontmatter-validator.js';
 export { CanvasLMetaverseBrowser } from './canvasl-browser.js';
 export type { CanvasLBrowserConfig, CanvasLQueryOptions, CanvasLExecutionResult } from './canvasl-browser.js';
 
+// Re-export types for convenience
+export type { Fact, Canvas } from '../types/index.js';
+

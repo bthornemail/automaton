@@ -210,8 +210,9 @@ const AppContent: React.FC = () => {
           >
             <UnifiedEditor
               filename="automaton.canvasl"
-              initialMode="canvas"
+              initialMode="ai-portal-tabs"
               height="100%"
+              showAIPortalTabs={true}
             />
           </motion.div>
         )}

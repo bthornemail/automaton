@@ -2,6 +2,7 @@
   "name": "meta-log-db",
   "version": "1.0.0",
   "description": "Native database package for Meta-Log (ProLog, DataLog, R5RS)",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "browser": "dist/browser/index.js",

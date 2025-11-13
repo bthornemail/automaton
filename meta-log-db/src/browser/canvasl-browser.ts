@@ -13,8 +13,8 @@
  * - Browser-native with IndexedDB caching
  */
 
-import type { MetaLogDbBrowser, BrowserConfig, Fact, Canvas } from './database.js';
-import type { PrologQueryResult, DatalogQueryResult, SparqlQueryResult, ShaclValidationReport } from '../types/index.js';
+import type { MetaLogDbBrowser, BrowserConfig } from './database.js';
+import type { Fact, Canvas, PrologQueryResult, DatalogQueryResult, SparqlQueryResult, ShaclValidationReport } from '../types/index.js';
 
 /**
  * Configuration for CanvasL Metaverse Browser
@@ -460,7 +460,7 @@ export class CanvasLMetaverseBrowser {
         // Simple argument parsing (could be enhanced)
         const argStr = match[2].trim();
         if (argStr) {
-          args = argStr.split(/\s+/).map(a => {
+          args = argStr.split(/\s+/).map((a: string) => {
             // Try to parse as number
             const num = Number(a);
             return isNaN(num) ? a : num;
@@ -531,9 +531,14 @@ export class CanvasLMetaverseBrowser {
     objects: Map<string, any>;
     errors: Array<{ object: any; error: string }>;
   }> {
-    const results = {
-      triples: [],
-      slides: [],
+    const results: {
+      triples: any[];
+      slides: any[];
+      objects: Map<string, any>;
+      errors: Array<{ object: any; error: string }>;
+    } = {
+      triples: [] as any[],
+      slides: [] as any[],
       objects: new Map<string, any>(),
       errors: [] as Array<{ object: any; error: string }>
     };

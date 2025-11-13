@@ -7,12 +7,13 @@ import { CanvasGraph } from '../../services/jsonl-canvas-service';
 
 export interface UnifiedEditorProps {
   filename: string;
-  initialMode?: EditorMode | 'auto';
+  initialMode?: EditorMode | 'auto' | 'ai-portal-tabs';
   onSave?: (content: string, format: 'code' | 'jsonl' | 'canvasl') => void;
   onClose?: () => void;
   height?: string;
   readOnly?: boolean;
   initialContent?: string;
+  showAIPortalTabs?: boolean;
 }
 
 export interface UnifiedEditorState {

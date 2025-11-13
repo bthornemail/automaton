@@ -14,6 +14,7 @@ import { CodeEditorPanel } from './components/CodeEditorPanel';
 import { CanvasEditorPanel } from './components/CanvasEditorPanel';
 import { HybridView } from './components/HybridView';
 import { BaseViewPanel } from './components/BaseViewPanel';
+import { AIPortalTabsPanel } from './components/AIPortalTabsPanel';
 import { databaseService } from '../../services/database-service';
 import { CanvasGraph } from '../../services/jsonl-canvas-service';
 import { jsonlCanvasService } from '../../services/jsonl-canvas-service';
@@ -26,7 +27,8 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
   onClose,
   height = '100%',
   readOnly = false,
-  initialContent
+  initialContent,
+  showAIPortalTabs = false
 }) => {
   const fileType = detectFileType(filename);
   const detectedMode = detectFileMode(filename);
@@ -188,19 +190,21 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
 
   return (
     <div className="h-full flex flex-col bg-gray-900 text-white" style={{ height }} data-testid="unified-editor">
-      {/* Toolbar */}
-      <UnifiedToolbar
-        mode={state.mode}
-        onModeChange={handleModeChange}
-        language={state.language}
-        onLanguageChange={handleLanguageChange}
-        filename={filename}
-        onSave={handleSave}
-        onSearch={setSearchQuery}
-        searchQuery={searchQuery}
-        isSaving={isSaving}
-        readOnly={readOnly}
-      />
+      {/* Toolbar - Hide when showing AI Portal tabs */}
+      {!(showAIPortalTabs || state.mode === 'ai-portal-tabs') && (
+        <UnifiedToolbar
+          mode={state.mode}
+          onModeChange={handleModeChange}
+          language={state.language}
+          onLanguageChange={handleLanguageChange}
+          filename={filename}
+          onSave={handleSave}
+          onSearch={setSearchQuery}
+          searchQuery={searchQuery}
+          isSaving={isSaving}
+          readOnly={readOnly}
+        />
+      )}
 
       {/* Error Display */}
       {error && (
@@ -212,7 +216,19 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
-        {state.mode === 'code' && (
+        {(showAIPortalTabs || state.mode === 'ai-portal-tabs') && (
+          <AIPortalTabsPanel
+            selectedJSONLFile={filename}
+            onJSONLFileChange={(file) => {
+              // Handle file change if needed
+            }}
+            onEvolutionLog={(message) => {
+              console.log('Evolution log:', message);
+            }}
+          />
+        )}
+
+        {!showAIPortalTabs && state.mode === 'code' && (
           <CodeEditorPanel
             content={state.content}
             language={state.language}
@@ -222,7 +238,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
           />
         )}
 
-        {state.mode === 'canvas' && state.graph && (
+        {!showAIPortalTabs && state.mode === 'canvas' && state.graph && (
           <CanvasEditorPanel
             graph={state.graph}
             onGraphChange={handleGraphChange}
@@ -231,7 +247,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
           />
         )}
 
-        {state.mode === 'hybrid' && (
+        {!showAIPortalTabs && state.mode === 'hybrid' && (
           state.graph ? (
             <HybridView
               codeContent={state.content}
@@ -253,7 +269,7 @@ export const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
           )
         )}
 
-        {state.mode === 'base' && (
+        {!showAIPortalTabs && state.mode === 'base' && (
           <BaseViewPanel
             filename={filename}
             readOnly={readOnly}

@@ -8,8 +8,13 @@ const gpuJsPath = resolve(__dirname, 'node_modules/gpu.js');
 const gpuJsInstalled = existsSync(gpuJsPath);
 
 // Check meta-log-db browser bundle paths
-const metaLogDbBuiltPath = resolve(__dirname, 'node_modules/meta-log-db/dist/browser/index.js');
-const metaLogDbSourcePath = resolve(__dirname, 'node_modules/meta-log-db/src/browser/index.ts');
+// Try node_modules first, then fall back to workspace root
+const metaLogDbBuiltPath = existsSync(resolve(__dirname, 'node_modules/meta-log-db/dist/browser/index.js'))
+  ? resolve(__dirname, 'node_modules/meta-log-db/dist/browser/index.js')
+  : resolve(__dirname, '../meta-log-db/dist/browser/index.js');
+const metaLogDbSourcePath = existsSync(resolve(__dirname, 'node_modules/meta-log-db/src/browser/index.ts'))
+  ? resolve(__dirname, 'node_modules/meta-log-db/src/browser/index.ts')
+  : resolve(__dirname, '../meta-log-db/src/browser/index.ts');
 
 // https://vitejs.dev/config/
 export default defineConfig({

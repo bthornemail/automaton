@@ -362,7 +362,7 @@ export class BrowserR5RSRegistry {
         return result;
       };
       
-      const result: number[] = [];
+      let result: number[] = [];
       for (let i = 0; i < p1.length; i++) {
         if (p1[i] !== 0) {
           // Multiply p2 by itself i times and scale by p1[i]
