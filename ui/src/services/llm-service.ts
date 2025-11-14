@@ -67,7 +67,11 @@ class LLMServiceImpl implements LLMService {
 
   private async initializeWebLLM(config: LLMConfig): Promise<void> {
     try {
-      const { CreateMLCEngine } = await import('@mlc-ai/web-llm');
+      // WebLLM is optional - dynamically import to handle if package is not installed
+      const webLLMModule = await import('@mlc-ai/web-llm').catch((error) => {
+        throw new Error(`WebLLM package not available. Install with: npm install @mlc-ai/web-llm. Error: ${error.message}`);
+      });
+      const { CreateMLCEngine } = webLLMModule;
       
       // Try to initialize with progress tracking
       let initProgress = 0;
@@ -98,7 +102,10 @@ class LLMServiceImpl implements LLMService {
       // Try first fallback model
       console.log('Trying fallback model: TinyLlama-1.1B-Chat-v0.4');
       try {
-        const { CreateMLCEngine } = await import('@mlc-ai/web-llm');
+        const webLLMModule = await import('@mlc-ai/web-llm').catch((error) => {
+          throw new Error(`WebLLM package not available. Install with: npm install @mlc-ai/web-llm. Error: ${error.message}`);
+        });
+        const { CreateMLCEngine } = webLLMModule;
         const fallbackEngine = await CreateMLCEngine('TinyLlama-1.1B-Chat-v0.4', {
           initProgressCallback: (progress: any) => {
             console.log(`WebLLM fallback loading: ${Math.round(progress.progress * 100)}%`);

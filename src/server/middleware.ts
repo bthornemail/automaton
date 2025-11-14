@@ -30,7 +30,7 @@ export function setupMiddleware(app: express.Application): void {
     crossOriginEmbedderPolicy: false, // Needed for WebGL
   }));
 
-  // CORS with restricted origins
+  // CORS with restricted origins - must be before other middleware
   app.use(cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (mobile apps, Postman, etc.)
@@ -38,16 +38,24 @@ export function setupMiddleware(app: express.Application): void {
         return callback(null, true);
       }
       
-      if (securityConfig.cors.allowedOrigins.includes(origin)) {
+      // Normalize origin for comparison (handle both localhost and 127.0.0.1)
+      const normalizedOrigin = origin.toLowerCase();
+      const normalizedAllowed = securityConfig.cors.allowedOrigins.map(o => o.toLowerCase());
+      
+      if (normalizedAllowed.includes(normalizedOrigin)) {
         callback(null, true);
       } else {
-        console.warn(`CORS blocked origin: ${origin}`);
+        console.warn(`CORS blocked origin: ${origin} (allowed: ${securityConfig.cors.allowedOrigins.join(', ')})`);
         callback(new Error('Not allowed by CORS'));
       }
     },
     credentials: securityConfig.cors.credentials,
     methods: securityConfig.cors.methods,
-    allowedHeaders: securityConfig.cors.allowedHeaders,
+    allowedHeaders: [...securityConfig.cors.allowedHeaders, 'X-Requested-With', 'Accept', 'Accept-Language', 'Content-Language'],
+    exposedHeaders: ['Content-Length', 'Content-Type'],
+    maxAge: 86400, // 24 hours
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   }));
 
   // Compression

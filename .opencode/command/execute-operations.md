@@ -15,6 +15,18 @@ Execute this operation sequence:
 5. Use automaton-query with query "state" to see resulting changes
 6. Use automaton-query with query "modifications" to track mutations
 
+**Autonomous Operations:**
+- Use automaton-execute with operation "regenerate" to regenerate kernel from seed
+- Use automaton-execute with operation "self-modify" for autonomous self-modification
+- Use automaton-execute with operation "goal-negotiate" for multi-agent goal negotiation
+- Use automaton-execute with operation "consensus" for consensus voting
+- Use automaton-execute with operation "autonomous-evolve" for autonomous evolution
+
+**Geometric Operations:**
+- Use automaton-execute with operation "bqf-encode" to encode polyhedra as BQF
+- Use automaton-execute with operation "polyhedra-transform" for polyhedra transformations
+- Use automaton-execute with operation "compute-mapping" for R5RS type to polyhedra mapping
+
 Then analyze the operation effects:
 
 - **Operation Impact**: How each operation changes system state

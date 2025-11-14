@@ -70,8 +70,11 @@ const WebLLMEvolution: React.FC = () => {
 
   const initializeWebLLM = async () => {
     try {
-      // Load actual WebLLM library
-      const { CreateMLCEngine } = await import('@mlc-ai/web-llm');
+      // Load actual WebLLM library (optional - handle if package is not installed)
+      const webLLMModule = await import('@mlc-ai/web-llm').catch((error) => {
+        throw new Error(`WebLLM package not available. Install with: npm install @mlc-ai/web-llm. Error: ${error.message}`);
+      });
+      const { CreateMLCEngine } = webLLMModule;
       
       const initProgressCallback = (progress: any) => {
         console.log('WebLLM loading progress:', progress);

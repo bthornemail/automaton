@@ -147,27 +147,29 @@ const AIPortal: React.FC = () => {
         
         // Validate and use saved config, but ensure model exists
         return {
-          provider: parsed.provider || 'webllm',
+          provider: parsed.provider || 'opencode',
           model,
           temperature: parsed.temperature ?? 0.7,
           maxTokens: parsed.maxTokens ?? 2048,
           topP: parsed.topP ?? 0.9,
           ollamaUrl: parsed.ollamaUrl || 'http://localhost:11434',
-          opencodeEndpoint: parsed.opencodeEndpoint || 'http://localhost:3000/api/opencode'
+          opencodeEndpoint: parsed.opencodeEndpoint || 'https://openrouter.ai/api/v1',
+          openaiApiKey: parsed.openaiApiKey || ''
         };
       }
     } catch (e) {
       console.warn('Failed to load LLM config from localStorage:', e);
     }
-    // Default config with a model that actually exists
+    // Default config - use OpenCode (API-based, no large downloads)
     return {
-      provider: 'webllm',
-      model: 'TinyLlama-1.1B-Chat-v0.4',
+      provider: 'opencode',
+      model: 'opencode/big-pickle', // Default OpenCode model
       temperature: 0.7,
       maxTokens: 2048,
       topP: 0.9,
       ollamaUrl: 'http://localhost:11434',
-      opencodeEndpoint: 'http://localhost:3000/api/opencode'
+      opencodeEndpoint: 'https://openrouter.ai/api/v1',
+      openaiApiKey: ''
     };
   };
 
@@ -321,25 +323,25 @@ const AIPortal: React.FC = () => {
     try {
       addEvolutionLog(`Initializing LLM provider: ${llmProviderConfig.provider}...`);
       
+      // WebLLM is now optional - only initialize if explicitly selected
       if (llmProviderConfig.provider === 'webllm') {
         addEvolutionLog(`Loading WebLLM model: ${llmProviderConfig.model}...`);
         addEvolutionLog(`⚠ Note: First-time model download may take 5-10 minutes`);
         addEvolutionLog(`   Models are downloaded to browser cache on first use`);
-        addEvolutionLog(`   You can switch to Ollama/OpenAI in Settings while waiting`);
-      }
-      
-      // For WebLLM, set a timeout to prevent hanging
-      let initPromise = llmService.initialize(llmProviderConfig);
-      
-      if (llmProviderConfig.provider === 'webllm') {
-        // Add a timeout for WebLLM initialization (10 minutes for model download)
+        addEvolutionLog(`   Consider using OpenCode (default) for faster setup`);
+        
+        // For WebLLM, set a timeout to prevent hanging
         const timeoutPromise = new Promise((_, reject) => {
           setTimeout(() => reject(new Error('WebLLM initialization timeout (10 minutes). Model download may still be in progress.')), 600000);
         });
         
-        await Promise.race([initPromise, timeoutPromise]);
+        await Promise.race([
+          llmService.initialize(llmProviderConfig),
+          timeoutPromise
+        ]);
       } else {
-        await initPromise;
+        // For OpenCode, Ollama, OpenAI - no pre-initialization needed, but initialize anyway
+        await llmService.initialize(llmProviderConfig);
       }
       
       // Verify initialization
@@ -440,7 +442,11 @@ const AIPortal: React.FC = () => {
 
     try {
       addEvolutionLog('Initializing WebLLM engine...');
-      const { CreateMLCEngine } = await import('@mlc-ai/web-llm');
+      // WebLLM is optional - handle if package is not installed
+      const webLLMModule = await import('@mlc-ai/web-llm').catch((error) => {
+        throw new Error(`WebLLM package not available. Install with: npm install @mlc-ai/web-llm. Error: ${error.message}`);
+      });
+      const { CreateMLCEngine } = webLLMModule;
       
       const initProgressCallback = (progress: any) => {
         const percent = Math.round(progress.progress * 100);

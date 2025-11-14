@@ -38,3 +38,7 @@ export { StateManager } from './utils/state.js';
 
 // Type exports
 export * from './types/index.js';
+
+// Tool exports
+export * from './tools/autonomous-operations.js';
+export * from './tools/geometric-operations.js';

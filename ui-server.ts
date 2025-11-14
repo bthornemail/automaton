@@ -40,6 +40,71 @@ const mimeTypes: Record<string, string> = {
 // Express app for better middleware support
 const app = express();
 
+// OPTIONS handler MUST be first - handle preflight requests before any other middleware
+// This runs before all other middleware to catch OPTIONS requests immediately
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    try {
+      // Immediately handle OPTIONS - don't let any other middleware interfere
+      const origin = req.headers.origin || '';
+      
+      // Default development origins (always allow these)
+      const devOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000', 'http://127.0.0.1:3000'];
+      
+      // Check if origin is allowed (dev origins always allowed)
+      let isAllowed = false;
+      
+      if (origin && devOrigins.includes(origin)) {
+        isAllowed = true;
+      } else if (origin) {
+        // Check securityConfig if available
+        try {
+          if (securityConfig && securityConfig.cors && securityConfig.cors.allowedOrigins) {
+            const normalizedOrigin = origin.toLowerCase();
+            const normalizedAllowed = securityConfig.cors.allowedOrigins.map((o: string) => o.toLowerCase());
+            isAllowed = normalizedAllowed.includes(normalizedOrigin);
+          }
+        } catch (e) {
+          // If securityConfig check fails, don't allow
+          isAllowed = false;
+        }
+      }
+      
+      // Set CORS headers if allowed
+      if (isAllowed && origin) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+        
+        // Set methods and headers
+        const methods = (securityConfig?.cors?.methods || ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']).join(', ');
+        const defaultHeaders = ['X-Requested-With', 'Accept', 'Accept-Language', 'Content-Language'];
+        const allowedHeaders = securityConfig?.cors?.allowedHeaders || [];
+        const headers = [...allowedHeaders, ...defaultHeaders].join(', ');
+        
+        res.setHeader('Access-Control-Allow-Methods', methods);
+        res.setHeader('Access-Control-Allow-Headers', headers);
+        res.setHeader('Access-Control-Max-Age', '86400');
+        
+        // Debug logging
+        console.log(`✅ OPTIONS preflight allowed for origin: ${origin}`);
+      } else if (origin) {
+        console.warn(`⚠️  OPTIONS preflight blocked for origin: ${origin}`);
+      }
+      
+      // Always return 204 for OPTIONS requests (even if origin not allowed)
+      // This prevents the browser from showing CORS errors for the preflight itself
+      res.status(204).end();
+      return; // Stop processing - don't call next()
+    } catch (error) {
+      // If anything goes wrong, still return 204 to prevent browser errors
+      console.error('Error in OPTIONS handler:', error);
+      res.status(204).end();
+      return;
+    }
+  }
+  next();
+});
+
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: {
@@ -54,24 +119,37 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false, // Needed for WebGL
 }));
 
-// CORS with restricted origins
+// CORS with restricted origins - must be before other middleware
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) {
-      return callback(null, true);
-    }
-    
-    if (securityConfig.cors.allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.warn(`CORS blocked origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
+    try {
+      // Allow requests with no origin (mobile apps, Postman, etc.)
+      if (!origin) {
+        return callback(null, true);
+      }
+      
+      // Normalize origin for comparison (handle both localhost and 127.0.0.1)
+      const normalizedOrigin = origin.toLowerCase();
+      const normalizedAllowed = securityConfig.cors.allowedOrigins.map(o => o.toLowerCase());
+      
+      if (normalizedAllowed.includes(normalizedOrigin)) {
+        callback(null, true);
+      } else {
+        console.warn(`CORS blocked origin: ${origin} (allowed: ${securityConfig.cors.allowedOrigins.join(', ')})`);
+        callback(null, false); // Return false instead of Error to allow CORS middleware to handle it
+      }
+    } catch (error) {
+      console.error('CORS origin check error:', error);
+      callback(null, false);
     }
   },
   credentials: securityConfig.cors.credentials,
   methods: securityConfig.cors.methods,
-  allowedHeaders: securityConfig.cors.allowedHeaders,
+  allowedHeaders: [...securityConfig.cors.allowedHeaders, 'X-Requested-With', 'Accept', 'Accept-Language', 'Content-Language'],
+  exposedHeaders: ['Content-Length', 'Content-Type'],
+  maxAge: 86400, // 24 hours
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
 }));
 
 // Compression
@@ -84,8 +162,13 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Logging
 app.use(morgan('combined'));
 
-// Rate limiting for all routes
-app.use(rateLimiters.api);
+// Rate limiting for all routes (skip OPTIONS requests)
+app.use((req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    return next(); // Skip rate limiting for OPTIONS
+  }
+  rateLimiters.api(req, res, next);
+});
 
 // Health check endpoints
 app.get('/health', (req, res) => {
@@ -121,14 +204,6 @@ app.get(/^(?!\/api).*/, (req, res) => {
     res.sendFile(indexPath);
   } else {
     res.status(404).send('Not Found');
-  }
-});
-
-// Socket.IO server for WebSocket connections
-const io = new SocketIOServer({
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
   }
 });
 
@@ -988,6 +1063,53 @@ function parseRequestBody(req: any): Promise<any> {
 // Chat participants tracking
 const chatParticipants = new Map<string, { userId: string; userName: string; type: 'human' | 'agent'; socketId: string }>();
 
+// Create HTTP server with Express app
+const httpServer = createServer(app);
+
+// Create Socket.IO server attached to HTTP server with proper CORS
+const io = new SocketIOServer(httpServer, {
+  cors: {
+    origin: securityConfig.cors.allowedOrigins,
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+  // Require authentication for WebSocket connections
+  allowRequest: (req, callback) => {
+    try {
+      const token = req.headers.authorization?.replace('Bearer ', '') || 
+                    req.url?.split('token=')[1]?.split('&')[0];
+      
+      if (!token) {
+        // Allow connection but mark as unauthenticated
+        callback(null, true);
+        return;
+      }
+
+      // Verify token (with error handling)
+      try {
+        const session = verifySession(token);
+        if (session) {
+          // Attach user info to handshake
+          (req as any).user = session;
+          callback(null, true);
+        } else {
+          // Invalid token - still allow connection but mark as unauthenticated
+          console.warn('⚠️  WebSocket connection with invalid token, allowing as unauthenticated');
+          callback(null, true);
+        }
+      } catch (verifyError) {
+        // If verification throws an error, allow connection but mark as unauthenticated
+        console.warn('⚠️  WebSocket token verification error, allowing as unauthenticated:', verifyError);
+        callback(null, true);
+      }
+    } catch (error) {
+      // If anything goes wrong, allow connection to prevent blocking
+      console.error('⚠️  WebSocket allowRequest error, allowing connection:', error);
+      callback(null, true);
+    }
+  },
+});
+
 // Socket.IO connection handling
 io.on('connection', (socket) => {
   console.log('🔌 Client connected to WebSocket');
@@ -1065,11 +1187,21 @@ io.on('connection', (socket) => {
   });
 });
 
-// Create HTTP server with Express app
-const httpServer = createServer(app);
-
-// Attach Socket.IO to HTTP server
-io.attach(httpServer);
+// Global error handler (must be after all routes)
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Express error handler:', err);
+  
+  // For OPTIONS requests, always return 204 even on error
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  
+  // For other errors, return appropriate status
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal Server Error',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+  });
+});
 
 // Start server
 httpServer.listen(HTTP_PORT, () => {

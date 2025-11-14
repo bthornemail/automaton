@@ -13,6 +13,22 @@ import path from "path"
  * This tool integrates with:
  * - plugin/meta-log-plugin - The Meta-Log plugin package
  * - meta-log-db - The Meta-Log database engine
+ * 
+ * R5RS Function Support:
+ * 
+ * Autonomous Operations (from docs/33-Autonomous-CanvasL/AUTONOMOUS-CANVASL-RFC2119-SPEC.md):
+ * - r5rs:establish-autonomous-basis - Establish autonomous basis
+ * - r5rs:regenerate-from-seed - Regenerate kernel from seed
+ * - r5rs:self-modify - Modify own structure
+ * - r5rs:autonomous-evolution - Execute autonomous evolution
+ * - r5rs:goal-negotiation - Execute goal negotiation
+ * - r5rs:consensus-vote - Execute consensus vote
+ * - r5rs:ai-decision - Execute AI-powered decision
+ * 
+ * Geometric Operations (from docs/32-Regulay-Polyhedra-Geometry):
+ * - r5rs:bqf-encode - Encode polyhedra as BQF
+ * - r5rs:polyhedra-transform - Transform polyhedra using BQF operations
+ * - r5rs:compute-mapping - Map R5RS types to polyhedra
  */
 export default tool({
   description: "I'm your Meta-Log query interface - I provide ProLog, DataLog, and SPARQL query capabilities for the computational topology canvas. I can query the self-referential JSONL database using logic programming languages, extract facts, and perform semantic reasoning. Think of me as your database query expert for the Church encoding-based system.",

@@ -1,216 +1,100 @@
----
-id: agents-multi-agent-system
-title: "AGENTS.md – Multi-Agent System for the Computational Topology Canvas"
-level: foundational
-type: specification
-tags: [multi-agent-system, agents, computational-topology, church-encoding, dimensional-progression, blackboard-architecture, ci-cd]
-keywords: [multi-agent-system, agents, computational-topology-canvas, church-encoding, dimensional-progression-0d-7d, r5rs-canvas-engine, blackboard-architecture, automaton-self-building, prolog-integration, datalog-integration, shacl-validation, asp-constraints, ci-pipeline-adapter, github-actions]
-prerequisites: [multiverse-canvas-rfc2119-spec, meta-log-docs-readme, metaverse-canvas-complete]
-enables: []
-related: [r5rs-canvas-engine, blackboard-architecture-guide, multiverse-canvas-rfc2119-spec, canvasl-rfc2119-spec, seed-regeneration-guide, github-ci-cd-workflow-readme, automatons-docs-readme, automatons-canvasl-docs-readme]
-readingTime: 90
-difficulty: 5
-blackboard:
-  status: active
-  assignedAgent: null
-  lastUpdate: null
-  dependencies: [r5rs-canvas-engine]
-  watchers: []
-  r5rsEngine: "r5rs-canvas-engine.scm"
-  selfBuilding:
-    enabled: true
-    source: "r5rs-canvas-engine.scm"
-    pattern: "blackboard-architecture"
-    regeneration:
-      function: "r5rs:parse-jsonl-canvas"
-      args: ["generate.metaverse.jsonl"]
-      context:
-        module: "MODULE 2: JSONL Parser & Canvas Loader"
-        functions: ["r5rs:parse-jsonl-canvas", "r5rs:extract-facts", "r5rs:jsonl-to-rdf"]
-        pipeline:
-          - step: "load-metaverse"
-            function: "r5rs:parse-jsonl-canvas"
-            args: ["generate.metaverse.jsonl"]
-          - step: "extract-references"
-            function: "r5rs:sparql-query"
-            args: ["SELECT ?id ?target WHERE { ?id rdf:type metaverse:Reference }", "triples"]
-          - step: "generate-files"
-            function: "r5rs:invoke-from-jsonl"
-            args: ["regenerate-function", "reference-args"]
-          - step: "validate"
-            function: "r5rs:shacl-validate"
-            args: ["shapes", "triples"]
-  architecture:
-    threeLayer:
-      topLayer:
-        name: "Vertical Spine"
-        type: "Fixed Church encoding mathematical foundation"
-        immutable: true
-        functions: ["r5rs:church-zero", "r5rs:church-succ", "r5rs:church-add", "r5rs:church-mult", "r5rs:church-exp", "r5rs:y-combinator"]
-      middleLayer:
-        name: "Horizontal Templates"
-        type: "Implementation mappings via blackboard"
-        mutable: true
-        pattern: "h:* edges define implementation templates"
-      bottomLayer:
-        name: "JSONL Blackboard"
-        type: "Queryable fact database"
-        functions: ["r5rs:parse-jsonl-canvas", "r5rs:extract-facts", "r5rs:query-facts"]
-  agentTypes:
-    foundationAgents:
-      - id: "0D-Topology-Agent"
-        dimension: "0D"
-        purpose: "Maintain quantum vacuum topology and identity processes"
-        churchEncoding: "r5rs:church-zero"
-        dependencies: []
-      - id: "1D-Temporal-Agent"
-        dimension: "1D"
-        purpose: "Handle temporal evolution and Church successor operations"
-        churchEncoding: "r5rs:church-succ"
-        dependencies: ["0D-Topology-Agent"]
-      - id: "2D-Structural-Agent"
-        dimension: "2D"
-        purpose: "Manage spatial structure and pattern encoding"
-        churchEncoding: "r5rs:church-pair"
-        dependencies: ["1D-Temporal-Agent"]
-    operationalAgents:
-      - id: "3D-Algebraic-Agent"
-        dimension: "3D"
-        purpose: "Perform Church algebra operations"
-        churchEncoding: ["r5rs:church-add", "r5rs:church-mult", "r5rs:church-exp"]
-        dependencies: ["2D-Structural-Agent"]
-      - id: "4D-Network-Agent"
-        dimension: "4D"
-        purpose: "Manage spacetime and network operations"
-        capabilities: ["IPv4/IPv6 address systems", "localhost operations", "CI/CD network operations", "deployment management"]
-        ciIntegration:
-          adapter: "NetworkAgentCI"
-          operations: ["triggerDeployment", "monitorDeployment"]
-          responsibilities: ["Deploy to staging/production", "Monitor deployment status", "Coordinate network-level CI/CD"]
-        dependencies: ["3D-Algebraic-Agent"]
-    advancedAgents:
-      - id: "5D-Consensus-Agent"
-        dimension: "5D"
-        purpose: "Implement distributed consensus and blockchain operations"
-        requirements: "MUST implement exactly one blockchain system"
-        ciIntegration:
-          adapter: "ConsensusAgentCI"
-          operations: ["triggerConsensusPipeline", "waitForConsensus"]
-          responsibilities: ["Coordinate deployment decisions", "Manage approval workflows", "Multi-agent consensus voting"]
-        dependencies: ["4D-Network-Agent"]
-      - id: "6D-Intelligence-Agent"
-        dimension: "6D"
-        purpose: "Handle emergent AI and neural network operations"
-        requirements: "MUST implement exactly one AI system"
-        ciIntegration:
-          adapter: "IntelligenceAgentCI"
-          operations: ["runTestsAndAnalyze", "getPerformanceMetrics"]
-          responsibilities: ["Analyze test results", "Extract performance metrics", "Test log analysis", "Pipeline optimization"]
-        dependencies: ["5D-Consensus-Agent"]
-      - id: "7D-Quantum-Agent"
-        dimension: "7D"
-        purpose: "Manage quantum superposition and entanglement"
-        requirements: "MUST implement exactly one qubit system"
-        dependencies: ["6D-Intelligence-Agent"]
-    interfaceAgents:
-      - id: "Query-Interface-Agent"
-        purpose: "Provide SPARQL/REPL access to the system"
-        functions: ["r5rs:sparql-query", "r5rs:repl-interface"]
-      - id: "Visualization-Agent"
-        purpose: "Handle WebGL-based 3D visualization"
-        technologies: ["Three.js", "GPU acceleration"]
-    collaborativeAgents:
-      - id: "Multiplayer-Agent"
-        purpose: "Enable collaborative exploration"
-        technologies: ["WebRTC", "Networked-Aframe"]
-      - id: "AI-Assist-Agent"
-        purpose: "Provide AI-powered development assistance"
-        technologies: ["WebLLM", "3D trace visualization"]
-    evolutionaryAgents:
-      - id: "Self-Modification-Agent"
-        purpose: "Drive system evolution through AI"
-        functions: ["r5rs:rewrite-canvas-jsonl", "r5rs:shacl-validate"]
-      - id: "Goal-Oriented-Agent"
-        purpose: "Coordinate multi-agent goal negotiation"
-        algorithms: ["Grover", "Borda"]
-    opencodeAgent:
-      - id: "OpenCode-Integration-Agent"
-        purpose: "Bridge opencode CLI commands with automaton dimensional operations"
-        toolMappings:
-          "Read/Glob/Grep": "2D-Structural-Agent"
-          "Edit/Write": "3D-Algebraic-Agent"
-          "Bash": "4D-Network-Agent"
-          "Task": "6D-Intelligence-Agent"
-          "Todo": "5D-Consensus-Agent"
-  communicationProtocol:
-    vertical: "0D → 1D → 2D → 3D → 4D → 5D → 6D → 7D"
-    horizontal: "Topology ↔ System implementations"
-    messageTypes:
-      - "State Updates"
-      - "Query Requests (SPARQL, Prolog, Datalog)"
-      - "Constraint Violations (SHACL)"
-      - "Evolution Proposals"
-      - "Consensus Votes"
-      - "OpenCode Commands"
-  prologIntegration:
-    enabled: true
-    module: "MODULE 6: Logic Programming"
-    functions: ["r5rs:prolog-query", "r5rs:build-prolog-db", "r5rs:unify"]
-    source: "grok_files/08-Grok.md"
-    rules:
-      - rule: "inherits(X,Z) :- vertical(Y,X), inherits(Y,Z)."
-        description: "Prolog inheritance rule"
-  datalogIntegration:
-    enabled: true
-    module: "MODULE 6: Logic Programming"
-    functions: ["r5rs:extract-facts", "r5rs:datalog-query", "r5rs:build-datalog-program"]
-    source: ["grok_files/03-Grok.md", "grok_files/10-Grok.md"]
-    facts:
-      - "node(Id, Type, X, Y, Text)"
-      - "edge(Id, Type, FromNode, ToNode)"
-      - "vertical(Id, FromNode, ToNode)"
-      - "horizontal(Id, FromNode, ToNode)"
-  rdfIntegration:
-    enabled: true
-    module: "MODULE 3: RDF Layer"
-    functions: ["r5rs:jsonl-to-rdf", "r5rs:rdf-query", "r5rs:sparql-query"]
-    source: "grok_files/04-Grok.md"
-  shaclValidation:
-    enabled: true
-    module: "MODULE 5: SHACL Validation"
-    functions: ["r5rs:load-shacl-shapes", "r5rs:shacl-validate"]
-    source: "grok_files/07-Grok.md"
-    constraints:
-      - "Label validation: rdfs:label must be string"
-      - "Identity validation: owl:sameAs minimum count 1"
-      - "Technology validation: prov:used must match specifications"
-  deploymentPhases:
-    phase1:
-      name: "Foundation"
-      agents: ["0D-3D agents"]
-      functions: ["r5rs:parse-jsonl-canvas", "r5rs:extract-facts"]
-    phase2:
-      name: "Expansion"
-      agents: ["4D-6D agents"]
-      functions: ["r5rs:jsonl-to-rdf", "r5rs:sparql-query"]
-    phase3:
-      name: "Integration"
-      agents: ["7D and interface agents"]
-      functions: ["r5rs:prolog-query", "r5rs:datalog-query"]
-    phase4:
-      name: "Autonomy"
-      capabilities: ["self-modification", "goal negotiation", "quantum consensus"]
-      functions: ["generate-all-automaton-files"]
-  multiverseGeneration:
-    enabled: true
-    source: "generate.metaverse.jsonl"
-    steps:
-      - "Load Metaverse: r5rs:parse-jsonl-canvas"
-      - "Extract References: SPARQL query"
-      - "Generate Files: Invoke regeneration function"
-      - "Create Unified Topology: Combine automaton.*.jsonl files"
-      - "Validate: SHACL, RFC2119, ASP, Prolog, Datalog"
----
+# AGENTS.md - Development Guide for Agentic Coding Agents
+
+## Build/Lint/Test Commands
+
+### Development
+- `npm run dev` - Start development server with hot reload
+- `npm run build` - Compile TypeScript to JavaScript
+- `npm run start` - Start production server
+- `npm run type-check` - Run TypeScript type checking without emitting files
+
+### Testing
+- `npm test` - Run all Jest unit tests
+- `npm run test:unit` - Run unit tests only
+- `npm run test:unit:watch` - Run unit tests in watch mode
+- `npm run test:unit:coverage` - Run unit tests with coverage report
+- `npm run test:e2e` - Run all Playwright E2E tests
+- `npm run test:e2e:headless` - Run E2E tests headlessly
+- `npm run test:e2e:jsonl` - Run JSONL-specific E2E tests
+- `npm run test:e2e:metaverse` - Run metaverse portal E2E tests
+- `npm run test:all` - Run both unit and E2E tests
+
+### Single Test Execution
+- Unit: `npx jest path/to/test.test.ts`
+- E2E: `npx playwright test path/to/spec.ts`
+
+### Code Quality
+- `npm run lint` - Run ESLint with auto-fix
+- `npm run clean` - Remove dist directory
+
+## Code Style Guidelines
+
+### TypeScript Configuration
+- **Strict mode enabled**: All type checking enforced
+- **Target**: ES2020, **Module**: CommonJS
+- **Imports**: Use explicit file extensions (.ts)
+- **No implicit any**: All types must be explicitly declared
+
+### Import Style
+```typescript
+// Node.js built-ins first
+import { createServer } from 'http';
+import express from 'express';
+
+// External packages
+import * as Sentry from '@sentry/node';
+
+// Internal modules (use @/ alias for UI src)
+import { ServerInstance } from './server';
+import { securityConfig } from '../config/security';
+```
+
+### Naming Conventions
+- **Files**: kebab-case (`agent-service.ts`, `websocket-handler.ts`)
+- **Classes**: PascalCase (`AutomatonController`, `WebSocketHandler`)
+- **Functions/Variables**: camelCase (`startServer`, `serverInstance`)
+- **Constants**: UPPER_SNAKE_CASE (`MAX_TIMEOUT`, `DEFAULT_PORT`)
+- **Interfaces**: PascalCase with `I` prefix optional (`ServerInstance`)
+
+### Error Handling
+```typescript
+// Use try-catch with proper error typing
+try {
+  const result = await riskyOperation();
+  return result;
+} catch (error) {
+  if (error instanceof Error) {
+    Sentry.captureException(error);
+    throw new Error(`Operation failed: ${error.message}`);
+  }
+  throw error;
+}
+```
+
+### Code Structure
+- **Services**: Business logic in `/src/services/`
+- **Routes**: API endpoints in `/src/routes/`
+- **Types**: TypeScript definitions in `/src/types/`
+- **Config**: Configuration in `/src/config/`
+- **Tests**: Co-located in `__tests__/` directories
+
+### ESLint Rules
+- No unused variables (disabled for flexibility)
+- Console logs allowed (for debugging)
+- No undefined variables (TypeScript handles this)
+- Case declarations in switches allowed
+
+### Testing Guidelines
+- **Unit tests**: Use Jest with `ts-jest` preset
+- **E2E tests**: Use Playwright with 120s timeout
+- **Coverage**: Minimum 60% across all metrics
+- **Test files**: `.test.ts` or `.spec.ts` suffix
+
+### Documentation
+- Use JSDoc comments for public APIs
+- Include parameter types and return types
+- Document complex business logic
+- Keep comments concise and relevant
 
 # AGENTS.md – Multi-Agent System for the Computational Topology Canvas
 

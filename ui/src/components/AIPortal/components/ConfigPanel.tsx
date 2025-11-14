@@ -181,7 +181,7 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({
               {/* Quick Provider Switch */}
               {onLLMProviderConfigChange && (
                 <div className="flex gap-2 mt-2">
-                  {(['webllm', 'ollama', 'opencode'] as const).map((provider) => (
+                  {(['opencode', 'ollama', 'webllm'] as const).map((provider) => (
                     <button
                       key={provider}
                       onClick={() => handleLLMChange({ provider })}

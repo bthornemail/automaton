@@ -214,7 +214,9 @@ export abstract class BaseMetaLogPlugin extends EventEmitter {
     }
 
     try {
-      const { CanvasLMetaverseBrowser } = await import('meta-log-db/browser');
+      // Dynamic import for browser module - types may not be available at compile time
+      const browserModule = await import('meta-log-db/browser') as any;
+      const CanvasLMetaverseBrowser = browserModule.CanvasLMetaverseBrowser;
       
       // Create or reuse browser instance
       if (!(this as any).browser) {

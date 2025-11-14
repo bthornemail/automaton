@@ -32,12 +32,19 @@ export default {
       browser: true,
       preferBuiltins: false
     }),
-    commonjs(),
+    commonjs({
+      transformMixedEsModules: true,
+      strictRequires: true
+    }),
     typescript({
       tsconfig: 'tsconfig.browser.json',
       declaration: false,
       declarationMap: false,
-      sourceMap: true
+      sourceMap: true,
+      compilerOptions: {
+        module: 'ES2020',
+        target: 'ES2020'
+      }
     })
   ],
   external: []

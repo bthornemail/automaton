@@ -35,14 +35,14 @@ docker compose -f docker-compose.yml ps
 echo "🏥 Running health checks..."
 
 # Check backend health
-if curl -f http://localhost:5555/api/status > /dev/null 2>&1; then
+if curl -f http://localhost:3000/api/status > /dev/null 2>&1; then
     echo "✅ Backend is healthy"
 else
     echo "❌ Backend is not responding"
 fi
 
 # Check frontend health
-if curl -f http://localhost:3000 > /dev/null 2>&1; then
+if curl -f http://localhost:8080 > /dev/null 2>&1; then
     echo "✅ Frontend is healthy"
 else
     echo "❌ Frontend is not responding"
@@ -73,9 +73,9 @@ echo ""
 echo "🎉 Production environment is ready!"
 echo ""
 echo "📊 Service URLs:"
-echo "   Frontend: http://localhost:3000"
-echo "   Backend API: http://localhost:5555"
-echo "   WebSocket: ws://localhost:9001"
+echo "   Frontend: http://localhost:8080"
+echo "   Backend API: http://localhost:3000"
+echo "   WebSocket: ws://localhost:3001"
 echo "   Redis: localhost:6379"
 echo "   Prometheus: http://localhost:9090"
 echo "   Grafana: http://localhost:3001"

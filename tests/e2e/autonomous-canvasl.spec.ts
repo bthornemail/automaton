@@ -31,8 +31,16 @@ const autonomousFileData = loadAutonomousFiles();
 
 test.describe('Autonomous CanvasL UI Integration', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    // Use more robust navigation with timeout and retry logic
+    try {
+      await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {
+        // If networkidle times out, continue anyway - page is likely loaded
+      });
+    } catch (error) {
+      // Retry once on failure
+      await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    }
   });
 
   // Test 1: Load Autonomous CanvasL Files

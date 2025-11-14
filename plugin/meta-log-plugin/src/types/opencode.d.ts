@@ -49,4 +49,9 @@ declare module '@opencode-ai/plugin' {
     describe(description: string): ArraySchema;
     optional(): ArraySchema;
   }
+
+  export interface EnumSchema<T extends readonly string[]> {
+    describe(description: string): EnumSchema<T>;
+    optional(): EnumSchema<T>;
+  }
 }

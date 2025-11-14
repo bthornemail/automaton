@@ -183,7 +183,7 @@ export const LLMProviderSettingsModal: React.FC<LLMProviderSettingsModalProps> =
         <div>
           <label className="block text-sm font-medium text-white mb-3">Provider</label>
           <div className="grid grid-cols-3 gap-3">
-            {(['webllm', 'ollama', 'opencode'] as const).map((provider) => (
+            {(['opencode', 'ollama', 'webllm'] as const).map((provider) => (
               <button
                 key={provider}
                 onClick={() => handleConfigChange({ provider })}

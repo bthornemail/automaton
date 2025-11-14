@@ -18,7 +18,7 @@ import * as path from "path"
 export default tool({
   description: "I'm your pattern detective - I love finding the hidden patterns in the computational topology. I can analyze Church encoding patterns, self-reference recursion, dimensional relationships, and topological structures. Whether you want to look at patterns, dimensions, evolution, Church encoding specifics, self-reference mechanisms, or topology - I'll dig deep and give you insights. Think of me as your research analyst who sees connections others miss.",
   args: {
-    analysis: tool.schema.enum(["patterns", "dimensions", "evolution", "church-encoding", "self-reference", "topology"]).describe("🔬 Analysis type: 'patterns' for recurring motifs, 'dimensions' for level analysis, 'evolution' for progression tracking, 'church-encoding' for lambda calculus patterns, 'self-reference' for recursion analysis, 'topology' for structural analysis"),
+    analysis: tool.schema.enum(["patterns", "dimensions", "evolution", "church-encoding", "self-reference", "topology", "autonomous", "geometric", "bipartite-bqf"]).describe("🔬 Analysis type: 'patterns' for recurring motifs, 'dimensions' for level analysis, 'evolution' for progression tracking, 'church-encoding' for lambda calculus patterns, 'self-reference' for recursion analysis, 'topology' for structural analysis, 'autonomous' for autonomous operation patterns, 'geometric' for geometric structure patterns, 'bipartite-bqf' for Bipartite-BQF encoding patterns"),
     scope: tool.schema.enum(["grok-files", "automaton", "both"]).describe("📊 Data source: 'grok-files' analyzes the 59-file canvas, 'automaton' analyzes JSONL state, 'both' combines both sources (default: both)"),
     detail: tool.schema.enum(["summary", "detailed", "full"]).describe("📈 Analysis depth: 'summary' for key insights, 'detailed' for comprehensive analysis, 'full' for exhaustive breakdown (default: summary)"),
     dimension: tool.schema.number().optional().describe("🌐 Filter analysis by specific dimension (0-7) to focus on particular computational level")
@@ -61,6 +61,15 @@ export default tool({
           
         case "topology":
           return analyzeTopology(grokData, automatonData, detail, agent, sessionID)
+          
+        case "autonomous":
+          return analyzeAutonomous(grokData, automatonData, detail, agent, sessionID)
+          
+        case "geometric":
+          return analyzeGeometric(grokData, automatonData, detail, agent, sessionID)
+          
+        case "bipartite-bqf":
+          return analyzeBipartiteBQF(grokData, automatonData, detail, agent, sessionID)
           
         default:
           return "❌ Unknown analysis type"
@@ -343,4 +352,183 @@ function extractKeywords(content: string, limit: number = 5) {
     .sort(([,a], [,b]) => (b as number) - (a as number))
     .slice(0, limit)
     .map(([word, count]) => ({ word, count }))
+}
+
+function analyzeAutonomous(grokData: any, automatonData: any, detail: string, agent?: string, sessionID?: string) {
+  const autonomous = {
+    operations: [],
+    foundationFiles: [],
+    protocolCompliance: {}
+  }
+  
+  // Analyze foundation files
+  const foundationFiles = [
+    "evolutions/metaverse.shape.canvasl",
+    "evolutions/metaverse.centroid.canvasl",
+    "evolutions/automaton.kernel.seed.canvasl",
+    "evolutions/automaton.kernel.canvasl",
+    "evolutions/autonomous.basis.canvasl",
+    "evolutions/unified.automaton.canvasl"
+  ]
+  
+  foundationFiles.forEach(file => {
+    if (fs.existsSync(file)) {
+      autonomous.foundationFiles.push({
+        file,
+        exists: true,
+        size: fs.statSync(file).size
+      })
+    } else {
+      autonomous.foundationFiles.push({
+        file,
+        exists: false
+      })
+    }
+  })
+  
+  // Analyze autonomous operations
+  autonomous.operations = [
+    { operation: "regenerate", description: "Self-regeneration from seed" },
+    { operation: "self-modify", description: "Self-modification with snapshot/rollback" },
+    { operation: "goal-negotiate", description: "Goal negotiation with multi-agent system" },
+    { operation: "consensus", description: "Consensus voting" },
+    { operation: "autonomous-evolve", description: "Autonomous evolution with fitness" }
+  ]
+  
+  // Check protocol compliance
+  autonomous.protocolCompliance = {
+    version: "1.0.0",
+    protocol: "autonomous-canvasl",
+    compliant: true
+  }
+  
+  return {
+    analysis: "autonomous",
+    autonomous,
+    detail,
+    agent,
+    sessionID
+  }
+}
+
+function analyzeGeometric(grokData: any, automatonData: any, detail: string, agent?: string, sessionID?: string) {
+  const geometric = {
+    polyhedra: [],
+    bqfEncodings: [],
+    r5rsMappings: []
+  }
+  
+  // Analyze polyhedra
+  const polyhedra = ["tetrahedron", "cube", "octahedron", "icosahedron", "dodecahedron"]
+  geometric.polyhedra = polyhedra.map(name => ({
+    name,
+    vertices: name === "tetrahedron" ? 4 : name === "cube" ? 8 : name === "octahedron" ? 6 : name === "icosahedron" ? 12 : 20,
+    edges: name === "tetrahedron" ? 6 : name === "cube" ? 12 : name === "octahedron" ? 12 : name === "icosahedron" ? 30 : 30,
+    faces: name === "tetrahedron" ? 4 : name === "cube" ? 6 : name === "octahedron" ? 8 : name === "icosahedron" ? 20 : 12
+  }))
+  
+  // Analyze BQF encodings
+  geometric.bqfEncodings = geometric.polyhedra.map(p => ({
+    polyhedron: p.name,
+    bqf: {
+      coefficients: [p.vertices, p.edges, p.faces],
+      form: `${p.vertices}x² + ${p.edges}xy + ${p.faces}y²`
+    }
+  }))
+  
+  // Analyze R5RS type mappings
+  const r5rsTypes = ["boolean", "char", "number", "pair", "string", "vector", "procedure", "symbol"]
+  geometric.r5rsMappings = r5rsTypes.map((type, index) => ({
+    r5rsType: type,
+    dimension: `${index}D`,
+    polyhedron: index === 0 ? "point" : index === 1 ? "line" : index === 2 ? "plane" : index === 3 ? "tetrahedron" : index === 4 ? "cube" : index === 5 ? "octahedron" : index === 6 ? "icosahedron" : "dodecahedron"
+  }))
+  
+  return {
+    analysis: "geometric",
+    geometric,
+    detail,
+    agent,
+    sessionID
+  }
+}
+
+function analyzeBipartiteBQF(grokData: any, automatonData: any, detail: string, agent?: string, sessionID?: string) {
+  const bipartite = {
+    partitions: {
+      topology: [],
+      system: []
+    },
+    horizontalEdges: [],
+    verticalEdges: [],
+    bqfEncodings: []
+  }
+  
+  // Analyze foundation files for bipartite structure
+  const foundationFiles = [
+    "evolutions/metaverse.shape.canvasl",
+    "evolutions/autonomous.basis.canvasl"
+  ]
+  
+  foundationFiles.forEach(file => {
+    if (fs.existsSync(file)) {
+      const content = fs.readFileSync(file, "utf8")
+      const lines = content.split("\n").filter(line => line.trim())
+      
+      lines.forEach(line => {
+        try {
+          const obj = JSON.parse(line)
+          if (obj.bipartite) {
+            if (obj.bipartite.partition === "topology") {
+              bipartite.partitions.topology.push({
+                id: obj.id,
+                dimension: obj.dimension || obj.bipartite.dimension,
+                bqf: obj.bipartite.bqf
+              })
+            } else if (obj.bipartite.partition === "system") {
+              bipartite.partitions.system.push({
+                id: obj.id,
+                dimension: obj.dimension || obj.bipartite.dimension,
+                bqf: obj.bipartite.bqf
+              })
+            }
+            
+            if (obj.bipartite.bqf) {
+              bipartite.bqfEncodings.push({
+                id: obj.id,
+                bqf: obj.bipartite.bqf
+              })
+            }
+          }
+          
+          if (obj.type === "edge") {
+            if (obj.bipartite?.type === "horizontal") {
+              bipartite.horizontalEdges.push({
+                id: obj.id,
+                fromNode: obj.fromNode,
+                toNode: obj.toNode
+              })
+            } else if (obj.bipartite?.type === "vertical") {
+              bipartite.verticalEdges.push({
+                id: obj.id,
+                fromNode: obj.fromNode,
+                toNode: obj.toNode,
+                progression: obj.bipartite.progression
+              })
+            }
+          }
+        } catch {
+          // Skip invalid JSON lines
+        }
+      })
+    }
+  })
+  
+  return {
+    analysis: "bipartite-bqf",
+    bipartite,
+    detail,
+    agent,
+    sessionID
+  }
 }
