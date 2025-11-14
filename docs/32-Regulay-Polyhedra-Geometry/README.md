@@ -74,6 +74,11 @@ The five regular polyhedra are the foundation of 3D geometric structures:
 - **`09-CANVASL-M-S-EXPRESSION-GRAMMAR.md`**: Complete grammar specification for M/S-expressions in CanvasL
 - **`10-CANVASL-TRANSLATION-QUICK-REFERENCE.md`**: Quick reference for M/S-expression translations
 
+### Testing and Validation
+
+- **`VALIDATION-REPORT.md`**: Complete validation report comparing docs vs implementation
+- **`TEST-RESULTS-SUMMARY.md`**: Detailed test results summary with 150 passing tests
+
 ## Quick Start
 
 ### Basic Usage
