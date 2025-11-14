@@ -74,6 +74,13 @@ The five regular polyhedra are the foundation of 3D geometric structures:
 - **`09-CANVASL-M-S-EXPRESSION-GRAMMAR.md`**: Complete grammar specification for M/S-expressions in CanvasL
 - **`10-CANVASL-TRANSLATION-QUICK-REFERENCE.md`**: Quick reference for M/S-expression translations
 
+### Categorical Foundations Documents
+
+- **`11-CATEGORICAL-FOUNDATIONS.md`**: Categorical foundations (monads, functors, comonads, perceptron) integrated with polyhedra
+- **`12-E8-LATTICE-INTEGRATION.md`**: E8 lattice integration with 9-perceptron projection system
+- **`13-COMONADIC-PORTS-FEDERATION.md`**: Comonadic ports for federation with signed public keys
+- **`14-TEMPORAL-MODELS-CATEGORICAL.md`**: Temporal models (Lamport, vector clocks, mutable time, quantum) as categorical structures
+
 ### Testing and Validation
 
 - **`VALIDATION-REPORT.md`**: Complete validation report comparing docs vs implementation
@@ -120,8 +127,10 @@ const dual = bqfTransformationService.dualSwap(bqf); // → [6, 12, 8] (Octahedr
 ## Related Documentation
 
 - **`docs/31-Understanding-Computational-Geometries/`**: Foundational geometric concepts
+  - **`10-MONADS-FUNCTORS-COMONADS-PERCEPTRON.md`**: Complete categorical foundations paper (source for integration)
 - **`docs/28-Canvasl-Frontmatter-Knowledge-Model/`**: Bipartite-BQF extension
 - **`docs/01-R5RS-Expressions/`**: R5RS type system and Church encoding
+- **`docs/30-Provanance-Canvas-Renderer/`**: Provenance canvas renderer patterns (performance optimizations)
 
 ## Next Steps
 

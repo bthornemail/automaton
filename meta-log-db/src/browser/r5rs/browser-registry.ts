@@ -133,6 +133,9 @@ export class BrowserR5RSRegistry {
     
     // Polyhedra functions
     this.registerPolyhedraFunctions();
+    
+    // Categorical functions
+    this.registerCategoricalFunctions();
   }
 
   /**
@@ -490,6 +493,174 @@ export class BrowserR5RSRegistry {
         return poly[1]; // Return BQF array
       }
       return [0, 0, 0]; // Default BQF
+    });
+  }
+
+  /**
+   * Register categorical R5RS functions (monads, functors, comonads, perceptron, E8)
+   */
+  private registerCategoricalFunctions(): void {
+    /**
+     * Monad: Wrap value in monad (affine)
+     * r5rs:monad-wrap(value, bqf?)
+     */
+    this.register('r5rs:monad-wrap', (value: any, bqf?: number[]) => {
+      if (bqf && Array.isArray(bqf) && bqf.length >= 1) {
+        return [value, bqf[1] || 0, bqf[2] || 0]; // [value, 0, 0] with optional bqf context
+      }
+      return [value, 0, 0]; // Pure affine point
+    });
+
+    /**
+     * Monad: Monadic bind operation
+     * r5rs:monad-bind(monad, f)
+     */
+    this.register('r5rs:monad-bind', (monad: any[], f: Function) => {
+      if (!Array.isArray(monad) || monad.length < 1) {
+        throw new Error('First argument must be a monad array [value, ...]');
+      }
+      if (typeof f !== 'function') {
+        throw new Error('Second argument must be a function');
+      }
+      const value = monad[0];
+      return f(value);
+    });
+
+    /**
+     * Functor: Functorial transformation (structure-preserving)
+     * r5rs:functor-map(structure, transform)
+     */
+    this.register('r5rs:functor-map', (structure: any, transform: string) => {
+      if (!Array.isArray(structure) || structure.length !== 3) {
+        throw new Error('First argument must be a BQF array [a, b, c]');
+      }
+      const [a, b, c] = structure;
+      switch (transform) {
+        case 'apply':
+          return [a, b, Math.max(0, c - 1)]; // Forward transformation
+        case 'abstract':
+          return [a, b, c + 1]; // Backward transformation
+        case 'dual-swap':
+          return [c, b, a]; // Dual swap
+        case 'identity':
+          return [a, b, c]; // Identity
+        default:
+          throw new Error(`Unknown transform: ${transform}`);
+      }
+    });
+
+    /**
+     * Comonad: Extract from comonad context
+     * r5rs:comonad-extract(comonad)
+     */
+    this.register('r5rs:comonad-extract', (comonad: any[]) => {
+      if (!Array.isArray(comonad) || comonad.length < 3) {
+        throw new Error('Argument must be a BQF array [a, b, c]');
+      }
+      return comonad[2]; // Extract projective component (c)
+    });
+
+    /**
+     * Comonad: Extend comonad context
+     * r5rs:comonad-extend(comonad, f)
+     */
+    this.register('r5rs:comonad-extend', (comonad: any[], f: Function) => {
+      if (!Array.isArray(comonad) || comonad.length < 3) {
+        throw new Error('First argument must be a BQF array [a, b, c]');
+      }
+      if (typeof f !== 'function') {
+        throw new Error('Second argument must be a function');
+      }
+      return f(comonad);
+    });
+
+    /**
+     * Perceptron: 9-perceptron projection
+     * r5rs:perceptron-project(tuple)
+     */
+    this.register('r5rs:perceptron-project', (tuple: any) => {
+      // Simplified: project 8-tuple to nearest E8 root index
+      // Full implementation would use E8 lattice
+      if (!Array.isArray(tuple) || tuple.length < 8) {
+        throw new Error('Argument must be an 8-tuple array');
+      }
+      // Hash-based projection (simplified)
+      const hash = tuple.reduce((acc: number, val: any) => acc + (typeof val === 'string' ? val.charCodeAt(0) : val || 0), 0);
+      return hash % 240; // Return root index (0-239)
+    });
+
+    /**
+     * E8: Embed 8-tuple to E8 vector
+     * r5rs:e8-embed(tuple)
+     */
+    this.register('r5rs:e8-embed', (tuple: any) => {
+      if (!Array.isArray(tuple) || tuple.length < 8) {
+        throw new Error('Argument must be an 8-tuple array');
+      }
+      // Convert tuple to 8D vector
+      return tuple.slice(0, 8).map((val: any) => {
+        if (typeof val === 'number') return val;
+        if (typeof val === 'string') return val.length;
+        if (typeof val === 'boolean') return val ? 1 : 0;
+        return 0;
+      });
+    });
+
+    /**
+     * E8: Project to nearest E8 root
+     * r5rs:e8-project(vector)
+     */
+    this.register('r5rs:e8-project', (vector: any[]) => {
+      if (!Array.isArray(vector) || vector.length < 8) {
+        throw new Error('Argument must be an 8D vector array');
+      }
+      // Simplified: return root index based on vector norm
+      // Full implementation would use actual E8 root system
+      const normSquared = vector.reduce((sum: number, v: number) => sum + v * v, 0);
+      return Math.floor(normSquared) % 240; // Return root index (0-239)
+    });
+
+    /**
+     * E8: E8 theta function
+     * r5rs:e8-theta(q)
+     */
+    this.register('r5rs:e8-theta', (q: number) => {
+      if (typeof q !== 'number') {
+        throw new Error('Argument must be a number');
+      }
+      // Simplified: E8 theta function approximation
+      // Full implementation would sum over all 240 roots
+      // θ_E8(q) = ∑_{x∈E8} q^{||x||²/2}
+      // For roots with ||x||² = 2, contribution is q^1
+      const rootCount = 240;
+      const normSquared = 2; // All E8 roots have norm squared = 2
+      return rootCount * Math.pow(q, normSquared / 2);
+    });
+
+    /**
+     * Lamport Clock: Create Lamport clock monad
+     * r5rs:lamport-clock(node, clock)
+     */
+    this.register('r5rs:lamport-clock', (node: any, clock: number) => {
+      if (typeof clock !== 'number') {
+        throw new Error('Second argument must be a number');
+      }
+      return { value: clock, node, state: [node, clock] };
+    });
+
+    /**
+     * Qubit Monad: Create qubit monad for superposition
+     * r5rs:qubit-monad(alpha, beta)
+     */
+    this.register('r5rs:qubit-monad', (alpha: number | any, beta?: number) => {
+      // If only one argument, treat as event to wrap
+      if (beta === undefined) {
+        return { alpha: 1.0, beta: 0.0, event: alpha };
+      }
+      if (typeof alpha !== 'number' || typeof beta !== 'number') {
+        throw new Error('Both arguments must be numbers');
+      }
+      return { alpha, beta };
     });
   }
 
