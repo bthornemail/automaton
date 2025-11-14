@@ -1066,6 +1066,11 @@
     (r5rs:abstract-bqf . ,abstract-bqf)
     (r5rs:dual-swap . ,dual-swap)
     (r5rs:compose-bqf . ,compose-bqf)
+    (r5rs:type-to-cube-vertex . ,type-to-cube-vertex)
+    (r5rs:cube-vertex-to-type . ,cube-vertex-to-type)
+    (r5rs:r5rs-8-tuple . ,r5rs-8-tuple)
+    (r5rs:type-to-polyhedron . ,type-to-polyhedron)
+    (r5rs:type-bqf . ,type-bqf)
     (r5rs:classify-type . ,classify-type)
     (r5rs:binary-to-point . ,binary-to-point)
     (r5rs:float-to-projective . ,float-to-projective)
@@ -1201,6 +1206,74 @@
 ;; Check if type is projective (float, continuous)
 (define (is-projective-type? type)
   (eq? (classify-type type) 'float))
+
+;; =============================================================================
+;; MODULE 14: R5RS TYPE TO CUBE VERTICES MAPPING
+;; =============================================================================
+;; Maps R5RS 8-tuple types to cube vertices
+;; 8-Tuple: [Boolean, Pair, Symbol, Number, Char, String, Vector, Procedure]
+;; Cube: 8 vertices = 8 types
+;; Source: docs/32-Regulay-Polyhedra-Geometry/04-COMPUTATIONAL-MAPPING.md
+
+;; Map R5RS type to cube vertex index (0-7)
+;; Cube vertex mapping:
+;;   0: Boolean (0D, affine)
+;;   1: Pair (3D, projective constructor)
+;;   2: Symbol (projective reference)
+;;   3: Number (2D, affine)
+;;   4: Char (1D, affine)
+;;   5: String (4D, affine sequence)
+;;   6: Vector (5D, projective indexed)
+;;   7: Procedure (6D, projective function)
+(define (type-to-cube-vertex type)
+  (cond
+    ((eq? type 'boolean) 0)   ; Vertex 0: Boolean
+    ((eq? type 'pair) 1)      ; Vertex 1: Pair
+    ((eq? type 'symbol) 2)    ; Vertex 2: Symbol
+    ((eq? type 'number) 3)    ; Vertex 3: Number
+    ((eq? type 'char) 4)      ; Vertex 4: Char
+    ((eq? type 'string) 5)     ; Vertex 5: String
+    ((eq? type 'vector) 6)    ; Vertex 6: Vector
+    ((eq? type 'procedure) 7) ; Vertex 7: Procedure
+    (else -1)))               ; Invalid type
+
+;; Map cube vertex index (0-7) to R5RS type
+(define (cube-vertex-to-type vertex-index)
+  (cond
+    ((= vertex-index 0) 'boolean)
+    ((= vertex-index 1) 'pair)
+    ((= vertex-index 2) 'symbol)
+    ((= vertex-index 3) 'number)
+    ((= vertex-index 4) 'char)
+    ((= vertex-index 5) 'string)
+    ((= vertex-index 6) 'vector)
+    ((= vertex-index 7) 'procedure)
+    (else #f)))               ; Invalid vertex
+
+;; Get all 8 R5RS types as list
+(define (r5rs-8-tuple)
+  '(boolean pair symbol number char string vector procedure))
+
+;; Map R5RS type to polyhedron based on dimension
+;; Returns polyhedron name and BQF
+(define (type-to-polyhedron type)
+  (let ((dim (type-dimension type)))
+    (cond
+      ((= dim 0) (list 'point '(1 0 0)))           ; Boolean → Point
+      ((= dim 1) (list 'line '(2 1 0)))            ; Char → Line
+      ((= dim 2) (list 'plane '(4 4 1)))          ; Number → Plane
+      ((= dim 3) (list 'tetrahedron '(4 6 4)))    ; Pair → Tetrahedron
+      ((= dim 4) (list 'cube '(8 12 6)))          ; String → Cube
+      ((= dim 5) (list 'octahedron '(6 12 8)))    ; Vector → Octahedron
+      ((= dim 6) (list 'icosahedron '(12 30 20)))  ; Procedure → Icosahedron
+      (else (list 'unknown '(0 0 0))))))
+
+;; Get BQF for R5RS type
+(define (type-bqf type)
+  (let ((poly (type-to-polyhedron type)))
+    (if (null? (cdr poly))
+        '(0 0 0)
+        (cadr poly))))
 
 ;; =============================================================================
 ;; UTILITY FUNCTIONS (for R5RS compatibility)

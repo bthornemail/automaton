@@ -69,6 +69,11 @@ The five regular polyhedra are the foundation of 3D geometric structures:
 - **`REFERENCE-DUAL-PAIRS.md`**: Complete dual pair mappings
 - **`REFERENCE-BQF-COEFFICIENTS.md`**: BQF coefficient tables for all polyhedra
 
+### Grammar and Translation Documents
+
+- **`09-CANVASL-M-S-EXPRESSION-GRAMMAR.md`**: Complete grammar specification for M/S-expressions in CanvasL
+- **`10-CANVASL-TRANSLATION-QUICK-REFERENCE.md`**: Quick reference for M/S-expression translations
+
 ## Quick Start
 
 ### Basic Usage
