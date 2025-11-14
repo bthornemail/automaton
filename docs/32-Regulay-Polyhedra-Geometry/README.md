@@ -78,6 +78,12 @@ The five regular polyhedra are the foundation of 3D geometric structures:
 
 - **`VALIDATION-REPORT.md`**: Complete validation report comparing docs vs implementation
 - **`TEST-RESULTS-SUMMARY.md`**: Detailed test results summary with 150 passing tests
+- **`META-LOG-DB-IMPLEMENTATION.md`**: Meta-log-db R5RS functions implementation with usage examples
+
+### Status and Assessment
+
+- **`03-RESOLUTIONS/00-COMPLETE-STATUS-REPORT.md`**: **Complete status report** - Where we are, how we got here, what's implemented, what remains (85-90% complete)
+- **`03-RESOLUTIONS/README.md`**: Overview of status documents
 
 ## Quick Start
 

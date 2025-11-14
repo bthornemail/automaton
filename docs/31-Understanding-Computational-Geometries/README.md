@@ -73,6 +73,7 @@ By mapping to a shape's face, all regular polyhedra reduce to the same balanced 
 7. **`07-BINARY-FLOATING-POINT-TOPOLOGY.md`**: Binary floating point-set topology foundations
 8. **`08-TRANSFORMER-MODEL-INTEGRATION.md`**: Transformer model integration with reasoning model
 9. **`09-NEXT-STEPS-ROADMAP.md`**: Implementation roadmap and next steps
+10. **`10-MONADS-FUNCTORS-COMONADS-PERCEPTRON.md`**: **Categorical foundations** - Monads, functors, comonads, and why we use "perceptron"
 
 ### Reference Documents
 
@@ -97,7 +98,8 @@ By mapping to a shape's face, all regular polyhedra reduce to the same balanced 
 1. **Start with**: `01-DIMENSIONAL-GEOMETRIC-MAPPING.md` to understand the corrected dimensional progression
 2. **Then read**: `02-PROJECTIVE-COMPUTATIONAL-MAPPING.md` to understand the fundamental isomorphism
 3. **Review**: `06-GECS-VS-BIPARTITE-BQF.md` to understand how to use both systems together
-4. **Plan**: `09-NEXT-STEPS-ROADMAP.md` for implementation guidance
+4. **Study**: `10-MONADS-FUNCTORS-COMONADS-PERCEPTRON.md` for categorical foundations
+5. **Plan**: `09-NEXT-STEPS-ROADMAP.md` for implementation guidance
 
 ## Key Insights
 

@@ -84,6 +84,9 @@ export class R5RSRegistry {
     
     // Polynomial operations
     this.registerPolynomialFunctions();
+    
+    // Polyhedra functions
+    this.registerPolyhedraFunctions();
   }
 
   /**
@@ -251,6 +254,100 @@ export class R5RSRegistry {
   }
 
   /**
+   * Register Polyhedra R5RS functions
+   * Maps R5RS types to polyhedra geometry (cube vertices, polyhedra, BQF)
+   * Source: docs/32-Regulay-Polyhedra-Geometry/04-COMPUTATIONAL-MAPPING.md
+   */
+  private registerPolyhedraFunctions(): void {
+    /**
+     * Get type dimension (0D-7D mapping)
+     * Helper function for type-to-polyhedron
+     */
+    const typeDimension = (type: string): number => {
+      const dims: Record<string, number> = {
+        'boolean': 0,   // 0D: Identity
+        'char': 1,      // 1D: Successor
+        'number': 2,    // 2D: Pairing
+        'pair': 3,      // 3D: Algebra
+        'string': 4,    // 4D: Network
+        'vector': 5,    // 5D: Consensus
+        'procedure': 6  // 6D: Intelligence
+      };
+      return dims[type] ?? 7; // 7D: Quantum (default)
+    };
+
+    /**
+     * Map R5RS type to cube vertex index (0-7)
+     * r5rs:type-to-cube-vertex(type)
+     * Returns vertex index or -1 for invalid type
+     */
+    this.register('r5rs:type-to-cube-vertex', (type: string) => {
+      const mapping: Record<string, number> = {
+        'boolean': 0,   // Vertex 0: Boolean
+        'pair': 1,      // Vertex 1: Pair
+        'symbol': 2,    // Vertex 2: Symbol
+        'number': 3,    // Vertex 3: Number
+        'char': 4,      // Vertex 4: Char
+        'string': 5,    // Vertex 5: String
+        'vector': 6,    // Vertex 6: Vector
+        'procedure': 7  // Vertex 7: Procedure
+      };
+      return mapping[type] ?? -1; // Invalid type
+    });
+
+    /**
+     * Map cube vertex index (0-7) to R5RS type
+     * r5rs:cube-vertex-to-type(vertex-index)
+     * Returns type string or null for invalid vertex
+     */
+    this.register('r5rs:cube-vertex-to-type', (vertexIndex: number) => {
+      const types = ['boolean', 'pair', 'symbol', 'number', 'char', 'string', 'vector', 'procedure'];
+      return (vertexIndex >= 0 && vertexIndex < types.length) ? types[vertexIndex] : null;
+    });
+
+    /**
+     * Get all 8 R5RS types as array
+     * r5rs:r5rs-8-tuple()
+     * Returns array of type strings
+     */
+    this.register('r5rs:r5rs-8-tuple', () => {
+      return ['boolean', 'pair', 'symbol', 'number', 'char', 'string', 'vector', 'procedure'];
+    });
+
+    /**
+     * Map R5RS type to polyhedron based on dimension
+     * r5rs:type-to-polyhedron(type)
+     * Returns [polyhedron-name, BQF-array]
+     */
+    this.register('r5rs:type-to-polyhedron', (type: string) => {
+      const dim = typeDimension(type);
+      const polyhedra: Record<number, [string, number[]]> = {
+        0: ['point', [1, 0, 0]],           // Boolean → Point
+        1: ['line', [2, 1, 0]],            // Char → Line
+        2: ['plane', [4, 4, 1]],          // Number → Plane
+        3: ['tetrahedron', [4, 6, 4]],    // Pair → Tetrahedron
+        4: ['cube', [8, 12, 6]],          // String → Cube
+        5: ['octahedron', [6, 12, 8]],    // Vector → Octahedron
+        6: ['icosahedron', [12, 30, 20]]  // Procedure → Icosahedron
+      };
+      return polyhedra[dim] ?? ['unknown', [0, 0, 0]];
+    });
+
+    /**
+     * Get BQF for R5RS type
+     * r5rs:type-bqf(type)
+     * Returns BQF array [a, b, c]
+     */
+    this.register('r5rs:type-bqf', (type: string) => {
+      const poly = this.getFunction('r5rs:type-to-polyhedron')?.(type);
+      if (poly && Array.isArray(poly) && poly.length >= 2) {
+        return poly[1]; // Return BQF array
+      }
+      return [0, 0, 0]; // Default BQF
+    });
+  }
+
+  /**
    * Register polynomial operation R5RS functions
    */
   private registerPolynomialFunctions(): void {
@@ -316,7 +413,7 @@ export class R5RSRegistry {
         return result;
       };
       
-      const result: number[] = [];
+      let result: number[] = [];
       for (let i = 0; i < p1.length; i++) {
         if (p1[i] !== 0) {
           // Multiply p2 by itself i times and scale by p1[i]
