@@ -3,6 +3,7 @@
  */
 
 import { ProvenanceNode, ProvenanceEdge, ProvenanceChain, Slide, Card } from '../services/provenance-slide-service';
+import type { VectorClock } from './vector-clock';
 
 /**
  * Chain update types
@@ -23,6 +24,7 @@ export interface ChainUpdate {
   evolutionPath: string;
   timestamp: number;
   clientId: string;
+  vectorClock?: VectorClock;
   data: {
     node?: ProvenanceNode;
     edge?: ProvenanceEdge;
@@ -41,6 +43,7 @@ export interface SlideUpdate {
   updates: Partial<Slide>;
   timestamp: number;
   clientId: string;
+  vectorClock?: VectorClock;
 }
 
 /**
@@ -53,6 +56,7 @@ export interface CardUpdate {
   updates: Partial<Card>;
   timestamp: number;
   clientId: string;
+  vectorClock?: VectorClock;
 }
 
 /**

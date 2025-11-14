@@ -8,6 +8,7 @@ import { databaseService } from '../database-service';
 
 export interface LearningService {
   learnFromInteraction(interaction: InteractionEvent): Promise<void>;
+  observeFromInteraction(interaction: InteractionEvent): Promise<void>;
   backPropagate(errorSignal: number, learningRate: number): Promise<void>;
   storePattern(pattern: string, weight: number, relationships: string[]): Promise<void>;
   getKnowledgeGraph(): KnowledgeNode[];
@@ -40,12 +41,16 @@ class LearningServiceImpl implements LearningService {
     this.neuralNetwork = new NeuralNetwork(config.learningRate);
   }
 
-  // Learn from interaction
+  /**
+   * Learn from interaction (ACTION - exponential, forward propagation)
+   * Actions are exponential transformations: Affine → Projective
+   * Effect: Forward propagation, exponential growth
+   */
   async learnFromInteraction(interaction: InteractionEvent): Promise<void> {
     // Extract features from interaction
     const features = this.extractFeatures(interaction);
 
-    // Forward pass through neural network
+    // Forward pass through neural network (exponential transformation)
     const output = await this.neuralNetwork.forward(features);
 
     // Calculate expected output
@@ -54,21 +59,66 @@ class LearningServiceImpl implements LearningService {
     // Calculate error
     const error = this.calculateError(output, expected);
 
-    // Backward pass
-    const gradients = await this.neuralNetwork.backward(error);
+    // Exponential weight update (forward propagation)
+    // Actions use exponential growth: weights *= (1 + learningRate * error)
+    const exponentialGradients = await this.neuralNetwork.backward(error);
+    await this.updateWeightsExponential(exponentialGradients, interaction.learningWeight);
 
-    // Update weights using gradient descent
-    await this.updateWeights(gradients);
-
-    // Store pattern in knowledge graph
+    // Store pattern in knowledge graph (exponential growth)
     const pattern = this.extractPattern(interaction);
     await this.storePattern(pattern, interaction.learningWeight, this.findRelationships(pattern));
 
     // Update metrics
     this.updateMetrics(interaction);
 
-    // Emit event
-    this.emit('learning:interaction', { interaction, output, error });
+    // Emit event (action type: exponential)
+    this.emit('learning:action', { 
+      interaction, 
+      output, 
+      error,
+      type: 'action',
+      transformation: 'exponential'
+    });
+  }
+
+  /**
+   * Observe from interaction (OBSERVATION - linear, backward propagation)
+   * Observations are linear transformations: Projective → Affine
+   * Effect: Backward propagation, linear collapse
+   */
+  async observeFromInteraction(interaction: InteractionEvent): Promise<void> {
+    // Extract features from interaction
+    const features = this.extractFeatures(interaction);
+
+    // Forward pass (for observation, we still need to compute output)
+    const output = await this.neuralNetwork.forward(features);
+
+    // Calculate expected output
+    const expected = this.getExpectedOutput(interaction);
+
+    // Calculate error
+    const error = this.calculateError(output, expected);
+
+    // Linear weight update (backward propagation)
+    // Observations use linear decay: weights -= learningRate * error
+    const linearGradients = await this.neuralNetwork.backward(error);
+    await this.updateWeightsLinear(linearGradients, interaction.learningWeight);
+
+    // Store observation pattern (linear collapse)
+    const pattern = this.extractPattern(interaction);
+    await this.storeObservation(pattern, interaction.learningWeight);
+
+    // Update metrics
+    this.updateMetrics(interaction);
+
+    // Emit event (observation type: linear)
+    this.emit('learning:observation', { 
+      interaction, 
+      output, 
+      error,
+      type: 'observation',
+      transformation: 'linear'
+    });
   }
 
   // Back propagate learning signal
@@ -206,6 +256,39 @@ class LearningServiceImpl implements LearningService {
     await this.neuralNetwork.updateWeightsFromGradients(gradients);
   }
 
+  /**
+   * Update weights exponentially (for actions)
+   * Exponential growth: weights *= (1 + learningRate * gradient)
+   */
+  private async updateWeightsExponential(gradients: number[], learningRate: number): Promise<void> {
+    // Use neural network's weight update with exponential transformation
+    for (let i = 0; i < gradients.length; i++) {
+      const exponentialGradient = gradients[i] * (1 + learningRate);
+      await this.neuralNetwork.updateWeights(exponentialGradient);
+    }
+  }
+
+  /**
+   * Update weights linearly (for observations)
+   * Linear decay: weights -= learningRate * gradient
+   */
+  private async updateWeightsLinear(gradients: number[], learningRate: number): Promise<void> {
+    // Use neural network's weight update with linear transformation
+    for (let i = 0; i < gradients.length; i++) {
+      const linearGradient = -learningRate * gradients[i];
+      await this.neuralNetwork.updateWeights(linearGradient);
+    }
+  }
+
+  /**
+   * Store observation pattern (linear collapse)
+   */
+  private async storeObservation(pattern: string, weight: number): Promise<void> {
+    // Observations are stored with linear weight decay
+    const observationWeight = weight * 0.5; // Linear decay factor
+    await this.storePattern(pattern, observationWeight, []);
+  }
+
   private updateMetrics(interaction: InteractionEvent): void {
     this.metrics.totalLearningEvents++;
     const totalWeight = this.metrics.averageLearningWeight * (this.metrics.totalLearningEvents - 1);
@@ -324,6 +407,10 @@ export const learningService: LearningService = {
   async learnFromInteraction(interaction: InteractionEvent) {
     if (!instance) throw new Error('LearningService not initialized');
     return instance.learnFromInteraction(interaction);
+  },
+  async observeFromInteraction(interaction: InteractionEvent) {
+    if (!instance) throw new Error('LearningService not initialized');
+    return instance.observeFromInteraction(interaction);
   },
   async backPropagate(errorSignal: number, learningRate: number) {
     if (!instance) throw new Error('LearningService not initialized');

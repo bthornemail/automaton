@@ -1061,7 +1061,17 @@
     (r5rs:nlp-eval . ,nlp-eval)
     (r5rs:attention . ,attention)
     (r5rs:qubit . ,qubit)
-    (r5rs:apply-gate . ,apply-gate)))
+    (r5rs:apply-gate . ,apply-gate)
+    (r5rs:apply-bqf . ,apply-bqf)
+    (r5rs:abstract-bqf . ,abstract-bqf)
+    (r5rs:dual-swap . ,dual-swap)
+    (r5rs:compose-bqf . ,compose-bqf)
+    (r5rs:classify-type . ,classify-type)
+    (r5rs:binary-to-point . ,binary-to-point)
+    (r5rs:float-to-projective . ,float-to-projective)
+    (r5rs:type-dimension . ,type-dimension)
+    (r5rs:is-affine-type? . ,is-affine-type?)
+    (r5rs:is-projective-type? . ,is-projective-type?)))
 
 ;; JSONL invocation interface
 (define (invoke-from-jsonl func-name args context)
@@ -1075,6 +1085,122 @@
 (define (get-context context key)
   (let ((pair (assoc key context)))
     (if pair (cdr pair) '())))
+
+;; =============================================================================
+;; MODULE 12: BQF TRANSFORMATIONS
+;; =============================================================================
+;; Binary Quadratic Form transformations for duality operations
+;; BQF = [a, b, c] where:
+;;   a = affine points (binary, discrete, values/facts)
+;;   b = interaction lines (shared bipartitely, ports/hashes)
+;;   c = projective planes (float, continuous, functions/rules)
+;; Source: 02-Reflections/05-grok-bqf.md
+
+;; Apply BQF transformation (forward, exponential)
+;; [a, b, c] → [a, b, c-1]
+;; Direction: Affine → Projective
+;; Effect: Forward propagation, exponential growth
+(define (apply-bqf bqf)
+  (let ((a (car bqf))
+        (b (cadr bqf))
+        (c (caddr bqf)))
+    (if (> c 0)
+        (list a b (- c 1))
+        (error "Cannot apply: c=0 (no projective component)"))))
+
+;; Abstract BQF transformation (backward, linear)
+;; [a, b, c] → [a, b, c+1]
+;; Direction: Projective → Affine
+;; Effect: Backward propagation, linear collapse
+(define (abstract-bqf bqf)
+  (let ((a (car bqf))
+        (b (cadr bqf))
+        (c (caddr bqf)))
+    (list a b (+ c 1))))
+
+;; Dual swap BQF transformation
+;; [a, b, c] → [c, b, a]
+;; Effect: Swap affine and projective components (geometric inversion)
+;; Example: Cube [8,12,6] ↔ Octahedron [6,12,8]
+(define (dual-swap bqf)
+  (let ((a (car bqf))
+        (b (cadr bqf))
+        (c (caddr bqf)))
+    (list c b a)))
+
+;; Compose two BQF transformations
+;; Q₁ ∘ Q₂: Compose transformations sequentially
+;; Matrix multiplication for composition
+(define (compose-bqf q1 q2)
+  (let ((a1 (car q1)) (b1 (cadr q1)) (c1 (caddr q1))
+        (a2 (car q2)) (b2 (cadr q2)) (c2 (caddr q2)))
+    (list
+      (+ (* a1 a2) (* b1 a2))           ; x² coefficient
+      (+ (* a1 b2) (* b1 b2) (* c1 a2)) ; xy coefficient
+      (+ (* b1 c2) (* c1 c2)))))        ; y² coefficient
+
+;; =============================================================================
+;; MODULE 13: TYPE CLASSIFICATION (Binary-Float Topology)
+;; =============================================================================
+;; Binary-Float type mapping for computational geometry
+;; Binary = Affine points (discrete, exact, values/facts)
+;; Float = Projective lines/planes (continuous, approximate, functions/rules)
+;; Source: 02-Reflections/02-grok-binary-float-topology.md
+
+;; Classify R5RS type as binary (affine) or float (projective)
+;; Binary types: boolean, char, number (integer), pair (discrete)
+;; Float types: string, vector, procedure (continuous)
+(define (classify-type type)
+  (cond
+    ((eq? type 'boolean) 'binary)
+    ((eq? type 'char) 'binary)
+    ((eq? type 'number) 'binary)  ; Integer numbers are binary
+    ((eq? type 'pair) 'binary)   ; Pairs are discrete structures
+    ((eq? type 'string) 'float)  ; Strings are continuous sequences
+    ((eq? type 'vector) 'float)   ; Vectors are continuous arrays
+    ((eq? type 'procedure) 'float) ; Procedures are continuous functions
+    (else 'unknown)))
+
+;; Map binary value to affine point
+;; Binary values are discrete, exact points in affine space
+(define (binary-to-point value)
+  (cond
+    ((boolean? value) (if value 1 0))
+    ((char? value) (char->integer value))
+    ((number? value) value)
+    ((pair? value) (cons (binary-to-point (car value))
+                         (binary-to-point (cdr value))))
+    (else value)))
+
+;; Map float value to projective line/plane
+;; Float values are continuous, approximate lines/planes in projective space
+(define (float-to-projective value)
+  (cond
+    ((string? value) (string-length value))  ; String length as projective coordinate
+    ((vector? value) (vector-length value))  ; Vector length as projective coordinate
+    ((procedure? value) 1.0)  ; Procedures map to projective line (1.0)
+    (else value)))
+
+;; Get type dimension (0D-7D mapping)
+;; Maps R5RS types to dimensional progression
+(define (type-dimension type)
+  (cond
+    ((eq? type 'boolean) 0)   ; 0D: Identity
+    ((eq? type 'char) 1)      ; 1D: Successor
+    ((eq? type 'number) 2)    ; 2D: Pairing
+    ((eq? type 'pair) 3)      ; 3D: Algebra
+    ((eq? type 'string) 4)    ; 4D: Network
+    ((eq? type 'vector) 5)   ; 5D: Consensus
+    ((eq? type 'procedure) 6) ; 6D: Intelligence
+    (else 7)))                ; 7D: Quantum
+
+;; Check if type is affine (binary, discrete)
+(define (is-affine-type? type)
+  (eq? (classify-type type) 'binary))
+
+;; Check if type is projective (float, continuous)
+(define (is-projective-type? type)
+  (eq? (classify-type type) 'float))
 
 ;; =============================================================================
 ;; UTILITY FUNCTIONS (for R5RS compatibility)

@@ -16,6 +16,8 @@ import { errorLoggingService } from './error-logging-service';
 import { provenanceChainCache, ProvenanceChainCache } from './provenance-chain-cache';
 import { performanceMonitoringService } from './performance-monitoring-service';
 import { avatarTemplateService } from './avatar-template-service';
+import { vectorClockService } from './vector-clock-service';
+import type { VectorClock } from '../types/vector-clock';
 
 export interface AvatarConfig {
   gltfModel: string;
@@ -37,6 +39,7 @@ export interface ProvenanceNode {
     dimension?: string;
     churchEncoding?: string;
     pattern?: string;
+    vectorClock?: VectorClock;
   };
   data: any;
   avatar?: AvatarConfig;
@@ -51,6 +54,7 @@ export interface ProvenanceEdge {
     timestamp: number;
     weight: number;
     context: string;
+    vectorClock?: VectorClock;
   };
 }
 
@@ -221,6 +225,14 @@ export class ProvenanceSlideService {
         }
       }
       
+      // Create vector clock from provenance metadata
+      const vectorClock = vectorClockService.create(
+        pattern.file,
+        pattern.line,
+        pattern.timestamp || Date.now(),
+        pattern.pattern || 'unknown'
+      );
+
       const node: ProvenanceNode = {
         id: `pattern-${pattern.id}`,
         type: isAgentNode ? 'agent' : 'evolution',
@@ -232,7 +244,8 @@ export class ProvenanceSlideService {
           agentId: agentId,
           dimension: pattern.dimension,
           churchEncoding: pattern.churchEncoding,
-          pattern: pattern.pattern
+          pattern: pattern.pattern,
+          vectorClock: vectorClock
         },
         data: {
           ...pattern,
@@ -253,6 +266,21 @@ export class ProvenanceSlideService {
       const toDim = parseInt(toNode.metadata.dimension?.replace('D', '') || '0');
       
       if (toDim === fromDim + 1 || (fromDim === 7 && toDim === 0)) {
+        // Merge vector clocks for edge (causal ordering)
+        const fromVC = fromNode.metadata.vectorClock || vectorClockService.create(
+          fromNode.metadata.file,
+          fromNode.metadata.line,
+          fromNode.metadata.timestamp,
+          fromNode.metadata.pattern || 'unknown'
+        );
+        const toVC = toNode.metadata.vectorClock || vectorClockService.create(
+          toNode.metadata.file,
+          toNode.metadata.line,
+          toNode.metadata.timestamp,
+          toNode.metadata.pattern || 'unknown'
+        );
+        const mergedVC = vectorClockService.merge(fromVC, toVC).merged;
+
         const edge: ProvenanceEdge = {
           id: `edge-${fromNode.id}-${toNode.id}`,
           type: 'evolves',
@@ -261,7 +289,8 @@ export class ProvenanceSlideService {
           metadata: {
             timestamp: Date.now(),
             weight: 1.0,
-            context: `Dimensional progression: ${fromNode.metadata.dimension} → ${toNode.metadata.dimension}`
+            context: `Dimensional progression: ${fromNode.metadata.dimension} → ${toNode.metadata.dimension}`,
+            vectorClock: mergedVC
           }
         };
         edges.push(edge);
@@ -269,6 +298,21 @@ export class ProvenanceSlideService {
       
       // Check for cross-file references (federated provenance)
       if (fromNode.metadata.file !== toNode.metadata.file) {
+        // Merge vector clocks for cross-file reference
+        const fromVC = fromNode.metadata.vectorClock || vectorClockService.create(
+          fromNode.metadata.file,
+          fromNode.metadata.line,
+          fromNode.metadata.timestamp,
+          fromNode.metadata.pattern || 'unknown'
+        );
+        const toVC = toNode.metadata.vectorClock || vectorClockService.create(
+          toNode.metadata.file,
+          toNode.metadata.line,
+          toNode.metadata.timestamp,
+          toNode.metadata.pattern || 'unknown'
+        );
+        const mergedVC = vectorClockService.merge(fromVC, toVC).merged;
+
         const referenceEdge: ProvenanceEdge = {
           id: `ref-${fromNode.id}-${toNode.id}`,
           type: 'references',
@@ -277,7 +321,8 @@ export class ProvenanceSlideService {
           metadata: {
             timestamp: Date.now(),
             weight: 0.5,
-            context: `Cross-file reference: ${fromNode.metadata.file} → ${toNode.metadata.file}`
+            context: `Cross-file reference: ${fromNode.metadata.file} → ${toNode.metadata.file}`,
+            vectorClock: mergedVC
           }
         };
         edges.push(referenceEdge);

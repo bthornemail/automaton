@@ -93,25 +93,25 @@ export class AutomatonController {
   }
 
   /**
-   * Execute a single action
+   * Execute a single action (exponential, forward propagation)
+   * Actions are exponential transformations: Affine → Projective
+   * Effect: Forward propagation, exponential growth
    */
   executeAction(action: string): void {
     try {
-      console.log(`🎯 Executing: ${action}`);
+      console.log(`🎯 Executing ACTION (exponential): ${action}`);
       
       const currentDim = (this.state.automaton as any).currentDimension;
       const iterationCount = (this.state.automaton as any).executionHistory?.length || 0;
       let fromDim = currentDim;
       let toDim = currentDim;
 
+      // Actions are exponential (forward, projective)
       switch (action) {
         case 'evolve':
           (this.state.automaton as any).executeEvolution();
           this.progressDimension();
           toDim = (this.state.automaton as any).currentDimension;
-          break;
-        case 'self-reference':
-          (this.state.automaton as any).executeSelfReference();
           break;
         case 'self-modify':
           (this.state.automaton as any).executeSelfModification();
@@ -120,18 +120,14 @@ export class AutomatonController {
         case 'self-io':
           (this.state.automaton as any).executeSelfIO();
           break;
-        case 'validate-self':
-          (this.state.automaton as any).executeSelfValidation();
-          break;
         case 'self-train':
           (this.state.automaton as any).executeSelfTraining();
-          break;
-        case 'self-observe':
-          (this.state.automaton as any).executeSelfObservation();
           break;
         case 'compose':
           (this.state.automaton as any).executeComposition();
           break;
+        default:
+          console.warn(`Unknown action: ${action}`);
       }
 
       // Add to execution history
@@ -150,14 +146,16 @@ export class AutomatonController {
         (this.state.automaton as any).executionHistory.push(historyEntry);
       }
 
-      // Emit action execution
+      // Emit action execution (exponential transformation)
       const actionData = {
         action: typeof action === 'string' ? action : 'unknown',
         result: 'success',
         timestamp: Date.now(),
         from: typeof fromDim === 'number' ? `${fromDim}D` : 'unknown',
         to: typeof toDim === 'number' ? `${toDim}D` : 'unknown',
-        iteration: typeof iterationCount === 'number' ? iterationCount : 0
+        iteration: typeof iterationCount === 'number' ? iterationCount : 0,
+        type: 'action', // exponential
+        transformation: 'exponential' // forward propagation
       };
       
       if (actionData && typeof actionData === 'object' && !Array.isArray(actionData)) {
@@ -173,6 +171,77 @@ export class AutomatonController {
         errorMessage = 'Unknown error occurred';
       }
       this.io.emit('error', { action: action, error: errorMessage });
+    }
+  }
+
+  /**
+   * Execute observation (linear, backward propagation)
+   * Observations are linear transformations: Projective → Affine
+   * Effect: Backward propagation, linear collapse
+   */
+  executeObservation(observation: string): void {
+    try {
+      console.log(`👁️ Executing OBSERVATION (linear): ${observation}`);
+      
+      const currentDim = (this.state.automaton as any).currentDimension;
+      const iterationCount = (this.state.automaton as any).executionHistory?.length || 0;
+
+      // Observations are linear (backward, affine)
+      switch (observation) {
+        case 'self-reference':
+          (this.state.automaton as any).executeSelfReference();
+          break;
+        case 'validate-self':
+          (this.state.automaton as any).executeSelfValidation();
+          break;
+        case 'self-observe':
+          (this.state.automaton as any).executeSelfObservation();
+          break;
+        default:
+          console.warn(`Unknown observation: ${observation}`);
+      }
+
+      // Add to execution history
+      const historyEntry = {
+        iteration: typeof iterationCount === 'number' ? iterationCount : 0,
+        observation: typeof observation === 'string' ? observation : 'unknown',
+        dimension: typeof currentDim === 'number' ? `${currentDim}D` : 'unknown',
+        timestamp: Date.now(),
+        type: 'observation', // linear
+        transformation: 'linear' // backward propagation
+      };
+      
+      if (historyEntry && typeof historyEntry === 'object' && !Array.isArray(historyEntry)) {
+        if (!(this.state.automaton as any).executionHistory) {
+          (this.state.automaton as any).executionHistory = [];
+        }
+        (this.state.automaton as any).executionHistory.push(historyEntry);
+      }
+
+      // Emit observation execution (linear transformation)
+      const observationData = {
+        observation: typeof observation === 'string' ? observation : 'unknown',
+        result: 'success',
+        timestamp: Date.now(),
+        dimension: typeof currentDim === 'number' ? `${currentDim}D` : 'unknown',
+        iteration: typeof iterationCount === 'number' ? iterationCount : 0,
+        type: 'observation', // linear
+        transformation: 'linear' // backward propagation
+      };
+      
+      if (observationData && typeof observationData === 'object' && !Array.isArray(observationData)) {
+        this.io.emit('observation', observationData);
+      }
+
+    } catch (error) {
+      console.error(`❌ Failed to execute observation ${observation}:`, error);
+      let errorMessage: string;
+      try {
+        errorMessage = error instanceof Error ? error.message : String(error);
+      } catch (e) {
+        errorMessage = 'Unknown error occurred';
+      }
+      this.io.emit('error', { observation: observation, error: errorMessage });
     }
   }
 
