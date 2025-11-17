@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voice Integration Test</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #1e1e1e;
+      color: #00ff00;
+    }
+    .test-section {
+      margin: 20px 0;
+      padding: 15px;
+      border: 1px solid #00ff00;
+      border-radius: 5px;
+    }
+    .pass { color: #00ff00; }
+    .fail { color: #ff0000; }
+    .info { color: #00aaff; }
+    button {
+      background: #00ff00;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      margin: 5px;
+      cursor: pointer;
+      font-family: monospace;
+      font-weight: bold;
+    }
+    button:hover {
+      background: #00cc00;
+    }
+    pre {
+      background: #2e2e2e;
+      padding: 10px;
+      border-radius: 3px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎤 CANVASL Voice Integration Test</h1>
+
+  <div class="test-section">
+    <h2>Browser Support</h2>
+    <div id="support-status"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Module Loading</h2>
+    <div id="module-status"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Template Compilation</h2>
+    <div id="compile-status"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Chain Complex</h2>
+    <div id="complex-status"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Voice App Creation</h2>
+    <button id="create-app-btn">Create Voice App</button>
+    <button id="test-keyword-btn" disabled>Test Keyword (Manual)</button>
+    <div id="app-status"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test Results</h2>
+    <pre id="test-results"></pre>
+  </div>
+
+  <script type="module">
+    const results = [];
+
+    function log(message, type = 'info') {
+      const className = type === 'pass' ? 'pass' : type === 'fail' ? 'fail' : 'info';
+      const prefix = type === 'pass' ? '✓' : type === 'fail' ? '✗' : '→';
+      results.push(`${prefix} ${message}`);
+      document.getElementById('test-results').textContent = results.join('\n');
+    }
+
+    // Test 1: Browser Support
+    async function testBrowserSupport() {
+      const supportDiv = document.getElementById('support-status');
+
+      const support = {
+        speechRecognition: !!(window.SpeechRecognition || window.webkitSpeechRecognition),
+        speechSynthesis: 'speechSynthesis' in window,
+        geolocation: 'geolocation' in navigator,
+        notifications: 'Notification' in window,
+        clipboard: 'clipboard' in navigator,
+        indexedDB: 'indexedDB' in window
+      };
+
+      let html = '<ul>';
+      for (const [api, supported] of Object.entries(support)) {
+        const status = supported ? '<span class="pass">✓</span>' : '<span class="fail">✗</span>';
+        html += `<li>${status} ${api}</li>`;
+        log(`Browser API ${api}: ${supported ? 'supported' : 'not supported'}`, supported ? 'pass' : 'fail');
+      }
+      html += '</ul>';
+      supportDiv.innerHTML = html;
+    }
+
+    // Test 2: Module Loading
+    async function testModuleLoading() {
+      const moduleDiv = document.getElementById('module-status');
+
+      try {
+        const {
+          CANVASLVoiceApp,
+          TemplateCompiler,
+          MacroRegistry,
+          isSpeechRecognitionSupported,
+          isSpeechSynthesisSupported
+        } = await import('../src/speech/index.js');
+
+        log('All modules loaded successfully', 'pass');
+        log(`  - CANVASLVoiceApp: ${typeof CANVASLVoiceApp}`, 'info');
+        log(`  - TemplateCompiler: ${typeof TemplateCompiler}`, 'info');
+        log(`  - MacroRegistry: ${typeof MacroRegistry}`, 'info');
+
+        moduleDiv.innerHTML = '<span class="pass">✓ All modules loaded</span>';
+        return true;
+      } catch (error) {
+        log(`Module loading failed: ${error.message}`, 'fail');
+        moduleDiv.innerHTML = `<span class="fail">✗ Error: ${error.message}</span>`;
+        return false;
+      }
+    }
+
+    // Test 3: Template Compilation
+    async function testTemplateCompilation() {
+      const compileDiv = document.getElementById('compile-status');
+
+      try {
+        const { TemplateCompiler } = await import('../src/speech/index.js');
+
+        const template = {
+          id: 'test-template',
+          type: 'node',
+          dimension: 2,
+          frontmatter: {
+            type: 'canvasl-template',
+            adjacency: {
+              edges: ['e1', 'e2'],
+              orientation: [1, -1]
+            },
+            speech: {
+              input: {
+                lang: 'en-US',
+                continuous: false,
+                interimResults: false,
+                keywords: ['test']
+              },
+              output: {
+                voice: 'Google US English',
+                rate: 1.0,
+                pitch: 1.0
+              }
+            },
+            macros: [{
+              keyword: 'test',
+              api: 'geolocation',
+              method: 'getCurrentPosition',
+              params: {},
+              type: ['web_api', 'geolocation']
+            }],
+            validates: {
+              homology: true,
+              byzantine: false,
+              accessibility: true
+            },
+            features: {}
+          },
+          body: '# Test Template'
+        };
+
+        const compiler = new TemplateCompiler();
+        const compiled = compiler.compile(template);
+
+        log('Template compiled successfully', 'pass');
+        log(`  - Chain complex C0: ${compiled.complex.C0.length} cells`, 'info');
+        log(`  - Chain complex C1: ${compiled.complex.C1.length} cells`, 'info');
+        log(`  - Chain complex C2: ${compiled.complex.C2.length} cells`, 'info');
+        log(`  - Chain complex C3: ${compiled.complex.C3.length} cells`, 'info');
+        log(`  - Validation: ${compiled.validation.valid ? 'valid' : 'invalid'}`, compiled.validation.valid ? 'pass' : 'fail');
+
+        compileDiv.innerHTML = '<span class="pass">✓ Template compiled</span>';
+        return compiled;
+      } catch (error) {
+        log(`Template compilation failed: ${error.message}`, 'fail');
+        compileDiv.innerHTML = `<span class="fail">✗ Error: ${error.message}</span>`;
+        return null;
+      }
+    }
+
+    // Test 4: Chain Complex
+    async function testChainComplex(compiled) {
+      const complexDiv = document.getElementById('complex-status');
+
+      if (!compiled) {
+        complexDiv.innerHTML = '<span class="fail">✗ No compiled template</span>';
+        return;
+      }
+
+      try {
+        const { computeAllBetti, eulerCharacteristic } = await import('../src/speech/index.js');
+
+        const betti = computeAllBetti(compiled.complex);
+        const euler = eulerCharacteristic(betti);
+
+        log('Chain complex analysis:', 'info');
+        log(`  - Betti numbers: [${betti.join(', ')}]`, 'info');
+        log(`  - Euler characteristic: ${euler}`, 'info');
+
+        complexDiv.innerHTML = `
+          <span class="pass">✓ Chain complex validated</span><br>
+          <span class="info">β = [${betti.join(', ')}], χ = ${euler}</span>
+        `;
+      } catch (error) {
+        log(`Chain complex analysis failed: ${error.message}`, 'fail');
+        complexDiv.innerHTML = `<span class="fail">✗ Error: ${error.message}</span>`;
+      }
+    }
+
+    // Test 5: Voice App Creation
+    let voiceApp = null;
+
+    document.getElementById('create-app-btn').addEventListener('click', async () => {
+      const appDiv = document.getElementById('app-status');
+
+      try {
+        const { CANVASLVoiceApp } = await import('../src/speech/index.js');
+
+        const template = {
+          id: 'test-voice-app',
+          type: 'node',
+          dimension: 2,
+          frontmatter: {
+            type: 'canvasl-template',
+            adjacency: {
+              edges: ['input', 'process', 'output'],
+              orientation: [1, 1, -1]
+            },
+            speech: {
+              input: {
+                lang: 'en-US',
+                continuous: false,
+                interimResults: false,
+                keywords: ['location', 'notify']
+              },
+              output: {
+                voice: 'Google US English',
+                rate: 1.0,
+                pitch: 1.0
+              }
+            },
+            macros: [
+              {
+                keyword: 'location',
+                api: 'geolocation',
+                method: 'getCurrentPosition',
+                params: { enableHighAccuracy: true },
+                type: ['web_api', 'geolocation']
+              },
+              {
+                keyword: 'notify',
+                api: 'notifications',
+                method: 'showNotification',
+                params: { title: 'Test', body: 'Test notification' },
+                type: ['web_api', 'notifications']
+              }
+            ],
+            validates: {
+              homology: true,
+              byzantine: false,
+              accessibility: true
+            },
+            features: {}
+          },
+          body: '# Test Voice App'
+        };
+
+        voiceApp = new CANVASLVoiceApp(template);
+
+        const summary = voiceApp.getSummary();
+
+        log('Voice app created successfully', 'pass');
+        log(`  - Template ID: ${summary.templateId}`, 'info');
+        log(`  - Betti numbers: [${summary.betti.join(', ')}]`, 'info');
+        log(`  - Running: ${summary.running}`, 'info');
+
+        appDiv.innerHTML = `
+          <span class="pass">✓ Voice app created</span><br>
+          <span class="info">Template: ${summary.templateId}</span><br>
+          <span class="info">β = [${summary.betti.join(', ')}]</span>
+        `;
+
+        document.getElementById('test-keyword-btn').disabled = false;
+      } catch (error) {
+        log(`Voice app creation failed: ${error.message}`, 'fail');
+        log(`  Stack: ${error.stack}`, 'fail');
+        appDiv.innerHTML = `<span class="fail">✗ Error: ${error.message}</span>`;
+      }
+    });
+
+    document.getElementById('test-keyword-btn').addEventListener('click', async () => {
+      if (!voiceApp) {
+        log('No voice app available', 'fail');
+        return;
+      }
+
+      try {
+        log('Executing test keyword: location', 'info');
+        // Note: This will prompt for geolocation permission
+        await voiceApp.executeKeyword('location');
+        log('Keyword execution completed', 'pass');
+
+        const summary = voiceApp.getSummary();
+        log(`  - Executions: ${summary.executionCount}`, 'info');
+      } catch (error) {
+        log(`Keyword execution error: ${error.message}`, 'fail');
+      }
+    });
+
+    // Run all tests
+    async function runTests() {
+      log('Starting CANVASL Voice Integration Tests', 'info');
+      log('='.repeat(50), 'info');
+
+      await testBrowserSupport();
+      const modulesLoaded = await testModuleLoading();
+
+      if (modulesLoaded) {
+        const compiled = await testTemplateCompilation();
+        await testChainComplex(compiled);
+      }
+
+      log('='.repeat(50), 'info');
+      log('Tests completed. Click "Create Voice App" to continue.', 'info');
+    }
+
+    runTests();
+  </script>
+</body>
+</html>

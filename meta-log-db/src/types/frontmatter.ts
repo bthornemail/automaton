@@ -78,6 +78,8 @@ export interface BipartiteMetadata {
   polynomial?: PolynomialObject;
   /** Optional relationships */
   relationships?: BipartiteRelationships;
+  /** Optional progression string */
+  progression?: string;
 }
 
 /**

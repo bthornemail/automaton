@@ -63,7 +63,7 @@ router.post('/save', async (req: Request, res: Response) => {
  * GET /api/slides/:evolutionPath
  * Get saved slides from an evolution directory.
  */
-router.get('/:evolutionPath(*)', async (req: Request, res: Response) => {
+router.get('/:evolutionPath', async (req: Request, res: Response) => {
   try {
     const evolutionPath = req.params.evolutionPath;
     const slidesDir = path.join(evolutionPath, 'slides');

@@ -33,15 +33,15 @@ if [ ! -d "node_modules" ]; then
 fi
 
 # Check for ts-node-dev (preferred for auto-reload) or fallback to tsx
-if [ -d "node_modules/ts-node-dev" ] || npm list ts-node-dev &>/dev/null; then
-    BACKEND_CMD="ts-node-dev --respawn --transpile-only ui-server.ts"
-elif [ -d "node_modules/tsx" ] || npm list tsx &>/dev/null; then
-    BACKEND_CMD="tsx ui-server.ts"
+if [ -f "node_modules/.bin/ts-node-dev" ]; then
+    BACKEND_CMD="./node_modules/.bin/ts-node-dev --respawn --transpile-only ui-server.ts"
+elif [ -f "node_modules/.bin/tsx" ]; then
+    BACKEND_CMD="./node_modules/.bin/tsx ui-server.ts"
     echo "⚠️  Using tsx (no auto-reload). Install ts-node-dev for auto-reload: npm install -D ts-node-dev"
 else
     echo "📦 Installing backend dependencies..."
     npm install -D ts-node-dev
-    BACKEND_CMD="ts-node-dev --respawn --transpile-only ui-server.ts"
+    BACKEND_CMD="./node_modules/.bin/ts-node-dev --respawn --transpile-only ui-server.ts"
 fi
 
 # Install UI dependencies if needed
