@@ -15,7 +15,8 @@ export { LearningAutomaton } from '../engines/learning-automaton.js';
 
 // Vector clock systems
 export { VectorClock } from '../vector-clock/vector-clock.js';
-export { VectorClockAutomaton, type MetaLog, type AutomatonState, type AutomatonMessage, type SwarmContext } from '../vector-clock/vector-clock-automaton.js';
+export { VectorClockAutomaton, type MetaLog, type AutomatonMessage, type SwarmContext } from '../vector-clock/vector-clock-automaton.js';
+export type { AutomatonState as VectorClockAutomatonState } from '../vector-clock/vector-clock-automaton.js';
 export { MLVectorClockAutomaton } from '../vector-clock/ml-vector-clock-automaton.js';
 export { A0_TopologyAutomaton } from '../vector-clock/dimension-automata/0d-topology-automaton.js';
 

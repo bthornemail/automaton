@@ -17,7 +17,8 @@ export { OptimizedBootstrap } from '../engines/bootstrap-automaton.js';
 
 // Vector clock systems
 export { VectorClock } from '../vector-clock/vector-clock.js';
-export { VectorClockAutomaton, type MetaLog, type AutomatonState, type AutomatonMessage, type SwarmContext } from '../vector-clock/vector-clock-automaton.js';
+export { VectorClockAutomaton, type MetaLog, type AutomatonMessage, type SwarmContext } from '../vector-clock/vector-clock-automaton.js';
+export type { AutomatonState as VectorClockAutomatonState } from '../vector-clock/vector-clock-automaton.js';
 export { MLVectorClockAutomaton } from '../vector-clock/ml-vector-clock-automaton.js';
 
 // Memory management (server-compatible)
@@ -32,6 +33,6 @@ export {
   MEMORY_THRESHOLDS
 } from '../memory/memory-utils.js';
 
-// Types
+// Types (using ControllerState alias to avoid conflict)
 export type { AutomatonState, Transition, VerticalTransition, CanvasObject } from '../types/automaton-state.js';
 

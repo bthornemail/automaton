@@ -1,7 +1,7 @@
 /**
- * Automata Metaverse - Main Entry Point
+ * Automata Metaverse - Browser Entry Point
  * 
- * Automaton execution engines for self-referential CanvasL/JSONL systems
+ * Browser-compatible exports (excludes type-only exports for Rollup compatibility)
  */
 
 // Core execution engines
@@ -14,17 +14,9 @@ export { ScalableAutomaton } from './engines/automaton-scalable.js';
 export { LearningAutomaton } from './engines/learning-automaton.js';
 export { OptimizedBootstrap } from './engines/bootstrap-automaton.js';
 
-// Server-side components
-export { AutomatonController } from './server/automaton-controller.js';
-export type { AutomatonControllerConfig, AutomatonState as ControllerState } from './server/automaton-controller.js';
-export { calculateActionFrequency } from './server/automaton-analysis.js';
-export type { ActionFrequency } from './server/automaton-analysis.js';
-
 // Vector clock systems
 export { VectorClock } from './vector-clock/vector-clock.js';
 export { VectorClockAutomaton } from './vector-clock/vector-clock-automaton.js';
-export type { MetaLog, AutomatonMessage, SwarmContext } from './vector-clock/vector-clock-automaton.js';
-export type { AutomatonState as VectorClockAutomatonState } from './vector-clock/vector-clock-automaton.js';
 export { MLVectorClockAutomaton } from './vector-clock/ml-vector-clock-automaton.js';
 export { A0_TopologyAutomaton } from './vector-clock/dimension-automata/0d-topology-automaton.js';
 
@@ -37,8 +29,4 @@ export {
   formatMemory,
   MEMORY_THRESHOLDS
 } from './memory/memory-utils.js';
-export type { MemoryState, MemoryPressure } from './memory/memory-utils.js';
-
-// Types (primary AutomatonState from types/automaton-state)
-export type { AutomatonState, Transition, VerticalTransition, CanvasObject } from './types/automaton-state.js';
 

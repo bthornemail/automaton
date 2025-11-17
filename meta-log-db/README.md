@@ -366,10 +366,22 @@ npm link meta-log-db
 ## Package Information
 
 - **Package Name**: `meta-log-db`
-- **Version**: 1.2.0
+- **Version**: 1.3.0
 - **License**: MIT
 - **Node Version**: >=18.0.0
 - **Repository**: https://github.com/bthornemail/meta-log-db
+
+## Related Packages
+
+- **[automaton-evolutions](https://www.npmjs.com/package/automaton-evolutions)**: Canonical automaton CanvasL files (A₀-A₁₁) for self-referential systems. Use with `meta-log-db` to load canonical automaton definitions:
+  ```typescript
+  import { MetaLogDb } from 'meta-log-db';
+  import { AUTOMATON_FILES } from 'automaton-evolutions';
+  
+  const db = new MetaLogDb();
+  const canvas = await db.loadCanvas(AUTOMATON_FILES.a0Unified);
+  ```
+- **[automata-metaverse](https://www.npmjs.com/package/automata-metaverse)**: Automaton execution engines that use `meta-log-db` for CanvasL/JSONL parsing and `automaton-evolutions` for canonical files
 
 ## License
 

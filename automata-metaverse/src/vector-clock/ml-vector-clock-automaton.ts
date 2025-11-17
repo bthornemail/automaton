@@ -4,7 +4,11 @@
  * Integrates WASM ML embeddings and HNSW indexing with vector clock state
  */
 
-import { VectorClockAutomaton, type MetaLog, type SwarmContext, type AutomatonMessage, type AutomatonState } from './vector-clock-automaton.js';
+import { VectorClockAutomaton } from './vector-clock-automaton.js';
+import type { MetaLog, SwarmContext, AutomatonMessage, AutomatonState } from './vector-clock-automaton.js';
+
+// Re-export types for convenience
+export type { MetaLog, SwarmContext, AutomatonMessage, AutomatonState };
 import type { HNSWAutomatonIndex } from '../ml/hnsw-automaton-index.js';
 import type { WASMMLEngine } from '../ml/wasm-ml-engine.js';
 

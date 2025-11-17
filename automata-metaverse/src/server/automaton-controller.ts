@@ -95,15 +95,17 @@ export class AutomatonController {
     console.log('🛑 Automaton stopped');
 
     // Emit status update
-    this.io.emit('status', {
-      isRunning: false,
-      currentDimension: (this.state.automaton as any).currentDimension,
-      iterationCount: (this.state.automaton as any).executionHistory.length,
-      selfModificationCount: (this.state.automaton as any).selfModificationCount,
-      totalObjects: (this.state.automaton as any).objects.length,
-      executionMode: 'builtin',
-      status: 'idle',
-    });
+    if (this.io) {
+      this.io.emit('status', {
+        isRunning: false,
+        currentDimension: (this.state.automaton as any).currentDimension || '0D',
+        iterationCount: (this.state.automaton as any).executionHistory?.length || 0,
+        selfModificationCount: (this.state.automaton as any).selfModificationCount || 0,
+        totalObjects: (this.state.automaton as any).objects?.length || 0,
+        executionMode: 'builtin',
+        status: 'idle',
+      });
+    }
   }
 
   /**
@@ -129,7 +131,9 @@ export class AutomatonController {
           break;
         case 'self-modify':
           (this.state.automaton as any).executeSelfModification();
-          this.io.emit('modification', { type: 'self-modify', timestamp: Date.now() });
+          if (this.io) {
+            this.io.emit('modification', { type: 'self-modify', timestamp: Date.now() });
+          }
           break;
         case 'self-io':
           (this.state.automaton as any).executeSelfIO();
@@ -172,7 +176,7 @@ export class AutomatonController {
         transformation: 'exponential' // forward propagation
       };
       
-      if (actionData && typeof actionData === 'object' && !Array.isArray(actionData)) {
+      if (actionData && typeof actionData === 'object' && !Array.isArray(actionData) && this.io) {
         this.io.emit('action', actionData);
       }
 
@@ -184,7 +188,9 @@ export class AutomatonController {
       } catch (e) {
         errorMessage = 'Unknown error occurred';
       }
-      this.io.emit('error', { action: action, error: errorMessage });
+      if (this.io) {
+        this.io.emit('error', { action: action, error: errorMessage });
+      }
     }
   }
 
@@ -243,7 +249,7 @@ export class AutomatonController {
         transformation: 'linear' // backward propagation
       };
       
-      if (observationData && typeof observationData === 'object' && !Array.isArray(observationData)) {
+      if (observationData && typeof observationData === 'object' && !Array.isArray(observationData) && this.io) {
         this.io.emit('observation', observationData);
       }
 
@@ -255,7 +261,9 @@ export class AutomatonController {
       } catch (e) {
         errorMessage = 'Unknown error occurred';
       }
-      this.io.emit('error', { observation: observation, error: errorMessage });
+      if (this.io) {
+        this.io.emit('error', { observation: observation, error: errorMessage });
+      }
     }
   }
 
@@ -267,7 +275,9 @@ export class AutomatonController {
     const nextDim = (currentDim + 1) % 8;
     (this.state.automaton as any).currentDimension = nextDim;
     
-    this.io.emit('dimension', { dimension: nextDim });
+    if (this.io) {
+      this.io.emit('dimension', { dimension: nextDim });
+    }
   }
 
   /**

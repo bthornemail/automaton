@@ -3,7 +3,7 @@ import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 
 export default {
-  input: 'src/index.ts',
+  input: 'src/browser-index.ts',
   output: {
     file: 'dist/browser/index.js',
     format: 'es',
@@ -12,7 +12,11 @@ export default {
   plugins: [
     resolve({ browser: true }),
     commonjs(),
-    typescript({ tsconfig: './tsconfig.browser.json' })
+    typescript({ 
+      tsconfig: './tsconfig.browser.json',
+      declaration: false,
+      declarationMap: false
+    })
   ],
   external: ['meta-log-db']
 };

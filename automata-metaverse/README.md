@@ -42,7 +42,28 @@ Automaton execution engines for self-referential CanvasL/JSONL systems with dime
 npm install automata-metaverse
 ```
 
+### Dependencies
+
+- **`meta-log-db`**: Required for CanvasL/JSONL parsing and R5RS function execution
+- **`automaton-evolutions`**: Recommended for canonical automaton CanvasL files (A₀-A₁₁)
+
 ## Usage
+
+### Using Canonical Automaton Files
+
+The `automaton-evolutions` package provides canonical CanvasL files for all A₀-A₁₁ automata:
+
+```typescript
+import { AdvancedSelfReferencingAutomaton } from 'automata-metaverse';
+import { MetaLogDb } from 'meta-log-db';
+import { AUTOMATON_FILES } from 'automaton-evolutions';
+
+const db = new MetaLogDb();
+const automaton = new AdvancedSelfReferencingAutomaton(
+  AUTOMATON_FILES.a0Unified,  // Use canonical unified automaton
+  db
+);
+```
 
 ### Basic Usage
 

@@ -8,6 +8,7 @@
 
 import { writeFileSync, existsSync } from 'fs';
 import { MetaLogDb } from 'meta-log-db';
+import { AUTOMATON_FILES } from 'automaton-evolutions';
 
 interface BootstrapStep {
   name: string;
@@ -37,6 +38,9 @@ class OptimizedBootstrap {
   private automatonObjects: any[] = [];
 
   constructor(config?: BootstrapConfig) {
+    // Default to automaton-evolutions canonical files if available
+    // Note: automaton-kernel.jsonl is the full kernel (generated from seed)
+    // For seed file, use AUTOMATON_FILES.a1KernelSeed from automaton-evolutions
     this.kernelPath = config?.kernelPath || './automaton-kernel.jsonl';
     this.automatonPath = config?.automatonPath || './automaton.jsonl';
     this.db = config?.db || new MetaLogDb({ enableProlog: true, enableDatalog: true, enableShacl: true });
@@ -385,4 +389,5 @@ if (require.main === module) {
     });
 }
 
+export { OptimizedBootstrap };
 export default OptimizedBootstrap;

@@ -36,7 +36,7 @@
     "build:all": "npm run build && npm run build:browser",
     "watch": "tsc --watch",
     "clean": "rm -rf dist",
-    "prepublishOnly": "npm run build:all",
+    "prepublishOnly": "npm run build",
     "test": "jest",
     "test:coverage": "jest --coverage",
     "test:watch": "jest --watch"
@@ -65,7 +65,8 @@
   "homepage": "https://github.com/bthornemail/automata-metaverse#readme",
   "license": "MIT",
   "dependencies": {
-    "meta-log-db": "^1.2.0"
+    "meta-log-db": "^1.2.0",
+    "automaton-evolutions": "^1.0.0"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^25.0.7",
