@@ -1,0 +1,15 @@
+node_modules/
+tests/
+coverage/
+*.log
+.DS_Store
+.env
+.env.local
+.git/
+.gitignore
+tsconfig*.json
+jest.config.cjs
+rollup.config.js
+*.test.ts
+*.spec.ts
+
