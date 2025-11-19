@@ -73,7 +73,7 @@ fi
 
 # Start the backend server
 echo "🔌 Starting backend server on port 3000..."
-$BACKEND_CMD > /tmp/automaton-backend.log 2>&1 &
+$BACKEND_CMD > ~/tmp/automaton-backend.log 2>&1 &
 BACKEND_PID=$!
 
 # Wait for backend to be ready
@@ -92,7 +92,7 @@ done
 # Start the UI development server
 echo "🎨 Starting UI development server on port 5173..."
 cd ui
-npm run dev > /tmp/automaton-ui.log 2>&1 &
+npm run dev > ~/tmp/automaton-ui.log 2>&1 &
 UI_PID=$!
 cd ..
 
@@ -108,8 +108,8 @@ echo "   🔌 Backend API: http://localhost:3000"
 echo "   📡 WebSocket: ws://localhost:3000/socket.io"
 echo ""
 echo "📝 Logs:"
-echo "   Backend: tail -f /tmp/automaton-backend.log"
-echo "   UI: tail -f /tmp/automaton-ui.log"
+echo "   Backend: tail -f ~/tmp/automaton-backend.log"
+echo "   UI: tail -f ~/tmp/automaton-ui.log"
 echo ""
 echo "Press Ctrl+C to stop both servers"
 
